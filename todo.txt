@@ -1,0 +1,390 @@
+todo:
+-add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to Ig-Folder objects
+	-same for VolumeList_raw = .direct-list for Volume-Folder objects
+-add UID to volumes, initiators, initiator groups
+	-will allow for getting IGs from IGFolder, volumes from Volume folder, other stuff for IGs?
+-New-XioApiURI does a "break" instead of throwing an error; ("not continuing" text at some point, and that caused try/catch to just exit instead of actually get caught)
+	-change this to throw error
+-upgrade New-XIOVolumeFolder, New-XIOInitiatorGroupFolder to make full, deep path of folders (for when parent folder heirarchy does not yet exist)
+	-example:  New-XIOVolumeFolder -Name newDeepFolder -ParentFolder /someVolume/Folder/ThatDoes/NotYet/Exist
+	-needs to iterate through those parents from the root
+	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
+-add Set-, Move-, Remove- cmdlets
+-watch for Alerts access in API:  would be good to be able to get/clear/ack Alerts
+-add Catch for explicit DownloadString exception:
+	VERBOSE: Uh-oh -- something went awry trying to get data from that URI
+	('https://somexms.dom.com/api/json/types'). A pair of guesses:  no such XMS appliance, or that item type is not
+	valid in the API version on the XMS appliance that you are contacting, maybe?  Should handle this in future module
+	release.  Throwing error for now.
+	Connect-XIOServer : Failed to connect to XMS 'somexms.dom.com'.  See error below for details
+	At line:1 char:1
+	+ Connect-XIOServer -ComputerName somexms.dom.com -TrustAllCert -Credential  ...
+	+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		+ CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+		+ FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Connect-XIOServer
+
+	Exception calling "DownloadString" with "1" argument(s): "The operation has timed out"
+	At \\path\to\XtremIO.Utils\XIO_SupportingFunctions.ps1:58 char:4
+	+             $oWebClient.DownloadString($hshParamsForRequest["Uri"]) | ConvertFrom-Json
+	+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		+ CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+		+ FullyQualifiedErrorId : WebException
+-check into / remove use of deprecated properties, if any, from list: (per v3.0.1 REST API guide, p12)
+	-In version 3.0, the following object parameters are not in use and have been deprecated:
+		-Cluster object:
+			-max-snapshots-per-volume
+			-meta-data-utilization-level
+			-meta-data-utilization
+			-vamd-memory
+			-vamd-memory-in-use
+			-max-cgs-per-volume
+			-max-cgs
+			-num-of-r-mdls
+			-max-snapsets-per-cg
+			-max-vol-per-cg
+			-num-of-d-mdls
+			-min-num-of-ssds-per-healthy-rg
+			-num-of-c-mdls
+		-Storage Controller object:
+			-eth-link-health-level
+	-In version 3.0.1, the following object parameters are not in use and have been deprecated:
+		-Storage Controller object:
+			-hw-revision
+	-also, others listed on p198 of v3.0.1 REST API guide
+-add New-XIOSnapshot at some point
+-add pipelining abilities for things like:
+	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
+	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroup
+	## currently behaves unexpectedly when using something like:
+	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
+	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
+	#   outputs like:
+<#	Name         WriteBW_MBps   WriteIOPS     ReadBW_MBps   ReadIOPS      BW_MBps      IOPS       TotWriteIOs  TotReadIOs
+	----         ------------   ---------     -----------   --------      -------      ----       -----------  ----------
+	/            21.153         851           17.813        825           38.966       1676       29298600763  77718380223
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
+	/            29.306         769           27.256        759           56.562       1528       29298604621  77718384024
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
+	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
+	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
+	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+
+	instead of the expected
+	Name         WriteBW_MBps   WriteIOPS     ReadBW_MBps   ReadIOPS      BW_MBps      IOPS       TotWriteIOs  TotReadIOs
+	----         ------------   ---------     -----------   --------      -------      ----       -----------  ----------
+	/            21.153         851           17.813        825           38.966       1676       29298600763  77718380223
+	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
+	/            29.306         769           27.256        759           56.562       1528       29298604621  77718384024
+	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
+	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
+	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
+	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+#>
+	Get-XIOInitiatorGroup | Get-XIOInitiator
+	Get-XIOInitiatorGroup | Get-XIOInitiatorGroupFolder
+	Get-XIOInitiatorGroup | Get-XIOLunMap
+	Get-XIOInitiatorGroup | Get-XIOVolume
+	Get-XIOVolumeFolder | Get-XIOVolume
+	Get-XIOVolume | Get-XIOLunMap
+	Get-XIOVolume | Get-XIOVolumeFolder
+-define output types made by module, use Add-Type to add them to session
+	-add OutputType to cmdlets once types are defined
+	-?add Types file in which return object types are defined, or via some C# that defines types
+-item types for which to add support in module:
+	## old and new APIs
+	iscsi-portals
+	iscsi-routes
+-add ability to create ISCSI initiators via New-XIOInitiator
+	-the overall params for creating new initiator, per CLI:
+		cluster-authentication-password         No                  CHAP Authentication Cluster Passwordstring
+		cluster-authentication-user-name        No                  CHAP Authentication Cluster User Namestring
+		cluster-discovery-password              No                  CHAP Discovery Cluster Password
+		cluster-discovery-user-name             No                  CHAP Discovery Cluster User Namestring
+		ig-id                                   Yes                 IG ID                         name or index
+		initiator-authentication-password       No                  CHAP Authentication Initiator Passwordstring
+		initiator-authentication-user-name      No                  CHAP Authentication Initiator User Namestring
+		initiator-discovery-password            No                  CHAP Discovery Initiator Password
+		initiator-discovery-user-name           No                  CHAP Discovery Initiator User Namestring
+		initiator-name                          No                  Initiator Name                string
+		port-address                            Yes                 Port Address                  string
+-for Get-XIOSnapshot:  add URI Param option for "ancestor-vol-id"?  available via xmcli
+-for Get-XIOVolume:  add URI Param option for "sg-id" (snapshot group ID)?  available via xmcli
+-change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
+-may need to remove XioStoredCred support at some point, now that Connect-XIOServer is available; if so, do via deprecation; _Find-CredentialToUse goes away at that point, too?
+-?add a Get-XIOUtilsConfiguration function to report things like the filespec of the StoredXioCred
+-?add a Set-XIOUtilsConfiguration function to set things like the default port to use, and $true/$false for TrustAllCert
+-?add "if ($PsCmdlet.ShouldProcess())" portion to New-XIOVolume, around the New-XioItem call, so as to have better WhatIf output?
+-?add "small" and "unaligned" performance items, too? (available in xmcli)
+-added URI property to Get-XIOItemInfo output objects; keep that?  Useful in pipeline times?
+
+
+done for version 0.next (after 0.7.0):
+-added additional parameters to New-XIOVolume cmdlet (as exposed in xmcli "add-volume" cmd); can set small-io-alerts, unaligned-io-alerts, vaai-tp-alerts to "enabled" or "disabled"; implemented as switch params
+	-Volume was the only one with additional options for now; Initiator, InitiatorGroup, InitiatorGroupFolder, VolumeFolder, LunMap had no more interesting (aside from Initiator's ISCSI items, which this module does not yet support)
+-published fn Update-TitleBarForXioConnection (title bar sometimes gets whacked by PowerCLI things)
+-fixed "compression" / "compressoin" typo in changelog
+
+
+
+try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
+
+
+## changes to handle in v2.4, v2.4.1
+## check for changed properties
+$strV30bXmsName = "somexms01.dom.com"
+$strV241XmsName = "somexms02.dom.com"
+$strV223XmsName = "somexms3.dom.com"
+$credSomeAdmin_noDom = Get-Credential someXioAdmin
+
+$arrTypesFor30b = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI_str https://$strV30bXmsName/api/json/types -ReturnFullResponse_sw).children
+$arrTypesFor241 = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI_str https://$strV241XmsName/api/json/types -ReturnFullResponse_sw).children
+$arrTypesInBothVersions = $arrTypesFor30b | %{$_.name} | ?{($arrTypesFor241 | %{$_.Name}) -contains $_}
+$hshObjPropertyDifferencesInfo = @{}
+foreach ($strItemtype in ($arrTypesInBothVersions | %{$_.TrimEnd("s")})) {
+#foreach ($strItemtype in $arrTypesInBothVersions) {
+	Write-Verbose -Verbose "working on '$strItemtype'"
+	$arrXioClusterInfoRaw_v241 = Get-XIOItemInfo -ItemType $strItemtype -computer $strV241XmsName -TrustAllCert -ReturnFullResponse -port 443 -cred $credSomeAdmin_noDom
+	$arrXioClusterInfoRaw_v30b = Get-XIOItemInfo -ItemType $strItemtype -computer $strV30bXmsName -TrustAllCert -ReturnFullResponse -port 443 -cred $credSomeAdmin_noDom
+	## not working, yet
+	#$arrXioClusterInfoRaw_v241 = Get-XIOItemInfo -Uri https://$strV241XmsName/api/json/types/$strItemtype -TrustAllCert -ReturnFullResponse -cred $credSomeAdmin_noDom
+	#$arrXioClusterInfoRaw_v30b = Get-XIOItemInfo -ItemType $strItemtype -computer $strV30bXmsName -TrustAllCert -ReturnFullResponse -port 443 -cred $credSomeAdmin_noDom
+
+	$hshObjPropertyDifferencesInfo["$strItemtype"] = @{
+		"inV241NotInV30b" = ($arrXioClusterInfoRaw_v241.content | gm -Type NoteProperty).Name | ?{($arrXioClusterInfoRaw_v30b.content | gm -Type NoteProperty).name -notcontains $_}
+		"inV30bNotInV241" = ($arrXioClusterInfoRaw_v30b.content | gm -Type NoteProperty).Name | ?{($arrXioClusterInfoRaw_v241.content | gm -Type NoteProperty).name -notcontains $_}
+	} ## end hashtable
+}
+
+
+## between 3.0 and 2.2.3
+$arrTypesFor30b = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI_str https://$strV30bXmsName/api/json/types -ReturnFullResponse_sw).children
+$arrTypesFor223 = (Get-XIOItemInfo -URI_str https://$strV223XmsName/api/json/types -ReturnFullResponse_sw).children
+$arrTypesInBothVersions = $arrTypesFor30b | %{$_.name} | ?{($arrTypesFor223 | %{$_.Name}) -contains $_}
+$hshObjPropertyDifferencesInfo = @{}
+foreach ($strItemtype in ($arrTypesInBothVersions | %{$_.TrimEnd("s")})) {
+#foreach ($strItemtype in $arrTypesInBothVersions) {
+	Write-Verbose -Verbose "working on '$strItemtype'"
+	$arrXioClusterInfoRaw_v223 = Get-XIOItemInfo -ItemType $strItemtype -computer $strV223XmsName -TrustAllCert -ReturnFullResponse -port 443
+	$arrXioClusterInfoRaw_v30b = Get-XIOItemInfo -ItemType $strItemtype -computer $strV30bXmsName -TrustAllCert -ReturnFullResponse -port 443 -cred $credSomeAdmin_noDom
+	## not working, yet
+	#$arrXioClusterInfoRaw_v223 = Get-XIOItemInfo -Uri https://$strV223XmsName/api/json/types/$strItemtype -TrustAllCert -ReturnFullResponse -cred $credSomeAdmin_noDom
+	#$arrXioClusterInfoRaw_v30b = Get-XIOItemInfo -ItemType $strItemtype -computer $strV30bXmsName -TrustAllCert -ReturnFullResponse -port 443 -cred $credSomeAdmin_noDom
+
+	$hshObjPropertyDifferencesInfo["$strItemtype"] = @{
+		"inV223NotInV30b" = ($arrXioClusterInfoRaw_v223.content | gm -Type NoteProperty).Name | ?{($arrXioClusterInfoRaw_v30b.content | gm -Type NoteProperty).name -notcontains $_}
+		"inV30bNotInV223" = ($arrXioClusterInfoRaw_v30b.content | gm -Type NoteProperty).Name | ?{($arrXioClusterInfoRaw_v223.content | gm -Type NoteProperty).name -notcontains $_}
+	} ## end hashtable
+}
+
+
+<#  older (2.4, 2.2.3)
+foreach ($strItemtype in @("cluster", "initiator-group", "initiator", "lun-map", "target-group", "target", "volume", "brick", "ssd", "storage-controller", "xenv")) {
+	Write-Verbose -Verbose "working on '$strItemtype'"
+	$arrXioClusterInfoRaw_v24 = Get-XIOItemInfo -ItemType $strItemtype -computer $strV24XmsName -TrustAllCert -ReturnFullResponse -port 443 -cred $credSomeAdmin_noDom
+	$arrXioClusterInfoRaw_v223 = Get-XIOItemInfo -ItemType $strItemtype -computer $strV223XmsName -TrustAllCert -ReturnFullResponse -port 443
+	$hshObjPropertyDifferencesInfo["$strItemtype"] = @{
+		"inV24NotInV223" = ($arrXioClusterInfoRaw_v24.content | gm -Type NoteProperty).Name | ?{($arrXioClusterInfoRaw_v223.content | gm -Type NoteProperty).name -notcontains $_}
+		"inV223NotInV24" = ($arrXioClusterInfoRaw_v223.content | gm -Type NoteProperty).Name | ?{($arrXioClusterInfoRaw_v24.content | gm -Type NoteProperty).name -notcontains $_}
+	} ## end hashtable
+}
+#>
+
+## get all properties and values, sorted by property name
+(Get-XIOItemInfo -ItemType storage-controller -ReturnFullResponse_sw).content | %{Select -InputObject $_ -Property (gm -in $_ -MemberType NoteProperty | %{$_.name} | sort)}
+(Get-XIOItemInfo -Uri https://somexms01.dom.com/api/json/types/data-protection-groups/1 -ReturnFullResponse_sw).content | %{Select -InputObject $_ -Property (gm -in $_ -MemberType NoteProperty | %{$_.name} | sort)}
+
+
+working through:
+(check what properties went away and are in use, and what new properties might be interesting)
+
+
+
+
+
+-clusters obj
+	-add "brick-list" property (available in 2.2.3 and 2.4, at least)
+
+
+
+## things below here are in changelog/readme
+
+
+
+
+
+
+
+
+
+
+
+RELEASED:
+done for version 0.7.0, 30 Nov 2014
+-added Connect-XIOServer, Disconnect-XIOServer
+	-made cmdlets use connection creds instead of needing to specify credentials for every call (some rewriting likely needing for existing scripts:  add Connect-XIOServer, remove -Credential and -ComputerName from each specific call)
+-added the rest of the New-XIO<specificItem> functions:
+	New-XIOInitiator, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolumeFolder
+-added ability to do "refresh interval" kind of thing for performance data returns, as emulated by:
+	1..4 | %{Get-XIOCluster somexms01.dom.com -Credential $credSomeAdmin_noDom; Start-Sleep -Seconds 4}
+	like, in xmcli:  show-targets-performance frequency=5
+	have frequency and duration
+	implemented as Get-XIOVolumePerformance, Get-XIOInitiatorPerformance, etc.
+-added type data-protection-group (available in API v2.4 and up)
+-added type events
+-updated Get-XIOLunMap to accept new parameters for filtering return:  Volume, InitiatorGroup, HostLunId
+-changed default port to 443, removing secondary port of 42503
+-added URLEncode helper function
+-added URI property to Get-XIOItemInfo output objects; keep that?  Useful in pipeline times?
+-renamed "ig-name" property of XioItemInfo.Lun-Map object to "InitiatorGroup"
+-added DataReduction property to cluster object (in addition to DedupeRatio); when setting the value on older-than-3.0 array, set it to DedupeRatio if data-reduction-ratio is $null
+
+
+
+for 0.5.6:
+17 Jun 2014:
+added ig-folder: (/api/json/types/ig-folders)
+	Name = name
+	Index = index
+	ParentFolder = "parent-folder-id"[1]
+	NumIG = "num-of-direct-objs"
+	FolderId = "folder-id"
+	ParentFolderId = "parent-folder-id"[0]
+	NumSubfolder = "num-of-subfolders"
+	IOPS = [int64]iops
+	"xms-id" = "xms-id"
+added volume-folder: (/api/json/types/volume-folders)
+	Name = name
+	ParentFolder = "parent-folder-id"[1]
+	NumVol = "num-of-vols"
+	VolSizeTB = "vol-size" / 1GB
+	FolderId = "folder-id"[0]
+	ParentFolderId = "parent-folder-id"[0]
+	NumSubfolder = "num-of-subfolders"
+	Index = index
+	IOPS = iops
+	"xms-id" = "xms-id"
+
+
+done 10 Jun 2014:
+changed values for numbers in following obj types to have full precision, handling the rounding for display only (object has full precision):
+	cluster, volume, ssd, target
+
+DONE 21 May between the ellipses
+NOW NEED TO update New-XioItem to use Get-XioItemInfo -URI <blah>
+...
+in Get-XioItemInfo:
+add URI param
+
+in process:
+make datastructure with computername->arrayHRefs key/value pairs, then iterate through that to make the custom objects
+if (paramsetname is URI) {
+	single item hashtable
+	computername is ([System.Uri]("http://some.com:42503/types/volumes/11")).DnsSafeHost
+	strItemType_plural gets set to that part of the URI after types; something with ([RegEx]("^(/api/json)?/types/(?'itemType'[^/]+)/")).Match(([System.Uri]("http://somexms01.dom.com:42503/types/volumes/11")).AbsolutePath).Groups.Item("itemType").Value
+	single href is the URI
+}
+else {
+	<and, move the $strItemType_plural, $strRestCmd_base definition from Begin{} to this section>
+	strItemType_plural is from default in Begin{} scriptblock
+	array of hashtable(s) (based on num of computername values in param)
+	foreach (computername in the array of computer names) {
+		computername is computername
+		arr of HREFs are gotten as they currently are
+	}
+}
+then, for the part that makes the pretty objects:
+foreach (item in the datastructure from above) {
+	do the stuff
+	need to adjust strThisXmsName to be "key" or whatever from the datastructure
+	instead of "$ItemType_str", use $strItemType_plural and strip trailing "s"?
+}
+...
+_then_, can use Get-XioItemInfo -URI... in New-XioItem (right?!)
+notes for making New-XIOItem:
+	determine port to use and, so, the base URI
+	check if item of given name/idea already exists before trying to create
+	if yes, write warning/error
+	else, try to create
+	return object created (by accessing content -> links -> href via Get-XioInfo -Uri <said href>)
+	write-verbose any "Created" response from the WebRequest
+	have -WhatIf
+
+
+
+
+done:
+18 May 2014:
+set *IOPS property types to be numeric (were being returned as strings instead of numbers)
+removed CreationTime from default properties displayed for volumes (via format.ps1xml)
+
+17 May 2014:
+added target-groups
+	Name = name
+	Index = index
+	ClusterName = "sys-id"[1]
+	"tg-id" = "tg-id"
+	"sys-id" = "sys-id"
+	"xms-id" = "xms-id"
+
+14 May 2014
+added NumSSD property to clusters objects (based on "num-of-ssds" from return)
+added bricks
+	Name = "brick-id"[1]
+	Index = "index-in-system"
+	ClusterName = "sys-id"[1]
+	State = "brick-state"
+	NumSSD = "num-of-ssds"
+	NumNode = "num-of-nodes"
+	NodeList = "node-list"
+	"brick-id" = "brick-id"
+	"rg-id" = "rg-id"
+	"ssd-slot-array" = "ssd-slot-array"
+	"xms-id" = "xms-id"
+added xenvs
+	Name = name
+	Index = index
+	CPUUsage = "cpu-usage"
+	NumMdl = "num-of-mdls"
+	"brick-id" = "brick-id"
+	"xenv-id" = "xenv-id"
+	"xenv-state" = "xenv-state"
+	"xms-id" = "xms-id"
+
+
+
+13 May 2014
+show-initiator-groups
+	Name = name
+	Index = index
+	NumInitiator = "num-of-initiators"
+	NumVol = "num-of-vols"
+	IOPS = iops
+	"ig-id" = "ig-id"
+	"xms-id" = "xms-id"
+####### end v0.5.6
+
+
+25 Apr 2014
+show-targets:
+	Name = name
+	PortType = "port-type"
+	PortWWN = "port-address"
+	PortState = "port-state"
+	#certainty-state ## not a direct property
+	Index = index
+	IOPS = iops
+	UnalignedIOPS = "unaligned-iops"
+	"fw-version" = "fw-version"
+	"driver-version" = "driver-version"
+	AccSizeOfRdTB = [Math]::Round($oContent."acc-size-of-rd" / 1GB, 2)
+	AccSizeOfWrTB = [Math]::Round($oContent."acc-size-of-wr" / 1GB, 2)
