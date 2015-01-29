@@ -63,7 +63,8 @@ function Open-XIOMgmtConsole {
 	System.Management.Automation.PSCredential or none
 #>
 function Get-XIOStoredCred {
-	[CmdletBinding()]param()
+	[CmdletBinding()][OutputType([System.Management.Automation.PSCredential])]param()
+
 	Process {
 		if (Test-Path $hshCfg["EncrCredFilespec"]) {
 			try {$credImportedXioCred = hImport-PSCredential $hshCfg["EncrCredFilespec"]} ## end try
@@ -85,6 +86,7 @@ function Get-XIOStoredCred {
 	None or System.Management.Automation.PSCredential
 #>
 function New-XIOStoredCred {
+	[OutputType("null",[System.Management.Automation.PSCredential])]
 	param(
 		## The credential to encrypt; if none, will prompt
 		[System.Management.Automation.PSCredential]$Credential = (Get-Credential -Message "Enter credentials to use for XtremIO access"),
@@ -128,6 +130,7 @@ function Remove-XIOStoredCred {
 #>
 function Connect-XIOServer {
 	[CmdletBinding()]
+	[OutputType([XioItemInfo.XioConnection])]
 	param(
 		## Credential for connecting to XMS appliance; if a credential has been encrypted and saved, this will automatically use that credential
 		[System.Management.Automation.PSCredential]$Credential = $(_Find-CredentialToUse),

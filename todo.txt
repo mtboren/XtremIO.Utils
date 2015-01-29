@@ -1,4 +1,6 @@
 todo:
+-add about_XtremIO.Utils.help.txt
+	-with the general "here's the module, here are some ways to use it"
 -add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to Ig-Folder objects
 	-same for VolumeList_raw = .direct-list for Volume-Folder objects
 -add UID to volumes, initiators, initiator groups
@@ -10,7 +12,6 @@ todo:
 	-needs to iterate through those parents from the root
 	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
 -add Set-, Move-, Remove- cmdlets
--watch for Alerts access in API:  would be good to be able to get/clear/ack Alerts
 -add Catch for explicit DownloadString exception:
 	VERBOSE: Uh-oh -- something went awry trying to get data from that URI
 	('https://somexms.dom.com/api/json/types'). A pair of guesses:  no such XMS appliance, or that item type is not
@@ -52,7 +53,8 @@ todo:
 			-hw-revision
 	-also, others listed on p198 of v3.0.1 REST API guide
 -add New-XIOSnapshot at some point
--add pipelining abilities for things like:
+-watch for Alerts access in API:  would be good to be able to get/clear/ack Alerts
+         -add pipelining abilities for things like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroup
 	## currently behaves unexpectedly when using something like:
@@ -99,7 +101,10 @@ todo:
 	Get-XIOVolume | Get-XIOVolumeFolder
 -define output types made by module, use Add-Type to add them to session
 	-add OutputType to cmdlets once types are defined
+		do: Disconnect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOItemInfo, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolume, New-XIOVolumeFolder, Open-XIOMgmtConsole, Remove-XIOStoredCred, Update-TitleBarForXioConnection
+		done: Connect-XIOServer, Get-XIOStoredCred, New-XIOStoredCred,
 	-?add Types file in which return object types are defined, or via some C# that defines types
+		-include something that calls that definition/types file when the module is loaded
 -item types for which to add support in module:
 	## old and new APIs
 	iscsi-portals
