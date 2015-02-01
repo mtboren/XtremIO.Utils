@@ -100,9 +100,38 @@ todo:
 	Get-XIOVolume | Get-XIOLunMap
 	Get-XIOVolume | Get-XIOVolumeFolder
 -define output types made by module, use Add-Type to add them to session
+	-requires renaming properties that have a dash in their name to not have a dash (.NET properties should not have a dash)
+		-properties renamed:
+			"brick-id" -> BrickId
+			"rg-id" -> RGrpId
+			"ssd-slot-array" -> SsdSlotInfo
+			"xms-id" -> XmsId
+			"ig-id" -> InitiatorGrpId
+			"initiator-id" -> InitiatorId
+			"lu-name" -> LuName
+			"small-io-ratio" -> SmallIORatio
+			"small-io-ratio-level" -> SmallIORatioLevel
+			"snapgrp-id" -> SnapGrpId
+			"unaligned-io-ratio" -> UnalignedIORatio
+			"unaligned-io-ratio-level" -> UnalignedIORatioLevel
+			"sys-id" -> SysId
+			"ssd-id" -> SsdId
+			"ssd-rg-state" -> SsdRGrpState
+			"ssd-uid" -> SsdUid
+			"xenv-id" -> XEnvId
+			"xenv-state" -> XEnvState
+		-types renamed:
+
 	-add OutputType to cmdlets once types are defined
-		do: Disconnect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOItemInfo, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolume, New-XIOVolumeFolder, Open-XIOMgmtConsole, Remove-XIOStoredCred, Update-TitleBarForXioConnection
-		done: Connect-XIOServer, Get-XIOStoredCred, New-XIOStoredCred,
+		do: Get-XIOItemInfo,
+			-these require changing code to take the "-" out of type names, and out of TypeName in formats ps1xml:
+				Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOLunMap, Get-XIOStorageController, Get-XIOTargetGroup, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolumeFolder
+		done:
+			Connect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorPerformance, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStoredCred, Get-XIOTarget, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOStoredCred, New-XIOVolume,
+		none needed:
+			Disconnect-XIOServer, Open-XIOMgmtConsole, Remove-XIOStoredCred, Update-TitleBarForXioConnection
+		need to further test/verify:
+			New-XIOInitiator, New-XIOVolume,
 	-?add Types file in which return object types are defined, or via some C# that defines types
 		-include something that calls that definition/types file when the module is loaded
 -item types for which to add support in module:

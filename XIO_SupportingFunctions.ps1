@@ -422,8 +422,8 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 						} ## end New-Object
 					}) ## end New-Object
 				}) ## end New-object PerformanceInfo
-				"ig-id" = $oContent."ig-id"
-				"xms-id" = $oContent."xms-id"
+				InitiatorGrpId = $oContent."ig-id"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"initiators" {
@@ -433,8 +433,8 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				IOPS = [int64]$oContent.iops
 				Index = $oContent.index
 				ConnectionState = $oContent."initiator-conn-state"
-				"ig-id" = $oContent."ig-id"
-				"initiator-id" = $oContent."initiator-id"
+				InitiatorGrpId = $oContent."ig-id"
+				InitiatorId = $oContent."initiator-id"
 				PortType = $oContent."port-type"
 				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 					Current = New-Object -Type PSObject -Property ([ordered]@{
@@ -488,10 +488,10 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				NumNode = $oContent."num-of-nodes"
 				NodeList = $oContent."node-list"
 				BrickGuid = $oContent."brick-guid"
-				"brick-id" = $oContent."brick-id"
-				"rg-id" = $oContent."rg-id"
-				"ssd-slot-array" = $oContent."ssd-slot-array"
-				"xms-id" = $oContent."xms-id"
+				BrickId = $oContent."brick-id"
+				RGrpId = $oContent."rg-id"
+				SsdSlotInfo = $oContent."ssd-slot-array"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"clusters" {
@@ -517,6 +517,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {$dblDedupeRatio})
 				ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
 				BrickList = $oContent."brick-list"
+				Index = $oContent.index
 				ConsistencyState = $oContent."consistency-state"
 				## available in 2.4.0 and up
 				EncryptionMode = $oContent."encryption-mode"
@@ -670,8 +671,8 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				ClusterIndex = $oContent."sys-id"[2]
 				NumNode = $oContent."num-of-nodes"
 				NumSSD = $oContent."num-of-ssds"
-				"rg-id" = $oContent."rg-id"
-				"xms-id" = $oContent."xms-id"
+				RGrpId = $oContent."rg-id"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"events" {
@@ -738,7 +739,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				}) ## end New-object PerformanceInfo
 				SubfolderList = $oContent."subfolder-list"
 				IOPS = [int64]$oContent.iops
-				"xms-id" = $oContent."xms-id"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"lun-maps" {
@@ -754,7 +755,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				MappingId = $oContent."mapping-id"
 				## available in 2.4.0 and up
 				MappingIndex = $oContent."mapping-index"
-				"xms-id" = $oContent."xms-id"
+				XmsId = $oContent."xms-id"
 				"vol-index" = $oContent."vol-index"
 			} ## end ordered dictionary
 			break} ## end case
@@ -799,13 +800,13 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				SSDLink1Health = $oContent."ssd-link1-health-state"
 				SSDLink2Health = $oContent."ssd-link2-health-state"
 				SSDPositionState = $oContent."ssd-position-state"
-				"brick-id" = $oContent."brick-id"
-				"rg-id" = $oContent."rg-id"
-				"ssd-rg-state" = $oContent."ssd-rg-state"
-				"ssd-id" = $oContent."ssd-id"
-				"ssd-uid" = $oContent."ssd-uid"
-				"sys-id" = $oContent."sys-id"
-				"xms-id" = $oContent."xms-id"
+				BrickId = $oContent."brick-id"
+				RGrpId = $oContent."rg-id"
+				SsdRGrpState = $oContent."ssd-rg-state"
+				SsdId = $oContent."ssd-id"
+				SsdUid = $oContent."ssd-uid"
+				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"storage-controllers" {
@@ -886,8 +887,8 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				Index = $oContent.index
 				ClusterName = $oContent."sys-id"[1]
 				"tg-id" = $oContent."tg-id"
-				"sys-id" = $oContent."sys-id"
-				"xms-id" = $oContent."xms-id"
+				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"targets" {
@@ -1031,21 +1032,17 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 						} ## end New-Object
 					}) ## end New-Object
 				}) ## end New-object PerformanceInfo
-				#AccSizeOfRdTB = $oContent."acc-size-of-rd" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-				#AccSizeOfWrTB = $oContent."acc-size-of-wr" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
 				SmallIOAlertsCfg = $oContent."small-io-alerts"
 				UnalignedIOAlertsCfg = $oContent."unaligned-io-alerts"
 				VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
-				"lu-name" = $oContent."lu-name"
-				"small-io-ratio" = $oContent."small-io-ratio"
-				"small-io-ratio-level" = $oContent."small-io-ratio-level"
-				"snapgrp-id" = $oContent."snapgrp-id"
-				"unaligned-io-ratio" = $oContent."unaligned-io-ratio"
-				"unaligned-io-ratio-level" = $oContent."unaligned-io-ratio-level"
-				#"unaligned-rd-iops" = $oContent."unaligned-rd-iops"  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-				#"unaligned-wr-iops" = $oContent."unaligned-wr-iops"  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-				"sys-id" = $oContent."sys-id"
-				"xms-id" = $oContent."xms-id"
+				LuName = $oContent."lu-name"
+				SmallIORatio = $oContent."small-io-ratio"
+				SmallIORatioLevel = $oContent."small-io-ratio-level"
+				SnapGrpId = $oContent."snapgrp-id"
+				UnalignedIORatio = $oContent."unaligned-io-ratio"
+				UnalignedIORatioLevel = $oContent."unaligned-io-ratio-level"
+				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"volume-folders" {
@@ -1100,7 +1097,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 						} ## end New-Object
 					}) ## end New-Object
 				}) ## end New-object PerformanceInfo
-				"xms-id" = $oContent."xms-id"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		"xenvs" {
@@ -1109,10 +1106,10 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				Index = $oContent.index
 				CPUUsage = $oContent."cpu-usage"
 				NumMdl = $oContent."num-of-mdls"
-				"brick-id" = $oContent."brick-id"
-				"xenv-id" = $oContent."xenv-id"
-				"xenv-state" = $oContent."xenv-state"
-				"xms-id" = $oContent."xms-id"
+				BrickId = $oContent."brick-id"
+				XEnvId = $oContent."xenv-id"
+				XEnvState = $oContent."xenv-state"
+				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
 		#### PerformanceInfo items

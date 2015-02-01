@@ -324,7 +324,7 @@
 							<TableColumnItem><PropertyName>Index</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>CPUUsage</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumMdl</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>xenv-state</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>XEnvState</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>

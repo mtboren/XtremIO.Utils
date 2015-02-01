@@ -157,6 +157,7 @@ function New-XIOInitiatorGroup {
 #>
 function New-XIOInitiator {
 	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Initiator])]
 	param(
 		## XMS appliance to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
@@ -329,6 +330,7 @@ function New-XIOLunMap {
 #>
 function New-XIOVolume {
 	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Volume])]
 	param(
 		## XMS appliance address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
