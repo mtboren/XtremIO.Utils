@@ -177,7 +177,7 @@ remove:
 										## add a URI property that uniquely identifies this object
 										Add-Member -Name "Uri" -MemberType NoteProperty -Value $strUriThisItem -PassThru
 									## add a TypeName to the TypeNames collection; this is for use by PS custom formatting; ref: http://msdn.microsoft.com/en-us/library/system.management.automation.psobject.typenames%28v=vs.85%29.aspx
-									$oObjToReturn.PSObject.TypeNames.Insert(0, "XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()))")
+									$oObjToReturn.PSObject.TypeNames.Insert(0, "XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()).Replace('-',''))")
 									## return the object
 									return $oObjToReturn
 								} ## end foreach-object
@@ -207,6 +207,7 @@ remove:
 #>
 function Get-XIOBrick {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Brick])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -249,6 +250,7 @@ function Get-XIOBrick {
 #>
 function Get-XIOCluster {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Cluster])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -291,6 +293,7 @@ function Get-XIOCluster {
 #>
 function Get-XIODataProtectionGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.DataProtectionGroup])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -333,6 +336,7 @@ function Get-XIODataProtectionGroup {
 #>
 function Get-XIOInitiator {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Initiator])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -375,6 +379,7 @@ function Get-XIOInitiator {
 #>
 function Get-XIOInitiatorGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.InitiatorGroup])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -417,6 +422,7 @@ function Get-XIOInitiatorGroup {
 #>
 function Get-XIOInitiatorGroupFolder {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.IgFolder])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -465,6 +471,7 @@ function Get-XIOInitiatorGroupFolder {
 #>
 function Get-XIOLunMap {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.LunMap])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -519,6 +526,7 @@ function Get-XIOLunMap {
 #>
 function Get-XIOSnapshot {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Snapshot])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -561,6 +569,7 @@ function Get-XIOSnapshot {
 #>
 function Get-XIOSsd {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Ssd])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -603,6 +612,7 @@ function Get-XIOSsd {
 #>
 function Get-XIOStorageController {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.StorageController])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -645,6 +655,7 @@ function Get-XIOStorageController {
 #>
 function Get-XIOTarget {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Target])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -687,6 +698,7 @@ function Get-XIOTarget {
 #>
 function Get-XIOTargetGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.TargetGroup])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -729,6 +741,7 @@ function Get-XIOTargetGroup {
 #>
 function Get-XIOVolume {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Volume])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -771,6 +784,7 @@ function Get-XIOVolume {
 #>
 function Get-XIOVolumeFolder {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.VolumeFolder])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -813,6 +827,7 @@ function Get-XIOVolumeFolder {
 #>
 function Get-XIOXenv {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.XEnv])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -865,6 +880,7 @@ function Get-XIOXenv {
 #>
 function Get-XIOEvent {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Event])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -978,15 +994,15 @@ function Get-XIOPerformanceInfo {
 		Switch ($PSCmdlet.ParameterSetName) {
 			"ByComputerName" {
 				"ComputerName_arr","ItemType_str","Name_arr" | Foreach-Object {if ($PSBoundParameters.ContainsKey($_)) {$hshParamsForGetXIOItemInfo[$_] = $PSBoundParameters[$_]}}
-				## type to return; something like "TargetPerformance"
-				$strItemTypeToReturn = "$((Get-Culture).TextInfo.ToTitleCase($ItemType_str.ToLower()))Performance"
+				## type to create from _New-Object_fromItemTypeAndContent; something like "Data-Protection-GroupPerformance"
+				$strItemTypeToCreate = "$((Get-Culture).TextInfo.ToTitleCase($ItemType_str.ToLower()))Performance"
 				break} ## end case
 			"SpecifyFullUri" {
 				$hshParamsForGetXIOItemInfo["URI_str"] = $URI_str
 				## the type being retrieved, for use in making the typename for the return
 				$strItemType_plural = Get-ItemTypeFromURI -URI $URI_str
 				## type to return; something like "TargetPerformance", grabbed from URL
-				$strItemTypeToReturn = "$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()))Performance"
+				$strItemTypeToCreate = "$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()))Performance"
 				break} ## end case
 		} ## end switch
 		## scriptblock to execute to get performance info
@@ -995,9 +1011,10 @@ function Get-XIOPerformanceInfo {
 			$arrXioItemInfo | Foreach-Object {
 				$oThisXioItemInfo = $_
 				## make a new object with some juicy info (and a new property for the XMS "computer" name used here)
-				$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemTypeToReturn -oContent $oThisXioItemInfo | Add-Member -Name "ComputerName" -MemberType NoteProperty -Value $oThisXioItemInfo.ComputerName -PassThru
+				$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemTypeToCreate -oContent $oThisXioItemInfo | Add-Member -Name "ComputerName" -MemberType NoteProperty -Value $oThisXioItemInfo.ComputerName -PassThru
 				## add a TypeName to the TypeNames collection; this is for use by PS custom formatting; ref: http://msdn.microsoft.com/en-us/library/system.management.automation.psobject.typenames%28v=vs.85%29.aspx
-				$oObjToReturn.PSObject.TypeNames.Insert(0, "XioItemInfo.$strItemTypeToReturn")
+				#  removing the dashes from the type created, so that the .NET type names is legit (no dashes)
+				$oObjToReturn.PSObject.TypeNames.Insert(0, "XioItemInfo.$($strItemTypeToCreate.Replace('-',''))")
 				## return the object
 				return $oObjToReturn
 			} ## end foreach-object
@@ -1028,6 +1045,7 @@ function Get-XIOPerformanceInfo {
 #>
 function Get-XIOClusterPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.ClusterPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1069,6 +1087,7 @@ function Get-XIOClusterPerformance {
 #>
 function Get-XIODataProtectionGroupPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.DataProtectionGroupPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1110,6 +1129,7 @@ function Get-XIODataProtectionGroupPerformance {
 #>
 function Get-XIOInitiatorGroupFolderPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.IgFolderPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1151,6 +1171,7 @@ function Get-XIOInitiatorGroupFolderPerformance {
 #>
 function Get-XIOInitiatorGroupPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.InitiatorGroupPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1192,6 +1213,7 @@ function Get-XIOInitiatorGroupPerformance {
 #>
 function Get-XIOInitiatorPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.InitiatorPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1233,6 +1255,7 @@ function Get-XIOInitiatorPerformance {
 #>
 function Get-XIOSsdPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.SsdPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1274,6 +1297,7 @@ function Get-XIOSsdPerformance {
 #>
 function Get-XIOTargetPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.TargetPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1315,6 +1339,7 @@ function Get-XIOTargetPerformance {
 #>
 function Get-XIOVolumeFolderPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.VolumeFolderPerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
@@ -1356,6 +1381,7 @@ function Get-XIOVolumeFolderPerformance {
 #>
 function Get-XIOVolumePerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.VolumePerformance])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
