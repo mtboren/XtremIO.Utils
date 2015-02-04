@@ -73,17 +73,40 @@ Add-Type -TypeDefinition @"
 		// ClusterPerformance (inherits from class PerformanceTotal)
 		public class ClusterPerformance : PerformanceTotal {}
 
-		// connection to XMS appliance
-		public class XioConnection {
+		public class DataProtectionGroup {
+			public System.Int32 AvailableRebuild;
+			public System.Int32 BrickIndex;
+			public System.String BrickName;
+			public System.Int32 ClusterIndex;
+			public System.String ClusterName;
 			public System.String ComputerName;
-			public System.DateTime ConnectDatetime;
-			public System.Management.Automation.PSCredential Credential;
-			public System.Int32 Port;
-			public System.Boolean TrustAllCert;
+			public System.Int32 Index;
+			public System.Int64 IOPS;
+			public System.String Name;
+			public System.Int32 NumNode;
+			public System.Int32 NumSSD;
+			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Boolean RebalanceInProg;
+			public System.Int32 RebalanceProgress;
+			public System.Boolean RebuildInProg;
+			public System.String RebuildPreventionReason;
+			public System.Int32 RebuildProgress;
+			public System.Object[] RGrpId;
+			public System.Boolean SSDPrepInProg;
+			public System.Int32 SSDPrepProgress;
+			public System.String State;
+			public System.Double TotSSDTB;
+			public System.String Uri;
+			public System.Double UsedSSDTB;
+			public System.Double UsefulSSDTB;
+			public System.Object[] XmsId;
 
 			// Implicit constructor
-			public XioConnection () {}
+			public DataProtectionGroup() {}
 		}
+
+		// DataProtectionGroupPerformance (inherits from class PerformanceBase)
+		public class DataProtectionGroupPerformance : PerformanceBase {}
 
 		// XIO Events
 		public class Event {
@@ -102,6 +125,30 @@ Add-Type -TypeDefinition @"
 			public Event () {}
 		}
 
+		// Initiator Group Folder
+		public class IgFolder {
+			public System.String Caption;
+			public System.String ComputerName;
+			public System.Object[] FolderId;
+			public System.Int32 Index;
+			public System.Int64 IOPS;
+			public System.String Name;
+			public System.Int32 NumIG;
+			public System.Int32 NumSubfolder;
+			public System.String ParentFolder;
+			public System.String ParentFolderId;
+			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object[] SubfolderList;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public IgFolder () {}
+		}
+
+		// Initiator Group Folder Performance (inherits from class PerformanceTotal)
+		public class IgFolderPerformance : PerformanceTotal {}
+
 		public class Initiator {
 			public System.String ComputerName;
 			public System.String ConnectionState;
@@ -119,8 +166,45 @@ Add-Type -TypeDefinition @"
 			public Initiator () {}
 		}
 
+		public class InitiatorGroup {
+			public System.String ComputerName;
+			public System.Int32 Index;
+			public System.Object[] InitiatorGrpId;
+			public System.Int64 IOPS;
+			public System.String Name;
+			public System.Int32 NumInitiator;
+			public System.Int32 NumVol;
+			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public InitiatorGroup () {}
+		}
+
+		// InitiatorGroupPerformance (inherits from class PerformanceTotal)
+		public class InitiatorGroupPerformance : PerformanceTotal {}
+
 		// InitiatorPerformance (inherits from class PerformanceTotal)
 		public class InitiatorPerformance : PerformanceTotal {}
+
+		public class LunMap {
+			public System.String ComputerName;
+			public System.String InitiatorGroup;
+			public System.Int32 InitiatorGrpIndex;
+			public System.Int32 LunId;
+			public System.Object[] MappingId;
+			public System.Int32 MappingIndex;
+			public System.Int32 TargetGrpIndex;
+			public System.String TargetGrpName;
+			public System.String Uri;
+			public System.Int32 VolumeIndex;
+			public System.String VolumeName;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public LunMap () {}
+		}
 
 		// general PerformanceBase class
 		public class PerformanceBase {
@@ -195,6 +279,44 @@ Add-Type -TypeDefinition @"
 		// SsdPerformance (inherits from class PerformanceBase)
 		public class SsdPerformance : PerformanceBase {}
 
+		public class StorageController {
+			public System.String BiosFWVersion;
+			public System.String BrickName;
+			public System.String Cluster;
+			public System.String ComputerName;
+			public System.String EnabledState;
+			public System.String EncryptionMode;
+			public System.String EncryptionSwitchStatus;
+			public System.Management.Automation.PSCustomObject FcHba;
+			public System.String HealthState;
+			public System.String IBAddr1;
+			public System.String IBAddr2;
+			public System.String IPMIAddr;
+			public System.String IPMIState;
+			public System.String JournalState;
+			public System.String MgmtPortSpeed;
+			public System.String MgmtPortState;
+			public System.String MgrAddr;
+			public System.String Name;
+			public System.String NodeMgrConnState;
+			public System.Int32 NumSSD;
+			public System.Int32 NumSSDDown;
+			public System.Int32 NumTargetDown;
+			public System.String OSVersion;
+			public System.Management.Automation.PSCustomObject PCI;
+			public System.String PoweredState;
+			public System.String RemoteJournalHealthState;
+			public System.Object[] SAS;
+			public System.String SdrFWVersion;
+			public System.String SerialNumber;
+			public System.String State;
+			public System.String SWVersion;
+			public System.String Uri;
+
+			// Implicit constructor
+			public StorageController () {}
+		}
+
 		// Target
 		public class Target {
 			public System.Object[] BrickId;
@@ -217,6 +339,20 @@ Add-Type -TypeDefinition @"
 
 			// Implicit constructor
 			public Target () {}
+		}
+
+		public class TargetGroup {
+			public System.String ClusterName;
+			public System.String ComputerName;
+			public System.Int32 Index;
+			public System.String Name;
+			public System.Object[] SysId;
+			public System.Object[] TargetGrpId;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public TargetGroup () {}
 		}
 
 		// TargetPerformance (inherits from class PerformanceTotal)
@@ -258,6 +394,29 @@ Add-Type -TypeDefinition @"
 			public Volume () {}
 		}
 
+		public class VolumeFolder {
+			public System.String ComputerName;
+			public System.String FolderId;
+			public System.Int32 Index;
+			public System.Int64 IOPS;
+			public System.String Name;
+			public System.Int32 NumChild;
+			public System.Int32 NumSubfolder;
+			public System.Int32 NumVol;
+			public System.String ParentFolder;
+			public System.String ParentFolderId;
+			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.String Uri;
+			public System.Int32 VolSizeTB;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public VolumeFolder () {}
+		}
+
+		// VolumeFolderPerformance (inherits from class PerformanceTotal)
+		public class VolumeFolderPerformance : PerformanceTotal {}
+
 		// VolumePerformance (inherits from class PerformanceTotal)
 		public class VolumePerformance : PerformanceTotal {}
 
@@ -275,6 +434,18 @@ Add-Type -TypeDefinition @"
 
 			// Implicit constructor
 			public XEnv () {}
+		}
+
+		// connection to XMS appliance
+		public class XioConnection {
+			public System.String ComputerName;
+			public System.DateTime ConnectDatetime;
+			public System.Management.Automation.PSCredential Credential;
+			public System.Int32 Port;
+			public System.Boolean TrustAllCert;
+
+			// Implicit constructor
+			public XioConnection () {}
 		}
 	}
 "@

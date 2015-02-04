@@ -748,15 +748,15 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				LunId = $oContent.lun
 				## changed property name from "ig-name" after v0.6.0 release
 				InitiatorGroup = $oContent."ig-name"
-				"ig-index" = $oContent."ig-index"
-				"tg-name" = $oContent."tg-name"
-				"tg-index" = $oContent."tg-index"
+				InitiatorGrpIndex = $oContent."ig-index"
+				TargetGrpName = $oContent."tg-name"
+				TargetGrpIndex = $oContent."tg-index"
 				## changed from lm-id to mapping-id in v2.4
 				MappingId = $oContent."mapping-id"
 				## available in 2.4.0 and up
 				MappingIndex = $oContent."mapping-index"
 				XmsId = $oContent."xms-id"
-				"vol-index" = $oContent."vol-index"
+				VolumeIndex = $oContent."vol-index"
 			} ## end ordered dictionary
 			break} ## end case
 		"ssds" {
@@ -834,7 +834,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 					Model = $oContent."fc-hba-model"
 				} ## end New-Object
 				HealthState = $oContent."node-health-state"
-				IMPIState = $oContent."ipmi-conn-state"
+				IPMIState = $oContent."ipmi-conn-state"
 				## available in 2.4.0 and up
 				JournalState = $oContent."journal-state"
 				## available in 2.4.0 and up
@@ -876,9 +876,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				## available in 2.4.0 and up
 				SdrFWVersion = $oContent."sdr-fw-version"
 				SWVersion = $oContent."sw-version"
-				"os-version" = $oContent."os-version"
-				#"pci-disk-controller-fw-version" = $oContent."pci-disk-controller-fw-version"  ## changed in module v0.5.7 (moved into PCI section)
-				#"pci-ib-hba-fw-version" = $oContent."pci-ib-hba-fw-version"  ## changed in module v0.5.7 (moved into PCI section)
+				OSVersion = $oContent."os-version"
 			} ## end ordered dictionary
 			break} ## end case
 		"target-groups" {
@@ -886,7 +884,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				Name = $oContent.name
 				Index = $oContent.index
 				ClusterName = $oContent."sys-id"[1]
-				"tg-id" = $oContent."tg-id"
+				TargetGrpId = $oContent."tg-id"
 				SysId = $oContent."sys-id"
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
@@ -909,7 +907,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 					PrimSeqProtErrCount = [int]$oContent."fc-prim-seq-prot-err-count"
 				}) ## end New-Object
 				FWVersion = $oContent."fw-version"  ## renamed from "fw-version"
-				Id = $oContent."tg-id"
+				TargetGrpId = $oContent."tg-id"
 				Index = $oContent.index
 				IOPS = [int64]$oContent.iops
 				JumboFrameEnabled = $oContent."jumbo-enabled"

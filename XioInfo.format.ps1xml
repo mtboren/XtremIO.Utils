@@ -48,7 +48,7 @@
 		</View>
 		<View>
 			<Name>XioItem_data-protection-groups</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Data-Protection-Group</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.DataProtectionGroup</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableRowEntries>
 					<TableRowEntry>
@@ -91,7 +91,7 @@
 		</View>
 		<View>
 			<Name>XioItem_ig-folders</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Ig-Folder</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.IgFolder</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableRowEntries>
 					<TableRowEntry>
@@ -142,7 +142,7 @@
 		</View>
 		<View>
 			<Name>XioItem_volume-folders</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Volume-Folder</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.VolumeFolder</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableRowEntries>
 					<TableRowEntry>
@@ -159,7 +159,7 @@
 		</View>
 		<View>
 			<Name>XioItem_initiator-groups</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Initiator-Group</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.InitiatorGroup</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableRowEntries>
 					<TableRowEntry>
@@ -192,7 +192,7 @@
 		</View>
 		<View>
 			<Name>XioItem_lun-maps</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Lun-Map</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.LunMap</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableRowEntries>
 					<TableRowEntry>
@@ -200,7 +200,7 @@
 							<TableColumnItem><PropertyName>VolumeName</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>LunId</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>InitiatorGroup</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>tg-name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>TargetGrpName</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -239,7 +239,7 @@
 		</View>
 		<View>
 			<Name>XioItem_target-groups</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Target-Group</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.TargetGroup</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableHeaders>
 					<TableColumnHeader><Width>15</Width></TableColumnHeader>
@@ -285,7 +285,7 @@
 		</View>
 		<View>
 			<Name>XioItem_storage-controllers</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Storage-Controller</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.StorageController</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableHeaders>
 					<TableColumnHeader><Width>9</Width></TableColumnHeader>
@@ -307,7 +307,7 @@
 							<TableColumnItem><PropertyName>BrickName</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NodeMgrConnState</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>IMPIState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>IPMIState</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -350,7 +350,7 @@
 		<View>
 			<Name>XioItem_Performance</Name>
 			<ViewSelectedBy>
-				<TypeName>XioItemInfo.Initiator-GroupPerformance</TypeName>
+				<TypeName>XioItemInfo.InitiatorGroupPerformance</TypeName>
 				<TypeName>XioItemInfo.InitiatorPerformance</TypeName>
 				<TypeName>XioItemInfo.VolumePerformance</TypeName>
 			</ViewSelectedBy>
@@ -389,9 +389,9 @@
 			<Name>XioItem_Performance_more</Name>
 			<ViewSelectedBy>
 				<TypeName>XioItemInfo.ClusterPerformance</TypeName>
-				<TypeName>XioItemInfo.Ig-FolderPerformance</TypeName>
+				<TypeName>XioItemInfo.IgFolderPerformance</TypeName>
 				<TypeName>XioItemInfo.TargetPerformance</TypeName>
-				<TypeName>XioItemInfo.Volume-FolderPerformance</TypeName>
+				<TypeName>XioItemInfo.VolumeFolderPerformance</TypeName>
 			</ViewSelectedBy>
 			<TableControl>
 				<TableHeaders>
@@ -428,7 +428,7 @@
 			<Name>XioItem_Performance_more2</Name>
 			<ViewSelectedBy>
 				<TypeName>XioItemInfo.SsdPerformance</TypeName>
-				<TypeName>XioItemInfo.Data-Protection-GroupPerformance</TypeName>
+				<TypeName>XioItemInfo.DataProtectionGroupPerformance</TypeName>
 			</ViewSelectedBy>
 			<TableControl>
 				<TableHeaders>

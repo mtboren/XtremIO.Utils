@@ -1,8 +1,8 @@
 todo:
 -add about_XtremIO.Utils.help.txt
 	-with the general "here's the module, here are some ways to use it"
--add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to Ig-Folder objects
-	-same for VolumeList_raw = .direct-list for Volume-Folder objects
+-add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to IgFolder objects
+	-same for VolumeList_raw = .direct-list for VolumeFolder objects
 -add UID to volumes, initiators, initiator groups
 	-will allow for getting IGs from IGFolder, volumes from Volume folder, other stuff for IGs?
 -New-XioApiURI does a "break" instead of throwing an error; ("not continuing" text at some point, and that caused try/catch to just exit instead of actually get caught)
@@ -99,41 +99,6 @@ todo:
 	Get-XIOVolumeFolder | Get-XIOVolume
 	Get-XIOVolume | Get-XIOLunMap
 	Get-XIOVolume | Get-XIOVolumeFolder
--define output types made by module, use Add-Type to add them to session
-	-requires renaming properties that have a dash in their name to not have a dash (.NET properties should not have a dash)
-		-properties renamed:
-			"brick-id" -> BrickId
-			"rg-id" -> RGrpId
-			"ssd-slot-array" -> SsdSlotInfo
-			"xms-id" -> XmsId
-			"ig-id" -> InitiatorGrpId
-			"initiator-id" -> InitiatorId
-			"lu-name" -> LuName
-			"small-io-ratio" -> SmallIORatio
-			"small-io-ratio-level" -> SmallIORatioLevel
-			"snapgrp-id" -> SnapGrpId
-			"unaligned-io-ratio" -> UnalignedIORatio
-			"unaligned-io-ratio-level" -> UnalignedIORatioLevel
-			"sys-id" -> SysId
-			"ssd-id" -> SsdId
-			"ssd-rg-state" -> SsdRGrpState
-			"ssd-uid" -> SsdUid
-			"xenv-id" -> XEnvId
-			"xenv-state" -> XEnvState
-		-types renamed:
-
-	-add OutputType to cmdlets once types are defined
-		do: Get-XIOItemInfo,
-			-these require changing code to take the "-" out of type names, and out of TypeName in formats ps1xml:
-				Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOLunMap, Get-XIOStorageController, Get-XIOTargetGroup, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolumeFolder
-		done:
-			Connect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorPerformance, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStoredCred, Get-XIOTarget, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOStoredCred, New-XIOVolume,
-		none needed:
-			Disconnect-XIOServer, Open-XIOMgmtConsole, Remove-XIOStoredCred, Update-TitleBarForXioConnection
-		need to further test/verify:
-			New-XIOInitiator, New-XIOVolume,
-	-?add Types file in which return object types are defined, or via some C# that defines types
-		-include something that calls that definition/types file when the module is loaded
 -item types for which to add support in module:
 	## old and new APIs
 	iscsi-portals
@@ -167,6 +132,55 @@ done for version 0.next (after 0.7.0):
 	-Volume was the only one with additional options for now; Initiator, InitiatorGroup, InitiatorGroupFolder, VolumeFolder, LunMap had no more interesting (aside from Initiator's ISCSI items, which this module does not yet support)
 -published fn Update-TitleBarForXioConnection (title bar sometimes gets whacked by PowerCLI things)
 -fixed "compression" / "compressoin" typo in changelog
+-defined output types made by module, used Add-Type to add them to session
+	-required renaming properties that have a dash in their name to not have a dash (.NET properties should not have a dash)
+		-properties renamed:
+			"brick-id" -> BrickId
+			"rg-id" -> RGrpId
+			"ssd-slot-array" -> SsdSlotInfo
+			"xms-id" -> XmsId
+			"ig-id" -> InitiatorGrpId
+			"initiator-id" -> InitiatorId
+			"lu-name" -> LuName
+			"small-io-ratio" -> SmallIORatio
+			"small-io-ratio-level" -> SmallIORatioLevel
+			"snapgrp-id" -> SnapGrpId
+			"unaligned-io-ratio" -> UnalignedIORatio
+			"unaligned-io-ratio-level" -> UnalignedIORatioLevel
+			"sys-id" -> SysId
+			"ssd-id" -> SsdId
+			"ssd-rg-state" -> SsdRGrpState
+			"ssd-uid" -> SsdUid
+			"xenv-id" -> XEnvId
+			"xenv-state" -> XEnvState
+			"ig-index" -> InitiatorGrpIndex
+			"tg-name" -> TargetGrpName
+			"tg-index" -> TargetGrpIndex
+			"tg-id" -> TargetGrpId
+			"vol-index" -> VolumeIndex
+			"os-version" -> OSVersion
+			"IMPIState" -> IPMIState
+		-types renamed (removed dashes):
+			"Data-Protection-Group" -> DataProtectionGroup
+			"Data-Protection-GroupPerformance" -> DataProtectionGroupPerformance
+			"Ig-Folder" -> IgFolder
+			"Ig-FolderPerformance" -> IgFolderPerformance
+			"Initiator-Group" -> InitiatorGroup
+			"Initiator-GroupPerformance" -> InitiatorGroupPerformance
+			"Lun-Map" -> LunMap
+			"Storage-Controller" -> StorageController
+			"Target-Group" -> TargetGroup
+			"Volume-Folder" -> VolumeFolder
+			"Volume-FolderPerformance" -> VolumeFolderPerformance
+	-added OutputType to cmdlets once types were defined
+		done:
+			Connect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStoredCred, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOStoredCred, New-XIOVolume, New-XIOVolumeFolder
+		none needed:
+			Disconnect-XIOServer, Get-XIOItemInfo, Open-XIOMgmtConsole, Remove-XIOStoredCred, Update-TitleBarForXioConnection
+		-some required changing code to take the "-" out of type names, and taking dashes out of TypeName in formats ps1xml
+			Changed PSTypeName piece to include ".Replace('-','')", to remove dashes from TypeNames
+	-added some C# that defines types
+		-included something that calls that definition/types file when the module is loaded
 
 
 
@@ -279,7 +293,7 @@ done for version 0.7.0, 30 Nov 2014
 -changed default port to 443, removing secondary port of 42503
 -added URLEncode helper function
 -added URI property to Get-XIOItemInfo output objects; keep that?  Useful in pipeline times?
--renamed "ig-name" property of XioItemInfo.Lun-Map object to "InitiatorGroup"
+-renamed "ig-name" property of XioItemInfo.LunMap object to "InitiatorGroup"
 -added DataReduction property to cluster object (in addition to DedupeRatio); when setting the value on older-than-3.0 array, set it to DedupeRatio if data-reduction-ratio is $null
 
 
