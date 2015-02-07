@@ -38,20 +38,6 @@ function Get-XIOItemInfo {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
 	) ## end param
 
-<#  items to populate in begin:
-## Credential for connecting to XMS appliance; if a credential has been encrypted and saved, this will automatically use that credential
-[System.Management.Automation.PSCredential]$Credential = $(_Find-CredentialToUse),
-## Port to use for API call (if none, will try to autodetect proper port; may be slightly slower due to port probe activity)
-[parameter(ParameterSetName="ByComputerName")][int]$Port_int,
-## switch: Trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
-[switch]$TrustAllCert_sw,
-
-remove:
-## Authentication type; default is "basic"
-[ValidateSet("basic")][string]$AuthType_str = "basic",
-
-#>
-
 	Begin {
 		## string to add to messages written by this function; function name in square brackets
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
@@ -170,14 +156,14 @@ remove:
 								## if the item type is events, access the "events" property of the response object; else, access the "Content" property
 								$(if ($strItemType_plural -eq "events") {$oThisResponseObj.$strItemType_plural} else {$oThisResponseObj."Content"}) | Foreach-Object {
 									$oThisResponseObjectContent = $_
+									## the TypeName to use for the new object
+									$strPSTypeNameForNewObj = "XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()).Replace('-',''))"
 									## make a new object with some juicy info (and a new property for the XMS "computer" name used here)
-									$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemType_plural -oContent $oThisResponseObjectContent |
-										## add ComputerName property
-										Add-Member -Name "ComputerName" -MemberType NoteProperty -Value $hshDataForGettingInfoFromThisXmsAppl["ComputerName"] -PassThru |
-										## add a URI property that uniquely identifies this object
-										Add-Member -Name "Uri" -MemberType NoteProperty -Value $strUriThisItem -PassThru
-									## add a TypeName to the TypeNames collection; this is for use by PS custom formatting; ref: http://msdn.microsoft.com/en-us/library/system.management.automation.psobject.typenames%28v=vs.85%29.aspx
-									$oObjToReturn.PSObject.TypeNames.Insert(0, "XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()).Replace('-',''))")
+									$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemType_plural -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj
+									## set ComputerName property
+									$oObjToReturn.ComputerName = $hshDataForGettingInfoFromThisXmsAppl["ComputerName"]
+									## set URI property that uniquely identifies this object
+									$oObjToReturn.Uri = $strUriThisItem
 									## return the object
 									return $oObjToReturn
 								} ## end foreach-object
@@ -203,7 +189,7 @@ remove:
 	Get-XIOBrick -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Brick
 #>
 function Get-XIOBrick {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -246,7 +232,7 @@ function Get-XIOBrick {
 	Get-XIOCluster -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Cluster
 #>
 function Get-XIOCluster {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -289,7 +275,7 @@ function Get-XIOCluster {
 	Get-XIODataProtectionGroup -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.DataProtectionGroup
 #>
 function Get-XIODataProtectionGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -332,7 +318,7 @@ function Get-XIODataProtectionGroup {
 	Get-XIOInitiator -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Initiator
 #>
 function Get-XIOInitiator {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -375,7 +361,7 @@ function Get-XIOInitiator {
 	Get-XIOInitiatorGroup -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.InitiatorGroup
 #>
 function Get-XIOInitiatorGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -418,7 +404,7 @@ function Get-XIOInitiatorGroup {
 	Get-XIOInitiatorGroupFolder -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.IgFolder
 #>
 function Get-XIOInitiatorGroupFolder {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -467,7 +453,7 @@ function Get-XIOInitiatorGroupFolder {
 	Get-XIOLunMap -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.LunMap
 #>
 function Get-XIOLunMap {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -522,7 +508,7 @@ function Get-XIOLunMap {
 	Get-XIOSnapshot -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Snapshot
 #>
 function Get-XIOSnapshot {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -565,7 +551,7 @@ function Get-XIOSnapshot {
 	Get-XIOSsd -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Ssd
 #>
 function Get-XIOSsd {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -608,7 +594,7 @@ function Get-XIOSsd {
 	Get-XIOStorageController -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.StorageController
 #>
 function Get-XIOStorageController {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -651,7 +637,7 @@ function Get-XIOStorageController {
 	Get-XIOTarget -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Target
 #>
 function Get-XIOTarget {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -694,7 +680,7 @@ function Get-XIOTarget {
 	Get-XIOTargetGroup -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.TargetGroup
 #>
 function Get-XIOTargetGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -737,7 +723,7 @@ function Get-XIOTargetGroup {
 	Get-XIOVolume -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Volume
 #>
 function Get-XIOVolume {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -780,7 +766,7 @@ function Get-XIOVolume {
 	Get-XIOVolumeFolder -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.VolumeFolder
 #>
 function Get-XIOVolumeFolder {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -823,7 +809,7 @@ function Get-XIOVolumeFolder {
 	Get-XIOXenv -ComputerName somexmsappl01.dom.com -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
-	PSCustomObject
+	XioItemInfo.XEnv
 #>
 function Get-XIOXenv {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -876,7 +862,7 @@ function Get-XIOXenv {
 	Get-XIOEvent -EntityType StorageController -SearchText level_3_warning
 	Request info from current XMS connection and return event info for all events involving entity of type StorageController with string "level_3_warning" in the event
 	.Outputs
-	PSCustomObject
+	XioItemInfo.Event
 #>
 function Get-XIOEvent {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1010,11 +996,11 @@ function Get-XIOPerformanceInfo {
 			$arrXioItemInfo = Get-XIOItemInfo @hshParamsForGetXIOItemInfo
 			$arrXioItemInfo | Foreach-Object {
 				$oThisXioItemInfo = $_
+				## the TypeName to use for the new object
+				$strPSTypeNameForNewObj = "XioItemInfo.$($strItemTypeToCreate.Replace('-',''))"
 				## make a new object with some juicy info (and a new property for the XMS "computer" name used here)
-				$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemTypeToCreate -oContent $oThisXioItemInfo | Add-Member -Name "ComputerName" -MemberType NoteProperty -Value $oThisXioItemInfo.ComputerName -PassThru
-				## add a TypeName to the TypeNames collection; this is for use by PS custom formatting; ref: http://msdn.microsoft.com/en-us/library/system.management.automation.psobject.typenames%28v=vs.85%29.aspx
-				#  removing the dashes from the type created, so that the .NET type names is legit (no dashes)
-				$oObjToReturn.PSObject.TypeNames.Insert(0, "XioItemInfo.$($strItemTypeToCreate.Replace('-',''))")
+				$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemTypeToCreate -oContent $oThisXioItemInfo -PSTypeNameForNewObj $strPSTypeNameForNewObj
+				$oObjToReturn.ComputerName = $oThisXioItemInfo.ComputerName
 				## return the object
 				return $oObjToReturn
 			} ## end foreach-object
@@ -1041,7 +1027,7 @@ function Get-XIOPerformanceInfo {
 	Get-XIOClusterPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.ClusterPerformance
 #>
 function Get-XIOClusterPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1083,7 +1069,7 @@ function Get-XIOClusterPerformance {
 	Get-XIODataProtectionGroupPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get data-protection-group peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.DataProtectionGroupPerformance
 #>
 function Get-XIODataProtectionGroupPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1125,7 +1111,7 @@ function Get-XIODataProtectionGroupPerformance {
 	Get-XIOInitiatorGroupFolderPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get ig-folder peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.IgFolderPerformance
 #>
 function Get-XIOInitiatorGroupFolderPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1167,7 +1153,7 @@ function Get-XIOInitiatorGroupFolderPerformance {
 	Get-XIOInitiatorGroupPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get initiator-group peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.InitiatorGroupPerformance
 #>
 function Get-XIOInitiatorGroupPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1209,7 +1195,7 @@ function Get-XIOInitiatorGroupPerformance {
 	Get-XIOInitiatorPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get initiator peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.InitiatorPerformance
 #>
 function Get-XIOInitiatorPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1251,7 +1237,7 @@ function Get-XIOInitiatorPerformance {
 	Get-XIOSsdPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get SSD peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.SsdPerformance
 #>
 function Get-XIOSsdPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1293,7 +1279,7 @@ function Get-XIOSsdPerformance {
 	Get-XIOTargetPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get target peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.TargetPerformance
 #>
 function Get-XIOTargetPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1335,7 +1321,7 @@ function Get-XIOTargetPerformance {
 	Get-XIOVolumeFolderPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get volume-folder peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.VolumeFolderPerformance
 #>
 function Get-XIOVolumeFolderPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
@@ -1377,7 +1363,7 @@ function Get-XIOVolumeFolderPerformance {
 	Get-XIOVolumePerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get volume peformance info every 5 seconds for 30 seconds
 	.Outputs
-	PSCustomObject
+	XioItemInfo.VolumePerformance
 #>
 function Get-XIOVolumePerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]

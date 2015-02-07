@@ -242,6 +242,27 @@ function _Find-CredentialToUse {
 } ## end function
 
 
+function _Test-TypeOrString {
+	<# .Description
+		Helper function to test if object is either of type String or $Type
+		.Outputs
+		Boolean -- $true if objects are all either String or the given $Type; $false otherwise
+	#>
+	param (
+		## Object to test
+		[parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][PSObject[]]$ObjectToTest,
+		## Type of object for which to check
+		[parameter(Mandatory=$true)][Type]$Type
+	) ## end param
+
+	process {
+		## make sure that all values are either a String or a Cluster obj
+		$arrCheckBoolValues = $ObjectToTest | Foreach-Object {($_ -is [System.String]) -or ($_ -is $Type)}
+		return (($arrCheckBoolValues -contains $true) -and ($arrCheckBoolValues -notcontains $false))
+	} ## end process
+} ## end function
+
+
 <#	.Description
 	Set PowerShell title bar to reflect currently connected XMS servers' names
 #>
@@ -370,7 +391,15 @@ function dWrite-ObjectToTableString {
 	.Outputs
 	PSCustomObject with info about given XtremIO input item type
 #>
-function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string]$argItemType, [parameter(Mandatory=$true)][PSCustomObject]$oContent) {
+function _New-Object_fromItemTypeAndContent {
+	param (
+		## the XIOS API item type; "initiator-groups", for example
+		[parameter(Mandatory=$true)][string]$argItemType,
+		## the raw content returned by the API GET call, from which to get data
+		[parameter(Mandatory=$true)][PSCustomObject]$oContent,
+		## TypeName of new object to create; "XioItemInfo.InitiatorGroup", for example
+		[parameter(Mandatory=$true)][string]$PSTypeNameForNewObj
+	)
 	## string to add to messages written by this function; function name in square brackets
 	$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 	Write-Debug "$strLogEntry_ToAdd argItemType: '$argItemType'"
@@ -517,7 +546,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {$dblDedupeRatio})
 				ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
 				BrickList = $oContent."brick-list"
-				Index = $oContent.index
+				Index = [int]$oContent.index
 				ConsistencyState = $oContent."consistency-state"
 				## available in 2.4.0 and up
 				EncryptionMode = $oContent."encryption-mode"
@@ -1139,5 +1168,5 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 			break} ## end case
 		#### end PerformanceInfo items
 		} ## end switch
-	New-Object -Type PSObject -Property $hshPropertyForNewObj
+	New-Object -Type $PSTypeNameForNewObj -Property $hshPropertyForNewObj
 } ## end function

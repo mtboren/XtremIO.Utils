@@ -2,7 +2,7 @@
 . $PSScriptRoot\configItems.ps1
 
 ## dot-source the function-definition files, class-definition file
-"GetXIOItem.ps1", "NewXIOItem.ps1", "OtherXIOMgmt.ps1", "XtremIO.Utils.init.ps1" | Foreach-Object {
+"GetXIOItem.ps1", "NewXIOItem.ps1", "OtherXIOMgmt.ps1", "SetXIOItem.ps1", "XtremIO.Utils.init.ps1" | Foreach-Object {
 	. $PSScriptRoot\$_
 } ## end foreach-object
 
@@ -13,4 +13,6 @@ Export-ModuleMember -Function Get-XIOItemInfo, Get-XIOBrick, Get-XIOCluster, Get
 	## performance items
 	Get-XIOClusterPerformance, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance,
 	## "New-" items
-	New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolume, New-XIOVolumeFolder
+	New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolume, New-XIOVolumeFolder,
+	## "Set-" items
+	Set-XIOVolumeFolder

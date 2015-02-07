@@ -1,60 +1,19 @@
 todo:
 -add about_XtremIO.Utils.help.txt
 	-with the general "here's the module, here are some ways to use it"
--add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to IgFolder objects
-	-same for VolumeList_raw = .direct-list for VolumeFolder objects
--add UID to volumes, initiators, initiator groups
-	-will allow for getting IGs from IGFolder, volumes from Volume folder, other stuff for IGs?
 -New-XioApiURI does a "break" instead of throwing an error; ("not continuing" text at some point, and that caused try/catch to just exit instead of actually get caught)
 	-change this to throw error
--upgrade New-XIOVolumeFolder, New-XIOInitiatorGroupFolder to make full, deep path of folders (for when parent folder heirarchy does not yet exist)
-	-example:  New-XIOVolumeFolder -Name newDeepFolder -ParentFolder /someVolume/Folder/ThatDoes/NotYet/Exist
-	-needs to iterate through those parents from the root
-	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
--add Set-, Move-, Remove- cmdlets
--add Catch for explicit DownloadString exception:
-	VERBOSE: Uh-oh -- something went awry trying to get data from that URI
-	('https://somexms.dom.com/api/json/types'). A pair of guesses:  no such XMS appliance, or that item type is not
-	valid in the API version on the XMS appliance that you are contacting, maybe?  Should handle this in future module
-	release.  Throwing error for now.
-	Connect-XIOServer : Failed to connect to XMS 'somexms.dom.com'.  See error below for details
-	At line:1 char:1
-	+ Connect-XIOServer -ComputerName somexms.dom.com -TrustAllCert -Credential  ...
-	+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		+ CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
-		+ FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Connect-XIOServer
-
-	Exception calling "DownloadString" with "1" argument(s): "The operation has timed out"
-	At \\path\to\XtremIO.Utils\XIO_SupportingFunctions.ps1:58 char:4
-	+             $oWebClient.DownloadString($hshParamsForRequest["Uri"]) | ConvertFrom-Json
-	+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		+ CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
-		+ FullyQualifiedErrorId : WebException
--check into / remove use of deprecated properties, if any, from list: (per v3.0.1 REST API guide, p12)
-	-In version 3.0, the following object parameters are not in use and have been deprecated:
-		-Cluster object:
-			-max-snapshots-per-volume
-			-meta-data-utilization-level
-			-meta-data-utilization
-			-vamd-memory
-			-vamd-memory-in-use
-			-max-cgs-per-volume
-			-max-cgs
-			-num-of-r-mdls
-			-max-snapsets-per-cg
-			-max-vol-per-cg
-			-num-of-d-mdls
-			-min-num-of-ssds-per-healthy-rg
-			-num-of-c-mdls
-		-Storage Controller object:
-			-eth-link-health-level
-	-In version 3.0.1, the following object parameters are not in use and have been deprecated:
-		-Storage Controller object:
-			-hw-revision
-	-also, others listed on p198 of v3.0.1 REST API guide
--add New-XIOSnapshot at some point
--watch for Alerts access in API:  would be good to be able to get/clear/ack Alerts
-         -add pipelining abilities for things like:
+-add Set-, Remove- cmdlets
+	Set:
+		Initiator:  'port-address', 'initiator-name'
+			for future (once supporitng iSCSI in this PSModule):  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
+		InitiatorGroup:  'initiator-group-name'
+		InitiatorGroupFolder:  'new-caption'
+		Volume:	 'vol-size', 'vol-name', 'small-io-alerts', 'unaligned-io-alerts', 'vaai-tp-alerts'
+		VolumeFolder:  'new-caption'
+	Remove:
+		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
+-add pipelining abilities for things like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroup
 	## currently behaves unexpectedly when using something like:
@@ -99,6 +58,52 @@ todo:
 	Get-XIOVolumeFolder | Get-XIOVolume
 	Get-XIOVolume | Get-XIOLunMap
 	Get-XIOVolume | Get-XIOVolumeFolder
+-add Catch for explicit DownloadString exception:
+	VERBOSE: Uh-oh -- something went awry trying to get data from that URI
+	('https://somexms.dom.com/api/json/types'). A pair of guesses:  no such XMS appliance, or that item type is not
+	valid in the API version on the XMS appliance that you are contacting, maybe?  Should handle this in future module
+	release.  Throwing error for now.
+	Connect-XIOServer : Failed to connect to XMS 'somexms.dom.com'.  See error below for details
+	At line:1 char:1
+	+ Connect-XIOServer -ComputerName somexms.dom.com -TrustAllCert -Credential  ...
+	+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		+ CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+		+ FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Connect-XIOServer
+
+	Exception calling "DownloadString" with "1" argument(s): "The operation has timed out"
+	At \\path\to\XtremIO.Utils\XIO_SupportingFunctions.ps1:58 char:4
+	+             $oWebClient.DownloadString($hshParamsForRequest["Uri"]) | ConvertFrom-Json
+	+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		+ CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+		+ FullyQualifiedErrorId : WebException
+-upgrade New-XIOVolumeFolder, New-XIOInitiatorGroupFolder to make full, deep path of folders (for when parent folder heirarchy does not yet exist)
+	-example:  New-XIOVolumeFolder -Name newDeepFolder -ParentFolder /someVolume/Folder/ThatDoes/NotYet/Exist
+	-needs to iterate through those parents from the root
+	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
+-check into / remove use of deprecated properties, if any, from list: (per v3.0.1 REST API guide, p12)
+	-In version 3.0, the following object parameters are not in use and have been deprecated:
+		-Cluster object:
+			-max-snapshots-per-volume
+			-meta-data-utilization-level
+			-meta-data-utilization
+			-vamd-memory
+			-vamd-memory-in-use
+			-max-cgs-per-volume
+			-max-cgs
+			-num-of-r-mdls
+			-max-snapsets-per-cg
+			-max-vol-per-cg
+			-num-of-d-mdls
+			-min-num-of-ssds-per-healthy-rg
+			-num-of-c-mdls
+		-Storage Controller object:
+			-eth-link-health-level
+	-In version 3.0.1, the following object parameters are not in use and have been deprecated:
+		-Storage Controller object:
+			-hw-revision
+	-also, others listed on p198 of v3.0.1 REST API guide
+-add New-XIOSnapshot at some point
+-watch for Alerts access in API:  would be good to be able to get/clear/ack Alerts
 -item types for which to add support in module:
 	## old and new APIs
 	iscsi-portals
@@ -120,11 +125,21 @@ todo:
 -for Get-XIOVolume:  add URI Param option for "sg-id" (snapshot group ID)?  available via xmcli
 -change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
 -may need to remove XioStoredCred support at some point, now that Connect-XIOServer is available; if so, do via deprecation; _Find-CredentialToUse goes away at that point, too?
+-potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, so that can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
+	-add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to IgFolder objects
+		-same for VolumeList_raw = .direct-list for VolumeFolder objects
+	-add UID to volumes, initiators, initiator groups
+		-will allow for getting IGs from IGFolder, volumes from Volume folder, other stuff for IGs?
 -?add a Get-XIOUtilsConfiguration function to report things like the filespec of the StoredXioCred
 -?add a Set-XIOUtilsConfiguration function to set things like the default port to use, and $true/$false for TrustAllCert
 -?add "if ($PsCmdlet.ShouldProcess())" portion to New-XIOVolume, around the New-XioItem call, so as to have better WhatIf output?
 -?add "small" and "unaligned" performance items, too? (available in xmcli)
 -added URI property to Get-XIOItemInfo output objects; keep that?  Useful in pipeline times?
+-try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
+-once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
+	-not available as of XIOS v3.0.1
+
+
 
 
 done for version 0.next (after 0.7.0):
@@ -181,10 +196,12 @@ done for version 0.next (after 0.7.0):
 			Changed PSTypeName piece to include ".Replace('-','')", to remove dashes from TypeNames
 	-added some C# that defines types
 		-included something that calls that definition/types file when the module is loaded
+-updated piece that makes the objects to return; returns "fully" legit objects now, by using proper typename for New-Object, instead of inserting PSTypeName into PSObject after the fact
 
 
 
-try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
+
+
 
 
 ## changes to handle in v2.4, v2.4.1
