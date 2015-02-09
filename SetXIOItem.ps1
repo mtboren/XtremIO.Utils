@@ -31,7 +31,7 @@ function Set-XIOItemInfo {
 		SpecifyFullUri
 			-get item by URI
 				-if not valid, error
--try to Put request
+-try to PUT request
 	-takes the URI and the JSON
 
 #>

@@ -41,7 +41,7 @@ function Get-XIOItemInfo {
 	Begin {
 		## string to add to messages written by this function; function name in square brackets
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## get the XIO connections to use
+		## get the XIO connections to use, either from ComputerName param, or from the URI
 		$arrXioConnectionsToUse = Get-XioConnectionsToUse -ComputerName $(
 			Switch ($PSCmdlet.ParameterSetName) {
 				"ByComputerName" {$ComputerName_arr; break}
@@ -211,11 +211,13 @@ function Get-XIOBrick {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "brick"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -254,11 +256,13 @@ function Get-XIOCluster {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "cluster"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -297,11 +301,13 @@ function Get-XIODataProtectionGroup {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "data-protection-group"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -340,11 +346,13 @@ function Get-XIOInitiator {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -383,11 +391,13 @@ function Get-XIOInitiatorGroup {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator-group"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -426,11 +436,13 @@ function Get-XIOInitiatorGroupFolder {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ig-folder"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -480,7 +492,9 @@ function Get-XIOLunMap {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "lun-map"
 		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{ItemType = $ItemType_str}
+		$hshParamsForGetXioItemInfo = @{}
+		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
+		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
 	} ## end begin
 
 	Process {
@@ -530,11 +544,13 @@ function Get-XIOSnapshot {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "snapshot"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -573,11 +589,13 @@ function Get-XIOSsd {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ssd"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -616,11 +634,13 @@ function Get-XIOStorageController {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "storage-controller"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -659,11 +679,13 @@ function Get-XIOTarget {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "target"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -702,11 +724,13 @@ function Get-XIOTargetGroup {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "target-group"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -745,11 +769,13 @@ function Get-XIOVolume {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "volume"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -788,11 +814,13 @@ function Get-XIOVolumeFolder {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "volume-folder"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -831,11 +859,13 @@ function Get-XIOXenv {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "xenv"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
 		## call the base function to get the given item
-		Get-XIOItemInfo @PSBoundParameters -ItemType $ItemType_str
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 

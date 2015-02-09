@@ -291,6 +291,10 @@ function Get-XioConnectionsToUse {
 		## Computer names to check for in default XMS servers list (if any; if $null, will use all)
 		[string[]]$ComputerName_arr
 	)
+
+	## string to add to messages written by this function; function name in square brackets
+	$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+
 	## if connected to any XIO servers
 	if (($Global:DefaultXmsServers | Measure-Object).Count -gt 0) {
 		## array of XIO connection names to potentially use
@@ -305,7 +309,7 @@ function Get-XioConnectionsToUse {
 					$oXioConnectionWithNameLikeThisConnectionName = $Global:DefaultXmsServers | Where-Object {$_.ComputerName -like $strThisConnectionName}
 					## if there was a matching connection, return it
 					if ($null -ne $oXioConnectionWithNameLikeThisConnectionName) {$oXioConnectionWithNameLikeThisConnectionName}
-					else {Write-Verbose "no connection to '$strThisConnectionName', not using"}
+					else {Write-Verbose "$strLogEntry_ToAdd no connection to '$strThisConnectionName', not using"}
 				} ## end foreach-object
 			} ## end if
 			## else, use all connections
@@ -314,7 +318,7 @@ function Get-XioConnectionsToUse {
 	else {Write-Warning "no XIO connections; connect first, and then try something"; break}
 
 	$intNumConnectionsToUse = ($arrXioConnectionsToUse | Measure-Object).Count
-	if ($null -ne $arrXioConnectionsToUse) { Write-Verbose ("continuing with call, using '{0}' XIO connection{1}" -f $intNumConnectionsToUse, $(if ($intNumConnectionsToUse -ne 1) {"s"})); return $arrXioConnectionsToUse}
+	if ($null -ne $arrXioConnectionsToUse) { Write-Verbose ("$strLogEntry_ToAdd continuing with call, using '{0}' XIO connection{1}" -f $intNumConnectionsToUse, $(if ($intNumConnectionsToUse -ne 1) {"s"})); return $arrXioConnectionsToUse}
 	else {Write-Warning ("not connected to specified computer{0}; check name{0} and try again" -f $(if (($arrConnectionNamesToUse | Measure-Object).Count -ne 1) {"s"})); break}
 } ## end function
 

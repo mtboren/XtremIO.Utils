@@ -197,6 +197,8 @@ done for version 0.next (after 0.7.0):
 	-added some C# that defines types
 		-included something that calls that definition/types file when the module is loaded
 -updated piece that makes the objects to return; returns "fully" legit objects now, by using proper typename for New-Object, instead of inserting PSTypeName into PSObject after the fact
+-fixed ParameterSet bug where specifying URI to most Get-* cmdlets (excluding the Get-*Performance cmdlets) was also passing the -ItemType to Get-XIOItemInfo, when the -ItemType should _not_ be passed when getting item by URI
+	affected:  Get-XIOBrick, Get-XIOCluster, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOXenv
 
 
 
