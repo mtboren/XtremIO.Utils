@@ -56,7 +56,7 @@ function New-XIOItem {
 
 					## try request
 					try {
-						Write-Debug "$strLogEntry_ToAdd hshParamsToCreateNewXIOItem: `n$($hshParamsToCreateNewXIOItem | Format-Table | Out-String)"
+						Write-Debug "$strLogEntry_ToAdd hshParamsToCreateNewXIOItem: `n$(dWrite-ObjectToTableString -ObjectToStringify $hshParamsToCreateNewXIOItem)"
 						$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem
 					} ## end try
 					## catch, write-error, break

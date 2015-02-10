@@ -5,12 +5,14 @@ todo:
 	-change this to throw error
 -add Set-, Remove- cmdlets
 	Set:
+		-make sure that Set-XioItemInfo is solid, then work on:
 		Initiator:  'port-address', 'initiator-name'
 			for future (once supporitng iSCSI in this PSModule):  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
 		InitiatorGroup:  'initiator-group-name'
 		InitiatorGroupFolder:  'new-caption'
 		Volume:	 'vol-size', 'vol-name', 'small-io-alerts', 'unaligned-io-alerts', 'vaai-tp-alerts'
 		VolumeFolder:  'new-caption'
+		-once done, un-export Set-XIOItemInfo?  Or, leave it exported?
 	Remove:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -add pipelining abilities for things like:

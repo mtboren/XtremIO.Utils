@@ -8,10 +8,15 @@ $hshCfg = @{
 	} ## end hashtable
 	## standard response status codes and descriptions
 	StdResponse = @{
-		## for item creation via Post method
+		## expected returns for successful item creation via Post method
 		Post = @{
 			StatusCode = 201
 			StatusDescription = "Created"
+		} ## end hashtable
+		## expected returns for successful item modification via Put method (in Set-* cmdlets)
+		Put = @{
+			StatusCode = 200
+			StatusDescription = "Ok"
 		} ## end hashtable
 	} ## end hashtable
 	## filespec of encrypted credential file

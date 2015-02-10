@@ -4,7 +4,7 @@
 	PSCustomObject
 #>
 function Set-XIOItemInfo {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName", SupportsShouldProcess=$true)]
+	[CmdletBinding(DefaultParameterSetName="ByComputerName", SupportsShouldProcess=$true, ConfirmImpact=[System.Management.Automation.Confirmimpact]::High)]
 	param(
 		## XMS appliance address to which to connect
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName_arr,
@@ -18,7 +18,9 @@ function Set-XIOItemInfo {
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForSetItem_str,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## XioItemInfo object whose property to set
+		[parameter(Position=0,ParameterSetName="ByXioItemInfoObj",ValueFromPipeline)][ValidateNotNullOrEmpty()][PSObject]$XIOItemInfoObj
 	) ## end param
 
 
@@ -31,64 +33,76 @@ function Set-XIOItemInfo {
 		SpecifyFullUri
 			-get item by URI
 				-if not valid, error
+		ByXioItemInfoObj
+			-continue on
 -try to PUT request
 	-takes the URI and the JSON
 
 #>
 <#	.Description
-	Create a new XtremIO item, like a volume, initiator group, etc.  Used as helper function to the New-XIO* functions that are each for a new item of a specific type
+	Set properties of an XtremIO item, like a volume, initiator group, etc.  Used as helper function to the Set-XIO* functions that are each for modifying items of a specific type
 	.Outputs
-	XioItemInfo object for the newly created object if successful
+	XioItemInfo object for the newly updated object if successful
 #>
 	Begin {
-		## from the param value, make the plural form (the item types in the API are all plural; adding "s" here to the singular form used for valid param values, the singular form being the standard for PowerShell-y things)
-		$strItemType_plural = "${ItemType_str}s"
-		## the base portion of the REST command to issue
-		$strRestCmd_base = "/types/$strItemType_plural"
 		## string to add to messages written by this function; function name in square brackets
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## get the XIO connections to use
-		$arrXioConnectionsToUse = Get-XioConnectionsToUse -ComputerName $ComputerName_arr
+		## get the XIO connections to use, either from ComputerName param, or from the URI
+		$arrXioConnectionsToUse = Get-XioConnectionsToUse -ComputerName $(
+			Switch ($PSCmdlet.ParameterSetName) {
+				"ByComputerName" {$ComputerName_arr; break}
+				"SpecifyFullUri" {([System.Uri]($URI_str)).DnsSafeHost; break}
+				"ByXioItemInfoObj" {$XIOItemInfoObj.ComputerName}
+			})
 	} ## end begin
 
 	Process {
-		## make hashtable of params for the Get call (that verifies if any such object by given name exists); remove any extra params that were copied in that are not used for the Get call, or where the param name is not quite the same in the subsequent function being called
-		$hshParamsForGetItem = $PSBoundParameters; "SpecForNewItem_str","WhatIf" | %{$hshParamsForGetItem.Remove($_) | Out-Null}
-		## if the item type is of "lun-map", do not need to get XIO Item Info again, as that is already done in the New-XIOLunMap call, and was $null at that point, else it would not have progressed to _this_ point
-		$oExistingXioItem = if ($ItemType_str -eq "lun-map") {$null} else {Get-XIOItemInfo @hshParamsForGetItem}
-		## if such an item already exists, write a warning and stop
-		if ($null -ne $oExistingXioItem) {Write-Warning "Item of name '$Name' and type '$ItemType_str' already exists on '$($oExistingXioItem.ComputerName -join ", ")'. Taking no action"; break;} ## end if
-		## else, actually try to make such an object
+		## make sure that object exists; attempt to get it, first
+		$oExistingXioItem = Switch ($PSCmdlet.ParameterSetName) {
+				{"ByComputerName","SpecifyFullUri" -contains $_} {
+					## make hashtable of params for the Get call (that verifies that such an object exists); remove any extra params that were copied in that are not used for the Get call, or where the param name is not quite the same in the subsequent function being called
+					$PSBoundParameters.Keys | Where-Object {"SpecForSetItem_str","WhatIf" -notcontains $_} | Foreach-Object -begin {$hshParamsForGetItem = @{}} -process {$hshParamsForGetItem[$_] = $PSBoundParameters[$_]}
+					Get-XIOItemInfo @hshParamsForGetItem; break
+				} ## end case
+				"ByXioItemInfoObj" {$XIOItemInfoObj; break}
+			} ## end switch
+		## if such an item does not exist, write a warning and stop
+		if ($null -eq $oExistingXioItem) {Write-Warning "Item of name '$Name' and type '$ItemType_str' does not exist on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"; break;} ## end if
+		## if more than one such an item exists, write a warning and stop
+		if (($oExistingXioItem | Measure-Object).Count -ne 1) {Write-Warning "More than one item like name '$Name' and of type '$ItemType_str' found on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"; break;} ## end if
+		## else, actually try to set properties on the object
 		else {
 			$arrXioConnectionsToUse | Foreach-Object {
 				$oThisXioConnection = $_
-				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, "Create new '$ItemType_str' object named '$Name'")) {
+				## the Set items' specification, from JSON; PSCustomObject with properties/values to be set
+				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem_str
+				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
+				$strShouldProcessOutput = "Set {0} propert{1} for '{2}' object named '{3}'" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
+				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
-					$hshParamsToCreateNewXIOItem = @{
+					$hshParamsToSetXIOItem = @{
 						## make URI
-						Uri = $(
-							$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
-							New-XioApiURI @hshParamsForNewXioApiURI)
+						Uri = $oExistingXioItem.Uri
 						## JSON contents for body, for the params for creating the new XIO object
-						Body = $SpecForNewItem_str
-						## set method to Post
-						Method = "Post"
+						Body = $SpecForSetItem_str
+						## set method
+						Method = "Put"
 						## do something w/ creds to make Headers
 						Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
 					} ## end hashtable
 
 					## try request
 					try {
-						Write-Debug "$strLogEntry_ToAdd hshParamsToCreateNewXIOItem: `n$($hshParamsToCreateNewXIOItem | Format-Table | Out-String)"
-						$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem
+						Write-Debug "$strLogEntry_ToAdd hshParamsToSetXIOItem: `n$(dWrite-ObjectToTableString -ObjectToStringify $hshParamsToSetXIOItem)"
+						$oWebReturn = Invoke-WebRequest @hshParamsToSetXIOItem
 					} ## end try
 					## catch, write-error, break
 					catch {Write-Error $_; break}
 					## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
-					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
-						Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
+					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Put"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Put"]["StatusDescription"])) {
+						Write-Verbose "$strLogEntry_ToAdd Item updated successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
 						## use the return's links' hrefs to return the XIO item(s)
-						($oWebReturn.Content | ConvertFrom-Json).links | Foreach-Object {Get-XIOItemInfo -URI $_.href}
+						Get-XIOItemInfo -URI $oExistingXioItem.Uri
 					} ## end if
 				} ## end if ShouldProcess
 			} ## end foreach-object
@@ -135,19 +149,18 @@ function Set-XIOVolumeFolder {
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{
-			ComputerName = $ComputerName_arr
-			ItemType_str = $strThisItemType
 			SpecForSetItem_str = $hshSetItemSpec | ConvertTo-Json
 		} ## end hashtable
 
 		Switch ($PsCmdlet.ParameterSetName) {
 			"SpecifyFullUri" {$hshParamsForSetItem["URI_str"] = $URI_str; break}
 			default {
-				if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["URI_str"] = $VolumeFolder.Uri}
+				if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder}
 				else {$hshParamsForSetItem["ItemName"] = $VolumeFolder}
+				$hshParamsForSetItem["ComputerName"] = $ComputerName_arr
+				$hshParamsForSetItem["ItemType_str"] = $strThisItemType
 			} ## end case
 		} ## end switch
-		Write-Debug "done in Set-XIOVolumeFolder, now to call Set"
 		## call the function to actually modify this item
 		#Set-XIOItem @hshParamsForSetItem
 	} ## end process

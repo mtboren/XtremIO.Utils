@@ -15,4 +15,6 @@ Export-ModuleMember -Function Get-XIOItemInfo, Get-XIOBrick, Get-XIOCluster, Get
 	## "New-" items
 	New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOVolume, New-XIOVolumeFolder,
 	## "Set-" items
-	Set-XIOVolumeFolder
+	Set-XIOVolumeFolder,
+	## exported for now -- remove at release time
+	Set-XIOItemInfo
