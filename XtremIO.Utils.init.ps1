@@ -132,6 +132,7 @@ Add-Type -TypeDefinition @"
 			public System.String ComputerName;
 			public System.Object[] FolderId;
 			public System.Int32 Index;
+			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
 			public System.String Name;
 			public System.Int32 NumIG;
@@ -154,7 +155,7 @@ Add-Type -TypeDefinition @"
 			public System.String ComputerName;
 			public System.String ConnectionState;
 			public System.Int32 Index;
-			public System.Object[] InitiatorGrpId;
+			public System.String InitiatorGrpId;
 			public System.Object[] InitiatorId;
 			public System.Int64 IOPS;
 			public System.String Name;
@@ -170,7 +171,7 @@ Add-Type -TypeDefinition @"
 		public class InitiatorGroup {
 			public System.String ComputerName;
 			public System.Int32 Index;
-			public System.Object[] InitiatorGrpId;
+			public System.String InitiatorGrpId;
 			public System.Int64 IOPS;
 			public System.String Name;
 			public System.Int32 NumInitiator;

@@ -455,7 +455,7 @@ function _New-Object_fromItemTypeAndContent {
 						} ## end New-Object
 					}) ## end New-Object
 				}) ## end New-object PerformanceInfo
-				InitiatorGrpId = $oContent."ig-id"
+				InitiatorGrpId = $oContent."ig-id"[0]
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
@@ -466,7 +466,7 @@ function _New-Object_fromItemTypeAndContent {
 				IOPS = [int64]$oContent.iops
 				Index = $oContent.index
 				ConnectionState = $oContent."initiator-conn-state"
-				InitiatorGrpId = $oContent."ig-id"
+				InitiatorGrpId = $oContent."ig-id"[0]
 				InitiatorId = $oContent."initiator-id"
 				PortType = $oContent."port-type"
 				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
@@ -725,6 +725,8 @@ function _New-Object_fromItemTypeAndContent {
 				Name = $oContent.name
 				Caption = $oContent.caption
 				Index = $oContent.index
+				## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
+				InitiatorGrpIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
 				FolderId = $oContent."folder-id"
 				NumIG = $oContent."num-of-direct-objs"
 				NumSubfolder = $oContent."num-of-subfolders"

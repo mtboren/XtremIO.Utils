@@ -3,6 +3,7 @@ todo:
 	-with the general "here's the module, here are some ways to use it"
 -New-XioApiURI does a "break" instead of throwing an error; ("not continuing" text at some point, and that caused try/catch to just exit instead of actually get caught)
 	-change this to throw error
+-update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -add Set-, Remove- cmdlets
 	Set:
 		-make sure that Set-XioItemInfo is solid, then work on:
@@ -17,7 +18,6 @@ todo:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -add pipelining abilities for things like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
-	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroup
 	## currently behaves unexpectedly when using something like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
 	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
@@ -54,7 +54,6 @@ todo:
 	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 #>
 	Get-XIOInitiatorGroup | Get-XIOInitiator
-	Get-XIOInitiatorGroup | Get-XIOInitiatorGroupFolder
 	Get-XIOInitiatorGroup | Get-XIOLunMap
 	Get-XIOInitiatorGroup | Get-XIOVolume
 	Get-XIOVolumeFolder | Get-XIOVolume
@@ -189,6 +188,10 @@ done for version 0.next (after 0.7.0):
 			"Target-Group" -> TargetGroup
 			"Volume-Folder" -> VolumeFolder
 			"Volume-FolderPerformance" -> VolumeFolderPerformance
+	-changed property values to be more usable (partially in support of adding pipelining support)
+		-on Initiator and InitiatorGroup objects:
+			InitiatorGrpId property now is a string that is just the ID, instead of the array of three strings which was @(<initiator group ID string>, <initiator group name>, <initiator group index number>)
+	-added property to IgFolder objects that is the list of IDs of the initiator groups that reside directly in the given IgFolder
 	-added OutputType to cmdlets once types were defined
 		done:
 			Connect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStoredCred, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOStoredCred, New-XIOVolume, New-XIOVolumeFolder
@@ -201,6 +204,15 @@ done for version 0.next (after 0.7.0):
 -updated piece that makes the objects to return; returns "fully" legit objects now, by using proper typename for New-Object, instead of inserting PSTypeName into PSObject after the fact
 -fixed ParameterSet bug where specifying URI to most Get-* cmdlets (excluding the Get-*Performance cmdlets) was also passing the -ItemType to Get-XIOItemInfo, when the -ItemType should _not_ be passed when getting item by URI
 	affected:  Get-XIOBrick, Get-XIOCluster, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOXenv
+-added support for getting XioInitiator by PortAddress
+-added support for getting XioInitiatorGroup by InitatorGrpId, including by pipeline
+	-Get-XIOInitator someInitiatorName | Get-XIOInitiatorGroup
+	-Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
+-added support for getting XioInitiatorGroupFolder by InitatorGrpId, including by pipeline
+	-Get-XIOInitiatorGroup someIG | Get-XIOInitiatorGroupFolder
+
+
+
 
 
 
