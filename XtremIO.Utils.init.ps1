@@ -388,7 +388,7 @@ Add-Type -TypeDefinition @"
 			public System.String Uri;
 			public System.Int32 UsedLogicalTB;
 			public System.String VaaiTPAlertsCfg;
-			public System.Object[] VolId;
+			public System.String VolId;
 			public System.Double VolSizeTB;
 			public System.Object[] XmsId;
 
@@ -409,6 +409,7 @@ Add-Type -TypeDefinition @"
 			public System.String ParentFolderId;
 			public System.Object PerformanceInfo;
 			public System.String Uri;
+			public System.String[] VolIdList;
 			public System.Int32 VolSizeTB;
 			public System.Object[] XmsId;
 

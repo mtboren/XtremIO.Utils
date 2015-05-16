@@ -998,7 +998,7 @@ function _New-Object_fromItemTypeAndContent {
 				Name = $oContent.name
 				NaaName = $oContent."naa-name"
 				VolSizeTB = $oContent."vol-size" / 1GB
-				VolId = $oContent."vol-id"  ## renamed from "vol-id"
+				VolId = $oContent."vol-id"[0]  ## renamed from "vol-id"
 				AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
 				AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
 				DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
@@ -1088,6 +1088,8 @@ function _New-Object_fromItemTypeAndContent {
 				ParentFolderId = $oContent."parent-folder-id"[0]
 				NumChild = [int]$oContent."num-of-direct-objs"
 				NumSubfolder = [int]$oContent."num-of-subfolders"
+				## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
+				VolIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
 				Index = [int]$oContent.index
 				IOPS = [int64]$oContent.iops
 				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
