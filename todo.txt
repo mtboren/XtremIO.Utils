@@ -19,6 +19,8 @@ todo:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -add pipelining abilities for things like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
+	Get-XIOInitiatorGroup | Get-XIOLunMap
+	Get-XIOVolume | Get-XIOLunMap
 	## currently behaves unexpectedly when using something like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
 	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
@@ -54,12 +56,6 @@ todo:
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 #>
-	Get-XIOInitiatorGroup | Get-XIOInitiator
-	Get-XIOInitiatorGroup | Get-XIOLunMap
-	Get-XIOInitiatorGroup | Get-XIOVolume
-	Get-XIOVolume | Get-XIOLunMap
-		-LunMappingList property on Volume is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>);
-		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 -add Catch for explicit DownloadString exception:
 	VERBOSE: Uh-oh -- something went awry trying to get data from that URI
 	('https://somexms.dom.com/api/json/types'). A pair of guesses:  no such XMS appliance, or that item type is not
@@ -209,14 +205,23 @@ done for version 0.next (after 0.7.0):
 -fixed ParameterSet bug where specifying URI to most Get-* cmdlets (excluding the Get-*Performance cmdlets) was also passing the -ItemType to Get-XIOItemInfo, when the -ItemType should _not_ be passed when getting item by URI
 	affected:  Get-XIOBrick, Get-XIOCluster, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOXenv
 -added support for getting Initiator by PortAddress
+-added support for getting Initiator by InitiatorGrpId, including by pipeline
+	Get-XIOInitiatorGroup someIG | Get-XIOInitiator
 -added support for getting InitiatorGroup by InitatorGrpId, including by pipeline
 	-Get-XIOInitator someInitiatorName | Get-XIOInitiatorGroup
 	-Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
+	-Get-XIOVolume myVol0 | Get-XIOInitiatorGroup
+	-Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
 -added support for getting InitiatorGroupFolder by InitatorGrpId, including by pipeline
 	-Get-XIOInitiatorGroup someIG | Get-XIOInitiatorGroupFolder
 -added support for getting Volume and Snapshot by VolId, including by pipeline
 	Get-XIOVolumeFolder /someVolumeFolder | Get-XIOVolume
 	Get-XIOVolumeFolder /someVolumeFolder | Get-XIOSnapshot
+-added support for getting Volume and Snapshot by InitiatorGrpId, including by pipeline
+	Get-XIOInitiatorGroup myIgroup0 | Get-XIOVolume
+	Get-XIOInitiatorGroup myIgroup0 | Get-XIOSnapshot
+		-on Volume object, LunMappingList property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
+		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 -added support for getting VolumeFolder by VolId, including by pipeline
 	Get-XIOVolume myVol0 | Get-XIOVolumeFolder
 

@@ -1006,6 +1006,8 @@ function _New-Object_fromItemTypeAndContent {
 				NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
 				NumLunMapping = $oContent."num-of-lun-mappings"
 				LunMappingList = $oContent."lun-mapping-list"
+				## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
+				InitiatorGrpIdList = $oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}
 				## available in 2.4.0 and up
 				UsedLogicalTB = $(if (Get-Member -Input $oContent -Name "logical-space-in-use") {$oContent."logical-space-in-use" / 1GB} else {$null})
 				IOPS = [int64]$oContent.iops

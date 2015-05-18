@@ -368,6 +368,7 @@ Add-Type -TypeDefinition @"
 			public System.DateTime CreationTime;
 			public System.Object[] DestSnapList;
 			public System.Int32 Index;
+			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
 			public System.Int32 LBSize;
 			public System.String LuName;
