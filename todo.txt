@@ -3,6 +3,8 @@ todo:
 	-with the general "here's the module, here are some ways to use it"
 -New-XioApiURI does a "break" instead of throwing an error; ("not continuing" text at some point, and that caused try/catch to just exit instead of actually get caught)
 	-change this to throw error
+-update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+-arrange properties in .NET obj definitions to be in desired order, instead of alphabetical?
 -add Set-, Remove- cmdlets
 	Set:
 		-make sure that Set-XioItemInfo is solid, then work on:
@@ -17,7 +19,8 @@ todo:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -add pipelining abilities for things like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
-	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroup
+	Get-XIOInitiatorGroup | Get-XIOLunMap
+	Get-XIOVolume | Get-XIOLunMap
 	## currently behaves unexpectedly when using something like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
 	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
@@ -53,13 +56,9 @@ todo:
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 #>
-	Get-XIOInitiatorGroup | Get-XIOInitiator
-	Get-XIOInitiatorGroup | Get-XIOInitiatorGroupFolder
-	Get-XIOInitiatorGroup | Get-XIOLunMap
-	Get-XIOInitiatorGroup | Get-XIOVolume
-	Get-XIOVolumeFolder | Get-XIOVolume
-	Get-XIOVolume | Get-XIOLunMap
-	Get-XIOVolume | Get-XIOVolumeFolder
+-update pipelining behavior for things like:
+	Get-XioVolumeFolder /someFolderWithNoDirectVolumes | Get-XioVolume
+		-to just return $null, instead of throwing error about " The input object cannot be bound to any parameters for the command either because the command does not take pipeline input or the input and its properties do not match any of the parameters that take pipeline input", which happens when .VolIdList is $null in this example
 -add Catch for explicit DownloadString exception:
 	VERBOSE: Uh-oh -- something went awry trying to get data from that URI
 	('https://somexms.dom.com/api/json/types'). A pair of guesses:  no such XMS appliance, or that item type is not
@@ -189,18 +188,47 @@ done for version 0.next (after 0.7.0):
 			"Target-Group" -> TargetGroup
 			"Volume-Folder" -> VolumeFolder
 			"Volume-FolderPerformance" -> VolumeFolderPerformance
-	-added OutputType to cmdlets once types were defined
-		done:
-			Connect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStoredCred, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOStoredCred, New-XIOVolume, New-XIOVolumeFolder
-		none needed:
-			Disconnect-XIOServer, Get-XIOItemInfo, Open-XIOMgmtConsole, Remove-XIOStoredCred, Update-TitleBarForXioConnection
-		-some required changing code to take the "-" out of type names, and taking dashes out of TypeName in formats ps1xml
-			Changed PSTypeName piece to include ".Replace('-','')", to remove dashes from TypeNames
-	-added some C# that defines types
-		-included something that calls that definition/types file when the module is loaded
+	-included something that calls that definition/types file when the module is loaded
+-changed property values to be more usable (partially in support of adding pipelining support)
+	-on Initiator and InitiatorGroup objects:
+		-InitiatorGrpId property now is a string that is just the ID, instead of the array of three strings which was @(<initiator group ID string>, <initiator group name>, <initiator group object index number>)
+	-on Volume and Snapshot objects:
+		-VolId property now is a string that is just the ID, instead of the array of three strings which was @(<volume ID string>, <volume name>, <volume object index number>)
+-added property to IgFolder objects that is the list of IDs of the initiator groups that reside directly in the given IgFolder
+-added OutputType to cmdlets once types were defined
+	done:
+		Connect-XIOServer, Get-XIOBrick, Get-XIOCluster, Get-XIOClusterPerformance, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStoredCred, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance, Get-XIOXenv, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOStoredCred, New-XIOVolume, New-XIOVolumeFolder
+	none needed:
+		Disconnect-XIOServer, Get-XIOItemInfo, Open-XIOMgmtConsole, Remove-XIOStoredCred, Update-TitleBarForXioConnection
+	-some required changing code to take the "-" out of type names, and taking dashes out of TypeName in formats ps1xml
+		Changed PSTypeName piece to include ".Replace('-','')", to remove dashes from TypeNames
 -updated piece that makes the objects to return; returns "fully" legit objects now, by using proper typename for New-Object, instead of inserting PSTypeName into PSObject after the fact
 -fixed ParameterSet bug where specifying URI to most Get-* cmdlets (excluding the Get-*Performance cmdlets) was also passing the -ItemType to Get-XIOItemInfo, when the -ItemType should _not_ be passed when getting item by URI
 	affected:  Get-XIOBrick, Get-XIOCluster, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOXenv
+-added support for getting Initiator by PortAddress
+-added support for getting Initiator by InitiatorGrpId, including by pipeline
+	Get-XIOInitiatorGroup someIG | Get-XIOInitiator
+-added support for getting InitiatorGroup by InitatorGrpId, including by pipeline
+	-Get-XIOInitator someInitiatorName | Get-XIOInitiatorGroup
+	-Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
+	-Get-XIOVolume myVol0 | Get-XIOInitiatorGroup
+	-Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
+-added support for getting InitiatorGroupFolder by InitatorGrpId, including by pipeline
+	-Get-XIOInitiatorGroup someIG | Get-XIOInitiatorGroupFolder
+-added support for getting Volume and Snapshot by VolId, including by pipeline
+	Get-XIOVolumeFolder /someVolumeFolder | Get-XIOVolume
+	Get-XIOVolumeFolder /someVolumeFolder | Get-XIOSnapshot
+-added support for getting Volume and Snapshot by InitiatorGrpId, including by pipeline
+	Get-XIOInitiatorGroup myIgroup0 | Get-XIOVolume
+	Get-XIOInitiatorGroup myIgroup0 | Get-XIOSnapshot
+		-on Volume object, LunMappingList property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
+		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
+-added support for getting VolumeFolder by VolId, including by pipeline
+	Get-XIOVolume myVol0 | Get-XIOVolumeFolder
+
+
+
+
 
 
 

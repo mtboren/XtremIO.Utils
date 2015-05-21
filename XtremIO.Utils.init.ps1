@@ -132,6 +132,7 @@ Add-Type -TypeDefinition @"
 			public System.String ComputerName;
 			public System.Object[] FolderId;
 			public System.Int32 Index;
+			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
 			public System.String Name;
 			public System.Int32 NumIG;
@@ -154,7 +155,7 @@ Add-Type -TypeDefinition @"
 			public System.String ComputerName;
 			public System.String ConnectionState;
 			public System.Int32 Index;
-			public System.Object[] InitiatorGrpId;
+			public System.String InitiatorGrpId;
 			public System.Object[] InitiatorId;
 			public System.Int64 IOPS;
 			public System.String Name;
@@ -170,7 +171,7 @@ Add-Type -TypeDefinition @"
 		public class InitiatorGroup {
 			public System.String ComputerName;
 			public System.Int32 Index;
-			public System.Object[] InitiatorGrpId;
+			public System.String InitiatorGrpId;
 			public System.Int64 IOPS;
 			public System.String Name;
 			public System.Int32 NumInitiator;
@@ -367,6 +368,7 @@ Add-Type -TypeDefinition @"
 			public System.DateTime CreationTime;
 			public System.Object[] DestSnapList;
 			public System.Int32 Index;
+			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
 			public System.Int32 LBSize;
 			public System.String LuName;
@@ -387,7 +389,7 @@ Add-Type -TypeDefinition @"
 			public System.String Uri;
 			public System.Int32 UsedLogicalTB;
 			public System.String VaaiTPAlertsCfg;
-			public System.Object[] VolId;
+			public System.String VolId;
 			public System.Double VolSizeTB;
 			public System.Object[] XmsId;
 
@@ -408,6 +410,7 @@ Add-Type -TypeDefinition @"
 			public System.String ParentFolderId;
 			public System.Object PerformanceInfo;
 			public System.String Uri;
+			public System.String[] VolIdList;
 			public System.Int32 VolSizeTB;
 			public System.Object[] XmsId;
 
