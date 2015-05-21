@@ -21,6 +21,8 @@ todo:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
 	Get-XIOInitiatorGroup | Get-XIOLunMap
 	Get-XIOVolume | Get-XIOLunMap
+		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
+		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 	## currently behaves unexpectedly when using something like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
 	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
@@ -143,7 +145,18 @@ todo:
 
 
 
-done for version 0.next (after 0.7.0):
+done for version 0.next (after 0.8.0):
+
+
+
+
+
+
+
+
+
+
+done for version 0.8.0:
 -added additional parameters to New-XIOVolume cmdlet (as exposed in xmcli "add-volume" cmd); can set small-io-alerts, unaligned-io-alerts, vaai-tp-alerts to "enabled" or "disabled"; implemented as switch params
 	-Volume was the only one with additional options for now; Initiator, InitiatorGroup, InitiatorGroupFolder, VolumeFolder, LunMap had no more interesting (aside from Initiator's ISCSI items, which this module does not yet support)
 -published fn Update-TitleBarForXioConnection (title bar sometimes gets whacked by PowerCLI things)
@@ -221,15 +234,8 @@ done for version 0.next (after 0.7.0):
 -added support for getting Volume and Snapshot by InitiatorGrpId, including by pipeline
 	Get-XIOInitiatorGroup myIgroup0 | Get-XIOVolume
 	Get-XIOInitiatorGroup myIgroup0 | Get-XIOSnapshot
-		-on Volume object, LunMappingList property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 -added support for getting VolumeFolder by VolId, including by pipeline
 	Get-XIOVolume myVol0 | Get-XIOVolumeFolder
-
-
-
-
-
 
 
 

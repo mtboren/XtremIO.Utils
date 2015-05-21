@@ -1,6 +1,89 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.8.0
+
+Several great improvements in this release, most of which were centered around adding pipelining support for objects returns from cmdlets (hurray for all of us, especially Greg D.).  These required updates that ranged from defining legitimate Types to adding more parameters on cmdlets to adding/renaming properties to/on objects.  Some of these property- and object name changes could affect existing scripts that leverage the module, but were necessary for adherence to things like .NET standards. The list of changes/updates:
+
+- \[improvement] added parameters to `New-XIOVolume` cmdlet: can now set `SmallIoAlerts`, `UnalignedIoAlerts`, and `VaaiTpAlerts` volume properties to `enabled` or `disabled`; implemented as switch params
+- \[update] published the function `Update-TitleBarForXioConnection` so that user can invoke said function at will (it is what sets the PowerShell window title bar with XIO connection info, and is invoked internally by the `Connect-XIOServer` / `Disconnect-XIOServer` cmdlets)
+- \[improvement] defined output types made by module, used `Add-Type` to add them to session at module load time. This required renaming types and properties (boo for that) that had a dash in their name to not have a dash (.NET properties should not have a dash)
+	- types renamed:
+
+			"Data-Protection-Group" -> DataProtectionGroup
+			"Data-Protection-GroupPerformance" -> DataProtectionGroupPerformance
+			"Ig-Folder" -> IgFolder
+			"Ig-FolderPerformance" -> IgFolderPerformance
+			"Initiator-Group" -> InitiatorGroup
+			"Initiator-GroupPerformance" -> InitiatorGroupPerformance
+			"Lun-Map" -> LunMap
+			"Storage-Controller" -> StorageController
+			"Target-Group" -> TargetGroup
+			"Volume-Folder" -> VolumeFolder
+			"Volume-FolderPerformance" -> VolumeFolderPerformance
+	- properties renamed across all object types that had them:
+
+			"brick-id" -> BrickId
+			"rg-id" -> RGrpId
+			"ssd-slot-array" -> SsdSlotInfo
+			"xms-id" -> XmsId
+			"ig-id" -> InitiatorGrpId
+			"initiator-id" -> InitiatorId
+			"lu-name" -> LuName
+			"small-io-ratio" -> SmallIORatio
+			"small-io-ratio-level" -> SmallIORatioLevel
+			"snapgrp-id" -> SnapGrpId
+			"unaligned-io-ratio" -> UnalignedIORatio
+			"unaligned-io-ratio-level" -> UnalignedIORatioLevel
+			"sys-id" -> SysId
+			"ssd-id" -> SsdId
+			"ssd-rg-state" -> SsdRGrpState
+			"ssd-uid" -> SsdUid
+			"xenv-id" -> XEnvId
+			"xenv-state" -> XEnvState
+			"ig-index" -> InitiatorGrpIndex
+			"tg-name" -> TargetGrpName
+			"tg-index" -> TargetGrpIndex
+			"tg-id" -> TargetGrpId
+			"vol-index" -> VolumeIndex
+			"os-version" -> OSVersion
+			"IMPIState" -> IPMIState
+- \[improvement] updated piece that makes the objects to return to now return "fully" legit objects, by using proper TypeName for `New-Object`, instead of inserting PSTypeName into PSObject properties after the fact (useful for many things, including detection of object type -- was not necessarily expected type when using PSTypeName insertion method of adding type)
+- \[improvement] added OutputType to cmdlets once types were defined, which, along with having proper types, allows for leveraging other handy/convenient PowerShell features like tab-completion of property names on the command line while constructing the pipeline
+- \[update] changed property values to be more usable (partially in support of adding pipelining support)
+	- on `Initiator` and `InitiatorGroup` objects:
+		- `InitiatorGrpId` property now is a string that is just the ID, instead of the array of three strings which was `<initiator group ID string>, <initiator group name>, <initiator group object index number>`
+	- on `Volume` and `Snapshot` objects:
+		- `VolId` property now is a string that is just the ID, instead of the array of three strings which was `<volume ID string>, <volume name>, <volume object index number>`
+- \[update] added property `InitiatorGrpIdList` to `IgFolder` objects that is the list of IDs of the initiator groups that reside directly in the given `IgFolder`
+- \[improvement] added support for getting Initiator by PortAddress
+- \[improvement] added support for getting Initiator by InitiatorGrpId, including by pipeline:
+
+		Get-XIOInitiatorGroup someIG | Get-XIOInitiator
+- \[improvement] added support for getting InitiatorGroup by InitatorGrpId, including by pipeline:
+
+		Get-XIOInitator someInitiatorName | Get-XIOInitiatorGroup
+		Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
+		Get-XIOVolume myVol0 | Get-XIOInitiatorGroup
+		Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
+- \[improvement] added support for getting InitiatorGroupFolder by InitatorGrpId, including by pipeline:
+
+		Get-XIOInitiatorGroup someIG | Get-XIOInitiatorGroupFolder
+- \[improvement] added support for getting Volume and Snapshot by VolId, including by pipeline:
+
+		Get-XIOVolumeFolder /someVolumeFolder | Get-XIOVolume
+		Get-XIOVolumeFolder /someVolumeFolder | Get-XIOSnapshot
+- \[improvement] added support for getting Volume and Snapshot by InitiatorGrpId, including by pipeline
+
+		Get-XIOVolumeFolder /someVolumeFolder | Get-XIOVolume
+		Get-XIOVolumeFolder /someVolumeFolder | Get-XIOSnapshot
+- \[improvement] added support for getting VolumeFolder by VolId, including by pipeline:
+
+		Get-XIOVolume myVol0 | Get-XIOVolumeFolder
+- \[bugfix] fixed ParameterSet bug where specifying URI to most `Get-XIO*` cmdlets (excluding the `Get-XIO*Performance` cmdlets) was also passing the `-ItemType` to internal function, which caused problems/errors
+- \[bugfix] corrected minor typo in changelog (thanks AC)
+
+
 ### v0.7.0 ###
 30 Nov 2014
 
