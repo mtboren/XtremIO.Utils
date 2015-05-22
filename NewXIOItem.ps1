@@ -56,7 +56,7 @@ function New-XIOItem {
 
 					## try request
 					try {
-						Write-Debug "$strLogEntry_ToAdd hshParamsToCreateNewXIOItem: `n$($hshParamsToCreateNewXIOItem | Format-Table | Out-String)"
+						Write-Debug "$strLogEntry_ToAdd hshParamsToCreateNewXIOItem: `n$(dWrite-ObjectToTableString -ObjectToStringify $hshParamsToCreateNewXIOItem)"
 						$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem
 					} ## end try
 					## catch, write-error, break
@@ -83,7 +83,7 @@ function New-XIOItem {
 	New-XIOInitiatorGroup -Name testIG0 -ParentFolder "/testIGs" -InitiatorList @{"myserver-hba2" = "10:00:00:00:00:00:00:F4"; "myserver-hba3" = "10:00:00:00:00:00:00:F5"}
 	Create an initiator-group named testIG0 with two initiators defined therein
 	.Outputs
-	XioItemInfo object for the newly created object if successful
+	XioItemInfo.InitiatorGroup object for the newly created object if successful
 #>
 function New-XIOInitiatorGroup {
 	[CmdletBinding(SupportsShouldProcess=$true)]
@@ -154,7 +154,7 @@ function New-XIOInitiatorGroup {
 	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54
 	Create a new initiator in the initiator group "myserver0"
 	.Outputs
-	XioItemInfo object for the newly created object if successful
+	XioItemInfo.Initiator object for the newly created object if successful
 #>
 function New-XIOInitiator {
 	[CmdletBinding(SupportsShouldProcess=$true)]
@@ -215,7 +215,7 @@ function New-XIOInitiator {
 	New-XIOInitiatorGroupFolder -Name someDeeperFolder -ParentFolder /myMainIGroups
 	Create a subfolder "someDeeperFolder" in parent folder "/myMainIGroups"
 	.Outputs
-	XioItemInfo object for the newly created object if successful
+	XioItemInfo.IgFolder object for the newly created object if successful
 #>
 function New-XIOInitiatorGroupFolder {
 	[CmdletBinding(SupportsShouldProcess=$true)]
@@ -261,7 +261,7 @@ function New-XIOInitiatorGroupFolder {
 	New-XIOLunMap -Volume someVolume02 -InitiatorGroup myIG0,myIG1 -HostLunId 21
 	Create a new LUN mapping for volume "someVolume02" to the two given initiator groups, using host LUN ID of 21
 	.Outputs
-	XioItemInfo object for the newly created object if successful
+	XioItemInfo.LunMap object for the newly created object if successful
 #>
 function New-XIOLunMap {
 	[CmdletBinding(SupportsShouldProcess=$true)]
@@ -329,7 +329,7 @@ function New-XIOLunMap {
 	New-XIOVolume -Name testvol05 -SizeGB 5KB -ParentFolder "/testVols" -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert
 	Create a 5TB volume named testvol05 with all three alert types enabled
 	.Outputs
-	XioItemInfo object for the newly created object if successful
+	XioItemInfo.Volume object for the newly created object if successful
 #>
 function New-XIOVolume {
 	[CmdletBinding(SupportsShouldProcess=$true)]
@@ -408,7 +408,7 @@ function New-XIOVolume {
 	New-XIOVolumeFolder -Name someDeeperFolder -ParentFolder /myMainVols
 	Create a subfolder "someDeeperFolder" in parent folder "/myMainVols"
 	.Outputs
-	XioItemInfo object for the newly created object if successful
+	XioItemInfo.VolumeFolder object for the newly created object if successful
 #>
 function New-XIOVolumeFolder {
 	[CmdletBinding(SupportsShouldProcess=$true)]

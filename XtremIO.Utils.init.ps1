@@ -38,6 +38,7 @@ Add-Type -TypeDefinition @"
 			public System.String FcPortSpeed;
 			public System.String FreespaceLevel;
 			public System.Double FreeSSDTB;
+			public System.Int32 Index;
 			public System.Object[] InfiniBandSwitchList;
 			public System.Int64 IOPS;
 			public System.String LicenseId;
@@ -49,7 +50,7 @@ Add-Type -TypeDefinition @"
 			public System.Int32 NumVol;
 			public System.Int32 NumXenv;
 			public System.String OverallEfficiency;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.String SharedMemEfficiencyLevel;
 			public System.String SharedMemInUseRatioLevel;
 			public System.String SizeAndCapacity;
@@ -85,7 +86,7 @@ Add-Type -TypeDefinition @"
 			public System.String Name;
 			public System.Int32 NumNode;
 			public System.Int32 NumSSD;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.Boolean RebalanceInProg;
 			public System.Int32 RebalanceProgress;
 			public System.Boolean RebuildInProg;
@@ -131,13 +132,14 @@ Add-Type -TypeDefinition @"
 			public System.String ComputerName;
 			public System.Object[] FolderId;
 			public System.Int32 Index;
+			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
 			public System.String Name;
 			public System.Int32 NumIG;
 			public System.Int32 NumSubfolder;
 			public System.String ParentFolder;
 			public System.String ParentFolderId;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.Object[] SubfolderList;
 			public System.String Uri;
 			public System.Object[] XmsId;
@@ -153,11 +155,11 @@ Add-Type -TypeDefinition @"
 			public System.String ComputerName;
 			public System.String ConnectionState;
 			public System.Int32 Index;
-			public System.Object[] InitiatorGrpId;
+			public System.String InitiatorGrpId;
 			public System.Object[] InitiatorId;
 			public System.Int64 IOPS;
 			public System.String Name;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.String PortAddress;
 			public System.String PortType;
 			public System.String Uri;
@@ -169,12 +171,12 @@ Add-Type -TypeDefinition @"
 		public class InitiatorGroup {
 			public System.String ComputerName;
 			public System.Int32 Index;
-			public System.Object[] InitiatorGrpId;
+			public System.String InitiatorGrpId;
 			public System.Int64 IOPS;
 			public System.String Name;
 			public System.Int32 NumInitiator;
 			public System.Int32 NumVol;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.String Uri;
 			public System.Object[] XmsId;
 
@@ -253,7 +255,7 @@ Add-Type -TypeDefinition @"
 			public System.String PartNumber;
 			public System.Int32 PctEnduranceLeft;
 			public System.String PctEnduranceLeftLvl;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.Object[] RGrpId;
 			public System.String SerialNumber;
 			public System.Int32 SlotNum;
@@ -287,7 +289,7 @@ Add-Type -TypeDefinition @"
 			public System.String EnabledState;
 			public System.String EncryptionMode;
 			public System.String EncryptionSwitchStatus;
-			public System.Management.Automation.PSCustomObject FcHba;
+			public System.Object FcHba;
 			public System.String HealthState;
 			public System.String IBAddr1;
 			public System.String IBAddr2;
@@ -303,7 +305,7 @@ Add-Type -TypeDefinition @"
 			public System.Int32 NumSSDDown;
 			public System.Int32 NumTargetDown;
 			public System.String OSVersion;
-			public System.Management.Automation.PSCustomObject PCI;
+			public System.Object PCI;
 			public System.String PoweredState;
 			public System.String RemoteJournalHealthState;
 			public System.Object[] SAS;
@@ -322,19 +324,19 @@ Add-Type -TypeDefinition @"
 			public System.Object[] BrickId;
 			public System.String ComputerName;
 			public System.String DriverVersion;
-			public System.Management.Automation.PSCustomObject FCIssue;
+			public System.Object FCIssue;
 			public System.String FWVersion;
-			public System.Object[] Id;
 			public System.Int32 Index;
 			public System.Int64 IOPS;
 			public System.Boolean JumboFrameEnabled;
 			public System.Int32 MTU;
 			public System.String Name;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.String PortAddress;
 			public System.String PortSpeed;
 			public System.String PortState;
 			public System.String PortType;
+			public System.Object[] TargetGrpId;
 			public System.String Uri;
 
 			// Implicit constructor
@@ -366,6 +368,7 @@ Add-Type -TypeDefinition @"
 			public System.DateTime CreationTime;
 			public System.Object[] DestSnapList;
 			public System.Int32 Index;
+			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
 			public System.Int32 LBSize;
 			public System.String LuName;
@@ -374,7 +377,7 @@ Add-Type -TypeDefinition @"
 			public System.String Name;
 			public System.Int32 NumDestSnap;
 			public System.Int32 NumLunMapping;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.String SmallIOAlertsCfg;
 			public System.String SmallIORatio;
 			public System.String SmallIORatioLevel;
@@ -386,7 +389,7 @@ Add-Type -TypeDefinition @"
 			public System.String Uri;
 			public System.Int32 UsedLogicalTB;
 			public System.String VaaiTPAlertsCfg;
-			public System.Object[] VolId;
+			public System.String VolId;
 			public System.Double VolSizeTB;
 			public System.Object[] XmsId;
 
@@ -405,8 +408,9 @@ Add-Type -TypeDefinition @"
 			public System.Int32 NumVol;
 			public System.String ParentFolder;
 			public System.String ParentFolderId;
-			public System.Management.Automation.PSCustomObject PerformanceInfo;
+			public System.Object PerformanceInfo;
 			public System.String Uri;
+			public System.String[] VolIdList;
 			public System.Int32 VolSizeTB;
 			public System.Object[] XmsId;
 

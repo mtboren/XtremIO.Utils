@@ -242,6 +242,27 @@ function _Find-CredentialToUse {
 } ## end function
 
 
+function _Test-TypeOrString {
+	<# .Description
+		Helper function to test if object is either of type String or $Type
+		.Outputs
+		Boolean -- $true if objects are all either String or the given $Type; $false otherwise
+	#>
+	param (
+		## Object to test
+		[parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][PSObject[]]$ObjectToTest,
+		## Type of object for which to check
+		[parameter(Mandatory=$true)][Type]$Type
+	) ## end param
+
+	process {
+		## make sure that all values are either a String or a Cluster obj
+		$arrCheckBoolValues = $ObjectToTest | Foreach-Object {($_ -is [System.String]) -or ($_ -is $Type)}
+		return (($arrCheckBoolValues -contains $true) -and ($arrCheckBoolValues -notcontains $false))
+	} ## end process
+} ## end function
+
+
 <#	.Description
 	Set PowerShell title bar to reflect currently connected XMS servers' names
 #>
@@ -270,6 +291,10 @@ function Get-XioConnectionsToUse {
 		## Computer names to check for in default XMS servers list (if any; if $null, will use all)
 		[string[]]$ComputerName_arr
 	)
+
+	## string to add to messages written by this function; function name in square brackets
+	$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+
 	## if connected to any XIO servers
 	if (($Global:DefaultXmsServers | Measure-Object).Count -gt 0) {
 		## array of XIO connection names to potentially use
@@ -284,7 +309,7 @@ function Get-XioConnectionsToUse {
 					$oXioConnectionWithNameLikeThisConnectionName = $Global:DefaultXmsServers | Where-Object {$_.ComputerName -like $strThisConnectionName}
 					## if there was a matching connection, return it
 					if ($null -ne $oXioConnectionWithNameLikeThisConnectionName) {$oXioConnectionWithNameLikeThisConnectionName}
-					else {Write-Verbose "no connection to '$strThisConnectionName', not using"}
+					else {Write-Verbose "$strLogEntry_ToAdd no connection to '$strThisConnectionName', not using"}
 				} ## end foreach-object
 			} ## end if
 			## else, use all connections
@@ -293,7 +318,7 @@ function Get-XioConnectionsToUse {
 	else {Write-Warning "no XIO connections; connect first, and then try something"; break}
 
 	$intNumConnectionsToUse = ($arrXioConnectionsToUse | Measure-Object).Count
-	if ($null -ne $arrXioConnectionsToUse) { Write-Verbose ("continuing with call, using '{0}' XIO connection{1}" -f $intNumConnectionsToUse, $(if ($intNumConnectionsToUse -ne 1) {"s"})); return $arrXioConnectionsToUse}
+	if ($null -ne $arrXioConnectionsToUse) { Write-Verbose ("$strLogEntry_ToAdd continuing with call, using '{0}' XIO connection{1}" -f $intNumConnectionsToUse, $(if ($intNumConnectionsToUse -ne 1) {"s"})); return $arrXioConnectionsToUse}
 	else {Write-Warning ("not connected to specified computer{0}; check name{0} and try again" -f $(if (($arrConnectionNamesToUse | Measure-Object).Count -ne 1) {"s"})); break}
 } ## end function
 
@@ -370,7 +395,15 @@ function dWrite-ObjectToTableString {
 	.Outputs
 	PSCustomObject with info about given XtremIO input item type
 #>
-function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string]$argItemType, [parameter(Mandatory=$true)][PSCustomObject]$oContent) {
+function _New-Object_fromItemTypeAndContent {
+	param (
+		## the XIOS API item type; "initiator-groups", for example
+		[parameter(Mandatory=$true)][string]$argItemType,
+		## the raw content returned by the API GET call, from which to get data
+		[parameter(Mandatory=$true)][PSCustomObject]$oContent,
+		## TypeName of new object to create; "XioItemInfo.InitiatorGroup", for example
+		[parameter(Mandatory=$true)][string]$PSTypeNameForNewObj
+	)
 	## string to add to messages written by this function; function name in square brackets
 	$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 	Write-Debug "$strLogEntry_ToAdd argItemType: '$argItemType'"
@@ -422,7 +455,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 						} ## end New-Object
 					}) ## end New-Object
 				}) ## end New-object PerformanceInfo
-				InitiatorGrpId = $oContent."ig-id"
+				InitiatorGrpId = $oContent."ig-id"[0]
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
@@ -433,7 +466,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				IOPS = [int64]$oContent.iops
 				Index = $oContent.index
 				ConnectionState = $oContent."initiator-conn-state"
-				InitiatorGrpId = $oContent."ig-id"
+				InitiatorGrpId = $oContent."ig-id"[0]
 				InitiatorId = $oContent."initiator-id"
 				PortType = $oContent."port-type"
 				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
@@ -517,7 +550,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {$dblDedupeRatio})
 				ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
 				BrickList = $oContent."brick-list"
-				Index = $oContent.index
+				Index = [int]$oContent.index
 				ConsistencyState = $oContent."consistency-state"
 				## available in 2.4.0 and up
 				EncryptionMode = $oContent."encryption-mode"
@@ -692,6 +725,8 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				Name = $oContent.name
 				Caption = $oContent.caption
 				Index = $oContent.index
+				## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
+				InitiatorGrpIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
 				FolderId = $oContent."folder-id"
 				NumIG = $oContent."num-of-direct-objs"
 				NumSubfolder = $oContent."num-of-subfolders"
@@ -963,7 +998,7 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				Name = $oContent.name
 				NaaName = $oContent."naa-name"
 				VolSizeTB = $oContent."vol-size" / 1GB
-				VolId = $oContent."vol-id"  ## renamed from "vol-id"
+				VolId = $oContent."vol-id"[0]  ## renamed from "vol-id"
 				AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
 				AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
 				DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
@@ -971,6 +1006,8 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
 				NumLunMapping = $oContent."num-of-lun-mappings"
 				LunMappingList = $oContent."lun-mapping-list"
+				## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
+				InitiatorGrpIdList = $oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}
 				## available in 2.4.0 and up
 				UsedLogicalTB = $(if (Get-Member -Input $oContent -Name "logical-space-in-use") {$oContent."logical-space-in-use" / 1GB} else {$null})
 				IOPS = [int64]$oContent.iops
@@ -1053,6 +1090,8 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 				ParentFolderId = $oContent."parent-folder-id"[0]
 				NumChild = [int]$oContent."num-of-direct-objs"
 				NumSubfolder = [int]$oContent."num-of-subfolders"
+				## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
+				VolIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
 				Index = [int]$oContent.index
 				IOPS = [int64]$oContent.iops
 				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
@@ -1139,5 +1178,5 @@ function _New-Object_fromItemTypeAndContent ([parameter(Mandatory=$true)][string
 			break} ## end case
 		#### end PerformanceInfo items
 		} ## end switch
-	New-Object -Type PSObject -Property $hshPropertyForNewObj
+	New-Object -Type $PSTypeNameForNewObj -Property $hshPropertyForNewObj
 } ## end function
