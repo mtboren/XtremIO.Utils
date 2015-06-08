@@ -145,7 +145,12 @@ todo:
 
 
 
-done for version 0.next (after 0.8.0):
+
+
+
+
+
+done for version 0.next (after v0.8.1):
 
 
 
@@ -154,6 +159,12 @@ done for version 0.next (after 0.8.0):
 
 
 
+
+
+
+done for version 0.8.1:
+-updated Connect-XIOServer to return "legit" object type, instead of PSObject with inserted typename of XioItemInfo.XioConnection (so that things like "$oConnection -is [XioItemInfo.XioConnection]" return $true)
+-fixed incorrect examples in changelog
 
 
 done for version 0.8.0:

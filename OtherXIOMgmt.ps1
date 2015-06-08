@@ -161,14 +161,13 @@ function Connect-XIOServer {
 					## get the XIO info object for this XMS machine
 					$oThisXioInfo = Get-XIOInfo -ComputerName $strThisXmsName @hshArgsForGetXIOInfo
 					if ($null -ne $oThisXioInfo) {
-						 $oTmpThisXmsConnection = New-Object -Type PSObject -Property ([ordered]@{
+						 $oTmpThisXmsConnection = New-Object -Type XioItemInfo.XioConnection -Property ([ordered]@{
 							ComputerName = $strThisXmsName
 							#XIOSSwVersion = $oThisXioInfo.SWVersion
 							ConnectDatetime = (Get-Date)
 							Port = $intPortToUse
 							Credential = $Credential
 							TrustAllCert = if ($TrustAllCert) {$true} else {$false}
-							PSTypeName = "XioItemInfo.XioConnection"
 						}) ## end New-Object
 						## add connection object to global connection variable
 						$Global:DefaultXmsServers += $oTmpThisXmsConnection
