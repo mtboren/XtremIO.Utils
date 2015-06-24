@@ -150,7 +150,7 @@ todo:
 
 
 
-done for version 0.next (after v0.8.1):
+done for version 0.next (after v0.8.2):
 
 
 
@@ -160,7 +160,8 @@ done for version 0.next (after v0.8.1):
 
 
 
-
+done for version 0.8.2:
+-fixed bug where some VolSizeTB and UsedLogicalTB values were defined as Int32 types in the type definition, which lead to lack of precision due to subsequent rounding in the casting process
 
 done for version 0.8.1:
 -updated Connect-XIOServer to return "legit" object type, instead of PSObject with inserted typename of XioItemInfo.XioConnection (so that things like "$oConnection -is [XioItemInfo.XioConnection]" return $true)

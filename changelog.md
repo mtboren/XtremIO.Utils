@@ -1,6 +1,11 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.8.2
+24 Jun 2015
+
+- \[bugfix] fixed issue where some `VolSizeTB` and `UsedLogicalTB` properties were defined as `Int32` types in the type definition, which lead to lack of precision due to subsequent rounding in the casting process. Corrected, defining them as `Double` items
+
 ### v0.8.1
 08 Jun 2015
 

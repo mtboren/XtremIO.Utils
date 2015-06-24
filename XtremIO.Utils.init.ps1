@@ -387,7 +387,7 @@ Add-Type -TypeDefinition @"
 			public System.String UnalignedIORatio;
 			public System.String UnalignedIORatioLevel;
 			public System.String Uri;
-			public System.Int32 UsedLogicalTB;
+			public System.Double UsedLogicalTB;
 			public System.String VaaiTPAlertsCfg;
 			public System.String VolId;
 			public System.Double VolSizeTB;
@@ -411,7 +411,7 @@ Add-Type -TypeDefinition @"
 			public System.Object PerformanceInfo;
 			public System.String Uri;
 			public System.String[] VolIdList;
-			public System.Int32 VolSizeTB;
+			public System.Double VolSizeTB;
 			public System.Object[] XmsId;
 
 			// Implicit constructor
