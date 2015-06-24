@@ -12,10 +12,10 @@
 RootModule = 'XtremIO_UtilsMod.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.8.1'
+ModuleVersion = '0.8.2'
 
 # ID used to uniquely identify this module
-GUID = '216da744-a63e-447d-8605-a941eb3eb06a'
+GUID = 'efd3b0e4-cbf0-4272-9175-f12fa93e4cf9'
 
 # Author of this module
 Author = 'Matt Boren'
