@@ -1,6 +1,12 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.8.3
+Sep 2015
+
+- \[improvement] updated supporting function `New-XioApiURI` such that communications testing can be controlled (say, only at, `Connect-XIOServer` time) -- previously, communications were tested with every cmdlet call.  Once verified with the `Connection-XIOServer` call, the assumption is that the port does not change on the destination XMS appliance in the session (or, probably ever), so, for the sake of performance, the test is not performed at every call, now
+- \[update] added handling of `DataReduction` property calculation on `Cluster` objects that accounts for the now-missing property `data-reduction-ratio` from the XMS appliance on at least the 4.0.0-54 beta and 4.0.1-7 XIOS versions. Without this, `DataReduction` value for connections to XMS appliance of these XIOS versions would return just the `DedupeRatio` value for  `DataReduction` property
+
 ### v0.8.2
 24 Jun 2015
 
