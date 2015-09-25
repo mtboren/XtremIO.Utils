@@ -145,7 +145,7 @@ function Connect-XIOServer {
 		## if the global connection info variable does not yet exist, initialize it
 		if ($null -eq $Global:DefaultXmsServers) {$Global:DefaultXmsServers = @()}
 		## args for the Get-XIOInfo call, and for New-XioApiURI call
-		$hshArgsForGetXIOInfo = @{Credential = $Credential}; $hshArgsForNewXioApiURI = @{RestCommand = "/types"; ReturnURIAndPortInfo = $true}
+		$hshArgsForGetXIOInfo = @{Credential = $Credential}; $hshArgsForNewXioApiURI = @{RestCommand = "/types"; ReturnURIAndPortInfo = $true; TestPort = $true}
 		if ($TrustAllCert) {$hshArgsForGetXIOInfo["TrustAllCert"] = $true}
 		if ($PSBoundParameters.ContainsKey("Port")) {$hshArgsForGetXIOInfo["Port"] = $Port; $hshArgsForNewXioApiURI["Port"] = $Port}
 	} ## end begin

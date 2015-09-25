@@ -1,8 +1,12 @@
 todo:
+-Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
+	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
+-New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc)
+-New-XIOLunMap:  take initiatorgroup from pipeline (by propert of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
+-add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
+	Alerts, Object Performance, Alert Definitions, Schedulers, BBUs, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, DAEs, Storage Controller PSUs, DAE Controllers, SYR Notifiers, DAE PSUs, SYSLOG Notifiers, Email Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, XMS, Local Disks
 -add about_XtremIO.Utils.help.txt
 	-with the general "here's the module, here are some ways to use it"
--New-XioApiURI does a "break" instead of throwing an error; ("not continuing" text at some point, and that caused try/catch to just exit instead of actually get caught)
-	-change this to throw error
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -arrange properties in .NET obj definitions to be in desired order, instead of alphabetical?
 -add Set-, Remove- cmdlets
@@ -150,7 +154,7 @@ todo:
 
 
 
-done for version 0.next (after v0.8.2):
+done for version 0.next (after v0.8.3):
 
 
 
@@ -158,10 +162,16 @@ done for version 0.next (after v0.8.2):
 
 
 
+
+done for version 0.8.3:
+-updated New-XioApiURI to throw error on port-communications test failure (formerly, it did a "break" instead of throwing an error, which would cause a user's try/catch around cmdlets to just exit instead of actually get caught, as there was no error previously)
+-added TestPort param to New-XioApiURI function, and updated Connect-XIOServer to use it; that way, Connect-XIOServer causes a port-comms test, but thereafter, cmdlets assume that the port is still good, and do not test; this is to work through some performance/timeout issues that were happening in certain scenarios (when a port test was happening at high frequency, and default 2s timeout was getting hit)
+-updated DataReduction property calculation on Cluster objects:  at least the XIOS v4.0.0-54 beta and v4.0.1-7 versions no longer returned the property "data-reduction-ratio". So, added code to workaround this change so that the real DataReduction value is still accurate
 
 
 done for version 0.8.2:
 -fixed bug where some VolSizeTB and UsedLogicalTB values were defined as Int32 types in the type definition, which lead to lack of precision due to subsequent rounding in the casting process
+
 
 done for version 0.8.1:
 -updated Connect-XIOServer to return "legit" object type, instead of PSObject with inserted typename of XioItemInfo.XioConnection (so that things like "$oConnection -is [XioItemInfo.XioConnection]" return $true)
