@@ -1,7 +1,25 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.8.3
+Sep 2015
+
+- \[improvement] updated supporting function `New-XioApiURI` such that communications testing can be controlled (say, only at, `Connect-XIOServer` time) -- previously, communications were tested with every cmdlet call.  Once verified with the `Connection-XIOServer` call, the assumption is that the port does not change on the destination XMS appliance in the session (or, probably ever), so, for the sake of performance, the test is not performed at every call, now
+- \[update] added handling of `DataReduction` property calculation on `Cluster` objects that accounts for the now-missing property `data-reduction-ratio` from the XMS appliance on at least the 4.0.0-54 beta and 4.0.1-7 XIOS versions. Without this, `DataReduction` value for connections to XMS appliance of these XIOS versions would return just the `DedupeRatio` value for  `DataReduction` property
+
+### v0.8.2
+24 Jun 2015
+
+- \[bugfix] fixed issue where some `VolSizeTB` and `UsedLogicalTB` properties were defined as `Int32` types in the type definition, which lead to lack of precision due to subsequent rounding in the casting process. Corrected, defining them as `Double` items
+
+### v0.8.1
+08 Jun 2015
+
+- \[improvement] updated `Connect-XIOServer` to return "legit" object type, instead of PSObject with inserted typename of `XioItemInfo.XioConnection` (so that things like `$oConnection -is [XioItemInfo.XioConnection]` return `$true`)
+- [correction] fixed incorrect examples in changelog
+
 ### v0.8.0
+22 May 2015
 
 Several great improvements in this release, most of which were centered around adding pipelining support for objects returns from cmdlets (hurray for all of us, especially Greg D.).  These required updates that ranged from defining legitimate Types to adding more parameters on cmdlets to adding/renaming properties to/on objects.  Some of these property- and object name changes could affect existing scripts that leverage the module, but were necessary for adherence to things like .NET standards. The list of changes/updates:
 
@@ -75,8 +93,8 @@ Several great improvements in this release, most of which were centered around a
 		Get-XIOVolumeFolder /someVolumeFolder | Get-XIOSnapshot
 - \[improvement] added support for getting Volume and Snapshot by InitiatorGrpId, including by pipeline
 
-		Get-XIOVolumeFolder /someVolumeFolder | Get-XIOVolume
-		Get-XIOVolumeFolder /someVolumeFolder | Get-XIOSnapshot
+		Get-XIOInitiatorGroup myIgroup0 | Get-XIOVolume
+		Get-XIOInitiatorGroup myIgroup0 | Get-XIOSnapshot
 - \[improvement] added support for getting VolumeFolder by VolId, including by pipeline:
 
 		Get-XIOVolume myVol0 | Get-XIOVolumeFolder
@@ -94,7 +112,7 @@ Hottest new feature:  Added `Connect-XIOServer` and `Disconnect-XIOServer` cmdle
 - added performance-specific cmdlets for retrieving performance data for given types:
 	- `Get-XIOClusterPerformance`, `Get-XIODataProtectionGroupPerformance`, `Get-XIOInitiatorGroupFolderPerformance`, `Get-XIOInitiatorGroupPerformance`, `Get-XIOInitiatorPerformance`, `Get-XIOSsdPerformance`, `Get-XIOTargetPerformance`, `Get-XIOVolumeFolderPerformance`, `Get-XIOVolumePerformance`
 	- included the ability to do "refresh interval" kind of performance data returns (similar to the "frequency" and "duration" types of options in the xmcli) -- see the help on these new cmdlets for examples
-	- the performance data is still available via structured properties in these object types' "normal" `Get-*` cmdlets, as introduced in v0.6.0, but the performance-specific cmdlets aim to get the pertinent info on one screen 
+	- the performance data is still available via structured properties in these object types' "normal" `Get-*` cmdlets, as introduced in v0.6.0, but the performance-specific cmdlets aim to get the pertinent info on one screen
 - added `Get-XIODataProtectionGroup` for getting XIO data-protection-groups (available in XIOS API v2.4 and up)
 - added `Get-XIOEvent` for getting XIO events (available in XIOS API v2.4 and up)
 - updated `Get-XIOLunMap` with new parameters for filtering return:  `-Volume`, `-InitiatorGroup`, `-HostLunId`

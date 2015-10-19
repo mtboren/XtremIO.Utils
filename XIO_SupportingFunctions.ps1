@@ -86,7 +86,9 @@ function New-XioApiURI {
 		## REST command to use for URI
 		[parameter(Mandatory=$true)][string]$RestCommand_str,
 		## Switch:  return array output of URI,Port, instead of just URI?
-		[switch]$ReturnURIAndPortInfo
+		[switch]$ReturnURIAndPortInfo,
+		## Switch:  test comms to the given port?  Likely only used at Connect- time (after which, somewhat safe assumption that the given port is legit)
+		[switch]$TestPort
 	) ##end param
 
 	## string to add to messages written by this function; function name in square brackets
@@ -95,8 +97,11 @@ function New-XioApiURI {
 	$intPortToUse = $(
 		## if a port was specified, try to use it
 		$intPortToTry = if ($PSBoundParameters.ContainsKey("Port_int")) {$Port_int} else {$hshCfg["DefaultApiPort"]["intSSL"]}
-		if (dTest-Port -Name $ComputerName_str -Port $intPortToTry -Verbose) {$intPortToTry}
-		else {Write-Warning "machine '$ComputerName_str' not responding on port '$intPortToTry'. Not continuing"; break}
+		if ($TestPort -eq $true) {
+			if (dTest-Port -Name $ComputerName_str -Port $intPortToTry -Verbose) {$intPortToTry}
+			else {Throw "machine '$ComputerName_str' not responding on port '$intPortToTry'. Valid port that is listening? Not continuing"}
+		} ## end if
+		else {$intPortToTry}
 	) ## end subexpression
 	$strURIToUse = if ($intPortToUse -eq 443) {"https://${ComputerName_str}/api/json$RestCommand_str"}
 		else {"http://${ComputerName_str}:$intPortToUse$RestCommand_str"}
@@ -546,8 +551,8 @@ function _New-Object_fromItemTypeAndContent {
 				CompressionFactor = $(if ($null -ne $oContent."compression-factor") {$oContent."compression-factor"})
 				## available in 3.0 and up
 				CompressionMode = $(if ($null -ne $oContent."compression-mode") {$oContent."compression-mode"})
-				## available in 3.0 and up; if not present on this object (due to say, older XIOS/API version on this appliance), the data reduction rate _is_ the dedupe ratio
-				DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {$dblDedupeRatio})
+				## available in 3.x, but went away in v4.0.0-54 (beta) and v4.0.1-7; if not present on this object (due to say, older or newer XIOS/API version on this appliance), the data reduction rate _is_ either the dedupe ratio or the dedupe ratio * compression factor, if compression factor is not $null
+				DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
 				ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
 				BrickList = $oContent."brick-list"
 				Index = [int]$oContent.index
