@@ -1,8 +1,8 @@
 todo:
 -Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
 	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
--New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc)
--New-XIOLunMap:  take initiatorgroup from pipeline (by propert of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
+-New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
+-New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
 -add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
 	Alerts, Object Performance, Alert Definitions, Schedulers, BBUs, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, DAEs, Storage Controller PSUs, DAE Controllers, SYR Notifiers, DAE PSUs, SYSLOG Notifiers, Email Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, XMS, Local Disks
 -add about_XtremIO.Utils.help.txt
@@ -22,9 +22,8 @@ todo:
 	Remove:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -add pipelining abilities for things like:
-	Get-XIOInitiatorGroupFolder | Get-XIOInitiator
-	Get-XIOInitiatorGroup | Get-XIOLunMap
-	Get-XIOVolume | Get-XIOLunMap
+	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name untile adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIOVolume | Get-XIOLunMap (just by Volume name untile adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
 		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 	## currently behaves unexpectedly when using something like:
@@ -110,7 +109,6 @@ todo:
 			-hw-revision
 	-also, others listed on p198 of v3.0.1 REST API guide
 -add New-XIOSnapshot at some point
--watch for Alerts access in API:  would be good to be able to get/clear/ack Alerts
 -item types for which to add support in module:
 	## old and new APIs
 	iscsi-portals
@@ -149,7 +147,7 @@ todo:
 
 
 
-
+doing:
 
 
 
