@@ -22,7 +22,8 @@ todo:
 	Remove:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -add pipelining abilities for things like:
-	Get-XIOVolume | Get-XIOLunMap
+	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name untile adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIOVolume | Get-XIOLunMap (just by Volume name untile adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
 		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 	## currently behaves unexpectedly when using something like:
@@ -147,8 +148,6 @@ todo:
 
 
 doing:
--add pipelining abilities for things like:
-	Get-XIOInitiatorGroup | Get-XIOLunMap
 
 
 
