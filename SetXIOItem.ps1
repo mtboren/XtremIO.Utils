@@ -13,7 +13,7 @@ function Set-XIOItemInfo {
 		[ValidateSet("ig-folder", "initiator-group", "initiator", "volume", "volume-folder")]
 		[string]$ItemType_str,
 		## Item name for which to set info
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string]$Name,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("ItemName")][string]$Name,
 		## JSON for the body of the POST WebRequest, for specifying the properties for modifying the XIO object
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForSetItem_str,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
@@ -66,10 +66,10 @@ function Set-XIOItemInfo {
 				} ## end case
 				"ByXioItemInfoObj" {$XIOItemInfoObj; break}
 			} ## end switch
-		## if such an item does not exist, write a warning and stop
-		if ($null -eq $oExistingXioItem) {Write-Warning "Item of name '$Name' and type '$ItemType_str' does not exist on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"; break;} ## end if
-		## if more than one such an item exists, write a warning and stop
-		if (($oExistingXioItem | Measure-Object).Count -ne 1) {Write-Warning "More than one item like name '$Name' and of type '$ItemType_str' found on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"; break;} ## end if
+		## if such an item does not exist, throw error and stop
+		if ($null -eq $oExistingXioItem) {Throw "Item of name '$Name' and type '$ItemType_str' does not exist on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"} ## end if
+		## if more than one such an item exists, throw error and stop
+		if (($oExistingXioItem | Measure-Object).Count -ne 1) {Throw "More than one item like name '$Name' and of type '$ItemType_str' found on '$($arrXioConnectionsToUse.ComputerName -join ", ")'"} ## end if
 		## else, actually try to set properties on the object
 		else {
 			$arrXioConnectionsToUse | Foreach-Object {
@@ -162,6 +162,6 @@ function Set-XIOVolumeFolder {
 			} ## end case
 		} ## end switch
 		## call the function to actually modify this item
-		#Set-XIOItem @hshParamsForSetItem
+		Set-XIOItemInfo @hshParamsForSetItem
 	} ## end process
 } ## end function
