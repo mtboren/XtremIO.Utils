@@ -446,7 +446,11 @@ Add-Type -TypeDefinition @"
 			public System.DateTime ConnectDatetime;
 			public System.Management.Automation.PSCredential Credential;
 			public System.Int32 Port;
+			public System.Version RestApiVersion;
 			public System.Boolean TrustAllCert;
+			public System.Version XmsDBVersion;
+			public System.String XmsSWVersion;
+			public System.Version XmsVersion;
 
 			// Implicit constructor
 			public XioConnection () {}

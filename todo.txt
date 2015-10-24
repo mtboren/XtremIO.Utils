@@ -1,4 +1,7 @@
 todo:
+-have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
+-?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
+-?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that
 -Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
 	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
@@ -155,7 +158,9 @@ doing:
 
 
 done for version 0.next (after v0.8.3):
-
+-add XIOS REST API version and full XMS version (if available via XMS type -- available for XIOS v4+, but, leave blank for XIOS v3 and lower?) to XioConnection object
+	-to be used by other things that need to determine API version available, objects available, when to use Tag version VolumeFolder API path, etc.
+	-new properties on XioItemInfo.XioConnection objects:  RestApiVersion, XmsDBVersion, XmsSWVersion (string representation, like "4.0.1-41"), XmsVersion
 
 ## things below here are in changelog/readme
 
