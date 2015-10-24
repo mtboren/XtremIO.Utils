@@ -7,18 +7,18 @@ function Set-XIOItemInfo {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName", SupportsShouldProcess=$true, ConfirmImpact=[System.Management.Automation.Confirmimpact]::High)]
 	param(
 		## XMS appliance address to which to connect
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName_arr,
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item type for which to set info
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")]
 		[ValidateSet("ig-folder", "initiator-group", "initiator", "volume", "volume-folder")]
-		[string]$ItemType_str,
+		[string]$ItemType,
 		## Item name for which to set info
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("ItemName")][string]$Name,
 		## JSON for the body of the POST WebRequest, for specifying the properties for modifying the XIO object
-		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForSetItem_str,
+		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForSetItem,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## XioItemInfo object whose property to set
 		[parameter(Position=0,ParameterSetName="ByXioItemInfoObj",ValueFromPipeline)][ValidateNotNullOrEmpty()][PSObject]$XIOItemInfoObj
 	) ## end param
@@ -50,8 +50,8 @@ function Set-XIOItemInfo {
 		## get the XIO connections to use, either from ComputerName param, or from the URI
 		$arrXioConnectionsToUse = Get-XioConnectionsToUse -ComputerName $(
 			Switch ($PSCmdlet.ParameterSetName) {
-				"ByComputerName" {$ComputerName_arr; break}
-				"SpecifyFullUri" {([System.Uri]($URI_str)).DnsSafeHost; break}
+				"ByComputerName" {$ComputerName; break}
+				"SpecifyFullUri" {([System.Uri]($URI)).DnsSafeHost; break}
 				"ByXioItemInfoObj" {$XIOItemInfoObj.ComputerName}
 			})
 	} ## end begin
@@ -61,21 +61,21 @@ function Set-XIOItemInfo {
 		$oExistingXioItem = Switch ($PSCmdlet.ParameterSetName) {
 				{"ByComputerName","SpecifyFullUri" -contains $_} {
 					## make hashtable of params for the Get call (that verifies that such an object exists); remove any extra params that were copied in that are not used for the Get call, or where the param name is not quite the same in the subsequent function being called
-					$PSBoundParameters.Keys | Where-Object {"SpecForSetItem_str","WhatIf" -notcontains $_} | Foreach-Object -begin {$hshParamsForGetItem = @{}} -process {$hshParamsForGetItem[$_] = $PSBoundParameters[$_]}
+					$PSBoundParameters.Keys | Where-Object {"SpecForSetItem","WhatIf" -notcontains $_} | Foreach-Object -begin {$hshParamsForGetItem = @{}} -process {$hshParamsForGetItem[$_] = $PSBoundParameters[$_]}
 					Get-XIOItemInfo @hshParamsForGetItem; break
 				} ## end case
 				"ByXioItemInfoObj" {$XIOItemInfoObj; break}
 			} ## end switch
 		## if such an item does not exist, throw error and stop
-		if ($null -eq $oExistingXioItem) {Throw "Item of name '$Name' and type '$ItemType_str' does not exist on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"} ## end if
+		if ($null -eq $oExistingXioItem) {Throw "Item of name '$Name' and type '$ItemType' does not exist on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"} ## end if
 		## if more than one such an item exists, throw error and stop
-		if (($oExistingXioItem | Measure-Object).Count -ne 1) {Throw "More than one item like name '$Name' and of type '$ItemType_str' found on '$($arrXioConnectionsToUse.ComputerName -join ", ")'"} ## end if
+		if (($oExistingXioItem | Measure-Object).Count -ne 1) {Throw "More than one item like name '$Name' and of type '$ItemType' found on '$($arrXioConnectionsToUse.ComputerName -join ", ")'"} ## end if
 		## else, actually try to set properties on the object
 		else {
 			$arrXioConnectionsToUse | Foreach-Object {
 				$oThisXioConnection = $_
 				## the Set items' specification, from JSON; PSCustomObject with properties/values to be set
-				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem_str
+				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem
 				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
 				$strShouldProcessOutput = "Set {0} propert{1} for '{2}' object named '{3}'" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
@@ -84,7 +84,7 @@ function Set-XIOItemInfo {
 						## make URI
 						Uri = $oExistingXioItem.Uri
 						## JSON contents for body, for the params for creating the new XIO object
-						Body = $SpecForSetItem_str
+						Body = $SpecForSetItem
 						## set method
 						Method = "Put"
 						## do something w/ creds to make Headers
@@ -113,7 +113,7 @@ function Set-XIOItemInfo {
 
 
 <#	.Description
-	Modify an XtremIO volume-folder
+	Modify an XtremIO volume-folder. Not yet functional for XIOS v4 and newer
 	.Example
 	.Outputs
 	XioItemInfo.VolumeFolder object for the modified object if successful
@@ -123,17 +123,14 @@ function Set-XIOVolumeFolder {
 	[OutputType([XioItemInfo.VolumeFolder])]
 	param(
 		## XMS appliance to use
-		[parameter(Position=0)][string[]]$ComputerName_arr,
+		[parameter(Position=0)][string[]]$ComputerName,
 		## New name to set for volume
 		[parameter(Mandatory=$true)][string]$Name,
 		## Volume Folder to modify; either a VolumeFolder object or the name of the Volume folder to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][ValidateScript({
 			_Test-TypeOrString -Object $_ -Type ([XioItemInfo.VolumeFolder])
 		})]
-		[PSObject]$VolumeFolder,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[PSObject]$VolumeFolder
 	) ## end param
 
 	Begin {
@@ -143,24 +140,23 @@ function Set-XIOVolumeFolder {
 
 	Process {
 		## the API-specific pieces for modifying the XIO object's properties
+		## set argument name based on XIOS version (not functional yet -- not yet testing XIOS version, so always defaults to older-than-v4 right now)
+## INCOMPLETE:  still need to do the determination for $intXiosMajorVersion; on hold while working on addint XIOSv4 object support
+		$strNewCaptionArgName = if ($intXiosMajorVersion -lt 4) {"new-caption"} else {"caption"}
 		$hshSetItemSpec = @{
-			"new-caption" = $Name
+			$strNewCaptionArgName = $Name
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{
-			SpecForSetItem_str = $hshSetItemSpec | ConvertTo-Json
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
 		} ## end hashtable
 
-		Switch ($PsCmdlet.ParameterSetName) {
-			"SpecifyFullUri" {$hshParamsForSetItem["URI_str"] = $URI_str; break}
-			default {
-				if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder}
-				else {$hshParamsForSetItem["ItemName"] = $VolumeFolder}
-				$hshParamsForSetItem["ComputerName"] = $ComputerName_arr
-				$hshParamsForSetItem["ItemType_str"] = $strThisItemType
-			} ## end case
-		} ## end switch
+		if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder}
+		else {$hshParamsForSetItem["ItemName"] = $VolumeFolder}
+		$hshParamsForSetItem["ComputerName"] = $ComputerName
+		$hshParamsForSetItem["ItemType"] = $strThisItemType
+
 		## call the function to actually modify this item
 		Set-XIOItemInfo @hshParamsForSetItem
 	} ## end process
