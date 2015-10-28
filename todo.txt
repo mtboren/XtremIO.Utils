@@ -1,15 +1,16 @@
 todo:
--have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
 -?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
--?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that
+-?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
 -Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
 	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
--add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
-	Alerts, Object Performance, Alert Definitions, Schedulers, BBUs, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, DAEs, Storage Controller PSUs, DAE Controllers, SYR Notifiers, DAE PSUs, SYSLOG Notifiers, Email Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, XMS, Local Disks
--v4 properties to add:
+-v4 properties to add/update:
 	-IG-GUID and vol-GUID are available in XIOLunMaps -- add those as property to XIOLunMap object (InitiatorGrpID, VolumeID)
+	-on XMS object:
+		-provide DateTime property from the ISO8601 date/time string that has timezone abbreviation in it
+		-change uptime string to be a timespan (currently a string like, "144 days, 4:50:10.300000")
+		-change NTPServer to be array of addresses (if empty, is "{}" right now)
 -add about_XtremIO.Utils.help.txt
 	-with the general "here's the module, here are some ways to use it"
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
@@ -153,7 +154,17 @@ todo:
 
 
 doing:
+-have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
+	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
+	-need to update all places that specify API types as singular to use real API type name
+-have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
+-add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
+	-Alerts, Object Performance, Alert Definitions, Schedulers, BBUs, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, DAEs, Storage Controller PSUs, DAE Controllers, DAE PSUs, SYSLOG Notifiers, Email Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, XMS, Local Disks, ?SYR Notifiers?
+	-type names in v2 API:  alert-definitions, alerts, bbus, consistency-group-volumes, consistency-groups, dae-controllers, dae-psus, daes, email-notifier, infiniband-switches, ldap-configs, local-disks, performance, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts, xms
+	-include GUID type of property when possible
+	done:
 
+XMS object:  finish the Top* properties
 
 
 

@@ -21,11 +21,12 @@ function Get-XIOItemInfo {
 		## XMS appliance address to which to connect
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName_arr,
 		## Item type for which to get info; currently supported types:
-		##   for all API versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
-		##   and, for API versions 2.2.3 and up:  "brick", "snapshot", "ssd", "storage-controller", "xenv"
-		##   and, for API versions 2.4 and up:    "data-protection-group", "event", "ig-folder", "volume-folder"
+		##   for all XIOS versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
+		##   and, for XIOS versions 2.2.3 and up:  "brick", "snapshot", "ssd", "storage-controller", "xenv"
+		##   and, for XIOS versions 2.4 and up:    "data-protection-group", "event", "ig-folder", "volume-folder"
+		##   and, for XIOS version 4.0 and up:     "xms"
 		[parameter(ParameterSetName="ByComputerName")]
-		[ValidateSet("cluster", "data-protection-group", "event", "ig-folder", "initiator-group", "initiator", "lun-map", "target-group", "target", "volume", "volume-folder", "brick", "snapshot", "ssd", "storage-controller", "xenv")]
+		[ValidateSet("cluster", "data-protection-group", "event", "ig-folder", "initiator-group", "initiator", "lun-map", "target-group", "target", "volume", "volume-folder", "brick", "snapshot", "ssd", "storage-controller", "xenv", "xms")]
 		[string]$ItemType_str = "cluster",
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -67,7 +68,7 @@ function Get-XIOItemInfo {
 			## else, specifying computer name and some other attributes (not full URI)
 			else {
 				## from the param value, make the plural form (the item types in the API are all plural; adding "s" here to the singular form used for valid param values, the singular form being the standard for PowerShell-y things)
-				$strItemType_plural = "${ItemType_str}s"
+				$strItemType_plural = if (@("xms") -notcontains $ItemType_str) {"${ItemType_str}s"} else {$ItemType_str}
 				## the base portion of the REST command to issue
 				$strRestCmd_base = "/types/$strItemType_plural"
 
@@ -96,9 +97,12 @@ function Get-XIOItemInfo {
 					} ## end hsh
 					## the base info for all items of this type known by this XMS appliance (href & name pairs)
 					## the general pattern:  the property returned is named the same as the item type
-					#   however, not the case with volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
+					#   however, not the case with:
+					#     volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
+					#     xms:  the property is "xmss"
 					$strPropertyNameToAccess = Switch ($strItemType_plural) {
 													{"volume-folders","ig-folders" -contains $_} {"folders"; break}
+													"xms" {"xmss"; break}
 													default {$strItemType_plural}
 												} ## end switch
 					## get the HREF->Name objects for this type of item
@@ -157,7 +161,7 @@ function Get-XIOItemInfo {
 								$(if ($strItemType_plural -eq "events") {$oThisResponseObj.$strItemType_plural} else {$oThisResponseObj."Content"}) | Foreach-Object {
 									$oThisResponseObjectContent = $_
 									## the TypeName to use for the new object
-									$strPSTypeNameForNewObj = "XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()).Replace('-',''))"
+									$strPSTypeNameForNewObj = if ($strItemType_plural -eq "xms") {"XioItemInfo.XMS"} else {"XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()).Replace('-',''))"}
 									## make a new object with some juicy info (and a new property for the XMS "computer" name used here)
 									$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemType_plural -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj
 									## set ComputerName property
@@ -1062,6 +1066,57 @@ function Get-XIOEvent {
 		Get-XIOItemInfo @hshParamsForGetXioItemInfo
 	} ## end process
 } ## end function
+
+
+#region  new types for API v2 ####################################################################################
+<#	.Description
+	Function to get XtremIO XMS info using REST API from XtremIO XMS appliance
+	.Example
+	Get-XIOXMS
+	Request info from current XMS connection and return an object with the "XMS" info for the XMS
+	.Example
+	Get-XIOXMS
+	Get the "XMS" items
+	.Example
+	.Outputs
+	XioItemInfo.XMS
+#>
+function Get-XIOXMS {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.XMS])]
+	param(
+		## XMS appliance address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "xms"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+	} ## end begin
+
+	Process {
+		## call the base function to get the given item
+		Get-XIOItemInfo @hshParamsForGetXioInfo
+	} ## end process
+} ## end function
+
+
+
+
+
+#endregion  new types for API v2 #################################################################################
+
 
 
 #region  performance section #####################################################################################

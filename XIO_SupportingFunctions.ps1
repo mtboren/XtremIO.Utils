@@ -1154,6 +1154,101 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		#### API v2 items
+		"xms" {
+			[ordered]@{
+				Name = $oContent.name
+				Index = $oContent.index
+				XmsId = $oContent."xms-id"
+				## the software version's build number; like, "41" for SWVersion "4.0.1-41"
+				BuildNumber = [int]$oContent.build
+				Config = New-Object -Type PSObject -Property ([ordered]@{
+					AllowEmptyPassword = [boolean]$oContent."allow-empty-password"
+					DefaultUserInactivityTimeoutMin = [int]$oContent."default-user-inactivity-timeout"
+					ManagementInterface = $oContent."mgmt-interface"
+					## network config of XMS
+					Network = New-Object -Type PSObject -Property ([ordered]@{
+						DefaultGateway = $oContent."xms-gw"
+						IP = $oContent."xms-ip"
+						SubnetMask = $oContent."xms-ip-sn"
+					}) ## end New-Object
+					NTPMode = $oContent.mode
+					NTPServer = $oContent."ntp-servers"
+					NumUserAccount = [int]$oContent."num-of-user-accounts"
+					WrongCnInCsr = $oContent."wrong-cn-in-csr"
+				}) ## end New-Object Config
+				DiskSpaceUtilizationLevel = $oContent."disk-space-utilization-level"
+				DiskSpaceSecUtilizationLevel = $oContent."disk-space-secondary-utilization-level"
+				DBVersion = [System.Version]($oContent."db-version")
+				EventlogInfo = New-Object -Type PSObject -Property ([ordered]@{
+					NumDaysInEventlog = [int]$oContent."days-in-num-event"
+					MaxEventlogRecords = [int]$oContent."max-recs-in-eventlog"
+					NumEventlogRecords = [int]$oContent."recs-in-event-log"
+				}) ## end New-Object EventlogInfo
+				## leaving as string for now, as casting to System.Guid adds dashes like a "real" GUID, whereas this string value has no dashes
+				Guid = $oContent.guid
+				IPVersion = $oContent."ip-version"
+				ISO8601DateTime = $oContent.datetime
+				LogSizeTotalGB = $oContent."logs-size" / 1MB
+				MemoryTotalGB = $oContent."ram-total" / 1MB
+				MemoryUsageGB = $oContent."ram-usage" / 1MB
+				MemoryUtilizationLevel = $oContent."memory-utilization-level"
+				NumCluster = [int]$oContent."num-of-systems"
+				NumInitiatorGroup = [int]$oContent."num-of-igs"
+				NumIscsiRoute = [int]$oContent."num-of-iscsi-routes"
+				ObjSeverity = $oContent."obj-severity"
+				## "The aggregated value of the ratio of provisioned Volume capacity to the cluster’s actual used physical capacity"
+				OverallEfficiency = [System.Double]$oContent."overall-efficiency-ratio"
+				RestApiVersion = [System.Version]($oContent."restapi-protocol-version")
+				ServerName = $oContent."server-name"
+				## string representation, like 4.0.1-41
+				SWVersion = $oContent."sw-version"
+				ThinProvSavingsPct = [int]$oContent."thin-provisioning-savings"
+				Version = [System.Version]($oContent.version)
+				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+					Current = New-Object -Type PSObject -Property ([ordered]@{
+						## latency in microseconds (µs)
+						Latency = New-Object -Type PSObject -Property ([ordered]@{
+							Read = New-Object -Type PSObject -Property ([ordered]@{
+								AllBlockSize = [int64]$oContent."rd-latency"
+							}) ## end object
+							Write = New-Object -Type PSObject -Property ([ordered]@{
+								AllBlockSize = [int64]$oContent."wr-latency"
+							}) ## end object
+						}) ## end object
+						BandwidthMB = $oContent.bw / 1KB
+						BandwidthMBByBlock = $oContent."bw-by-block" / 1KB
+						CPUUsagePct = [System.Double]$oContent.cpu
+						IOPS = [int64]$oContent.iops
+						IOPSByBlock = [int64]$oContent."iops-by-block"
+						ReadBandwidthMB = $oContent."rd-bw" / 1KB
+						ReadBandwidthMBByBlock = $oContent."rd-bw-by-block" / 1KB
+						ReadIOPS = [int]$oContent."rd-iops"
+						ReadIOPSByBlock = [int]$oContent."rd-iops-by-block"
+						WriteBandwidthMB = $oContent."wr-bw" / 1KB
+						WriteBandwidthMBByBlock = $oContent."wr-bw-by-block" / 1KB
+						WriteIOPS = [int]$oContent."wr-iops"
+						WriteIOPSByBlock = [int]$oContent."wr-iops-by-block"
+					}) ## end New-Object
+					TopObjectByCategory = New-Object -Type PSObject -Property ([ordered]@{
+						InitiatorGrpByBandwidth = $oContent."top-n-igs-by-bw" | Foreach-Object {
+							$oThisTopObj = $_
+							New-Object -Type PSObject -Property ([ordered]@{
+								## name of XIO cluster in which this IG resides
+								Cluster = $oThisTopObj[7]
+								InitiatorGrpId = $oThisTopObj[0][0]
+								Name = $oThisTopObj[0][1]
+								InitiatorGrpIndex = $oThisTopObj[0][2]
+								LastBandwidthMB = $oThisTopObj[1..6] | Foreach-Object {$_ / 1KB}
+							})
+						} ## end Foreach-Object
+						InitiatorGrpByIOPS = $null
+						VolumeByLatency = $null
+					}) ## end property
+				}) ## end New-object PerformanceInfo
+			} ## end ordered dictionary
+			break} ## end case
+		#### end API v2 items
 		#### PerformanceInfo items
 		{"ClusterPerformance","Ig-FolderPerformance","Initiator-GroupPerformance","InitiatorPerformance","TargetPerformance","Volume-FolderPerformance","VolumePerformance" -contains $_} {
 			[ordered]@{

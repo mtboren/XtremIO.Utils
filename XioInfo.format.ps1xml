@@ -331,6 +331,30 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_XMS</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.XMS</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>36</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ServerName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SwVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>RestApiVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>IPVersion</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_XioConnection</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.XioConnection</TypeName></ViewSelectedBy>
 			<TableControl>

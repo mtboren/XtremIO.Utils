@@ -440,6 +440,42 @@ Add-Type -TypeDefinition @"
 			public XEnv () {}
 		}
 
+		// XMS itself
+		public class XMS {
+			public System.String ComputerName;
+			public System.String Name;
+			public System.Int32 Index;
+			public System.Int32 BuildNumber;
+			public System.Object[] Config;
+			public System.String DiskSpaceUtilizationLevel;
+			public System.String DiskSpaceSecUtilizationLevel;
+			public System.Version DBVersion;
+			public System.Object[] EventlogInfo;
+			public System.String Guid;
+			public System.String IPVersion;
+			public System.String ISO8601DateTime;
+			public System.Double LogSizeTotalGB;
+			public System.Double MemoryTotalGB;
+			public System.Double MemoryUsageGB;
+			public System.String MemoryUtilizationLevel;
+			public System.Int32 NumCluster;
+			public System.Int32 NumInitiatorGroup;
+			public System.Int32 NumIscsiRoute;
+			public System.String ObjSeverity;
+			public System.Double OverallEfficiency;
+			public System.Version RestApiVersion;
+			public System.String ServerName;
+			public System.String SWVersion;
+			public System.Int32 ThinProvSavingsPct;
+			public System.Version Version;
+			public System.Object[] PerformanceInfo;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public XMS () {}
+		}
+
 		// connection to XMS appliance
 		public class XioConnection {
 			public System.String ComputerName;
