@@ -15,6 +15,7 @@ todo:
 	-with the general "here's the module, here are some ways to use it"
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -arrange properties in .NET obj definitions to be in desired order, instead of alphabetical?
+-add object definitions of sub-property objects
 -add Set-, Remove- cmdlets
 	Set:
 		-make sure that Set-XioItemInfo is solid, then work on:
@@ -160,11 +161,12 @@ doing:
 -have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
 -add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
 	-Alerts, Object Performance, Alert Definitions, Schedulers, BBUs, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, DAEs, Storage Controller PSUs, DAE Controllers, DAE PSUs, SYSLOG Notifiers, Email Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, XMS, Local Disks, ?SYR Notifiers?
-	-type names in v2 API:  alert-definitions, alerts, bbus, consistency-group-volumes, consistency-groups, dae-controllers, dae-psus, daes, email-notifier, infiniband-switches, ldap-configs, local-disks, performance, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts, xms
+	-type names in v2 API:  alert-definitions, alerts, bbus, consistency-group-volumes, consistency-groups, dae-controllers, dae-psus, daes, email-notifier, infiniband-switches, ldap-configs, local-disks, performance, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts
 	-include GUID type of property when possible
 	done:
+	type names:  xms
+	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIoConnection RestAPI version is 2 or greater
 
-XMS object:  finish the Top* properties
 
 
 

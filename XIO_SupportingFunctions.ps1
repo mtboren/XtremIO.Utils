@@ -392,6 +392,29 @@ function dWrite-ObjectToTableString {
 } ## end function
 
 
+function _Test-XIOObjectIsInThisXIOSVersion {
+<#	.Description
+	function to determine if this API Item type is present in the given XIOS version, based on a config table of values -> XIOSVersion
+	.Outputs
+	Boolean
+#>
+	param(
+		## API item type (like volumes, xms, ssds, etc.)
+		[parameter(Mandatory=$true)][string]$ApiItemType,
+		## XIOS version to check
+		[AllowNull()][System.Version]$XiosVersion
+	) ## end param
+	process {
+		## if XiosVersion was $null, which is the case with older XIOConnection objects, as their XmsVersion property is not populated, as the XMS type from which to get such info is not available until XIOS v4
+		if ($null -eq $XiosVersion) {$XiosVersion = [System.Version]"3.0"}
+		## get, from the given global config item, all of the API item types that are available for this API version
+		$arrItemTypeNamesAvailableInThisRestXiosVersion = $hshCfg["ItemTypeInfoPerXiosVersion"].Keys | Where-Object {$XiosVersion -ge [System.Version]$_} | Foreach-Object {$hshCfg["ItemTypeInfoPerXiosVersion"][$_]} | Foreach-Object {$_}
+		## does the resulting array of API item types contain this API item type?
+		$arrItemTypeNamesAvailableInThisRestXiosVersion -contains $ApiItemType
+	} ## end process
+} ## end function
+
+
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	All item types (including some that are only on XMS v2.2.3 rel 25):  "target-groups", "lun-maps", "storage-controllers", "bricks", "snapshots", "iscsi-portals", "xenvs", "iscsi-routes", "initiator-groups", "volumes", "clusters", "initiators", "ssds", "targets"
@@ -1242,8 +1265,28 @@ function _New-Object_fromItemTypeAndContent {
 								LastBandwidthMB = $oThisTopObj[1..6] | Foreach-Object {$_ / 1KB}
 							})
 						} ## end Foreach-Object
-						InitiatorGrpByIOPS = $null
-						VolumeByLatency = $null
+						InitiatorGrpByIOPS = $oContent."top-n-igs-by-iops" | Foreach-Object {
+							$oThisTopObj = $_
+							New-Object -Type PSObject -Property ([ordered]@{
+								## name of XIO cluster in which this IG resides
+								Cluster = $oThisTopObj[7]
+								InitiatorGrpId = $oThisTopObj[0][0]
+								Name = $oThisTopObj[0][1]
+								InitiatorGrpIndex = $oThisTopObj[0][2]
+								LastIOPS = $oThisTopObj[1..6] | Foreach-Object {[int]$_}
+							})
+						} ## end Foreach-Object
+						VolumeByLatency = $oContent."top-n-volumes-by-latency" | Foreach-Object {
+							$oThisTopObj = $_
+							New-Object -Type PSObject -Property ([ordered]@{
+								## name of XIO cluster in which this IG resides
+								Cluster = $oThisTopObj[7]
+								VolId = $oThisTopObj[0][0]
+								Name = $oThisTopObj[0][1]
+								VolumeIndex = $oThisTopObj[0][2]
+								LastLatency = $oThisTopObj[1..6] | Foreach-Object {[int]$_}
+							})
+						} ## end Foreach-Object
 					}) ## end property
 				}) ## end New-object PerformanceInfo
 			} ## end ordered dictionary

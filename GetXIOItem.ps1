@@ -65,117 +65,130 @@ function Get-XIOItemInfo {
 					arrHrefsToGetItemsInfo = $URI_str
 				} ## end hashtable
 			} ## end if
-			## else, specifying computer name and some other attributes (not full URI)
+			## else, use ItemType
 			else {
 				## from the param value, make the plural form (the item types in the API are all plural; adding "s" here to the singular form used for valid param values, the singular form being the standard for PowerShell-y things)
 				$strItemType_plural = if (@("xms") -notcontains $ItemType_str) {"${ItemType_str}s"} else {$ItemType_str}
-				## the base portion of the REST command to issue
-				$strRestCmd_base = "/types/$strItemType_plural"
+			} ## end else
 
-				## this XMS appliance name
-				$strThisXmsName = $oThisXioConnection.ComputerName
+			## is this a type that is supported in this XioConnection's XIOS version?
+			if (-not (_Test-XIOObjectIsInThisXIOSVersion -XiosVersion $oThisXioConnection.XmsVersion -ApiItemType $strItemType_plural)) {
+			# if (-not $false) {
+				Write-Warning $("Type '$strItemType_plural' does not exist in $($oThisXioConnection.ComputerName)'s XIOS version{0}. This is possibly an object type that was introduced in a later XIOS version" -f $(if (-not [String]::IsNullOrEmpty($_.XmsSWVersion)) {" ($($_.XmsSWVersion))"}))
+			} ## end if
 
-				## if the item type is "event"
-				if ($ItemType_str -eq "event") {
-					## REST command to use (with URIParams added, if any)
-					$strRestCommandWithAnyAddlParams = if ($PSBoundParameters.ContainsKey("AdditionalURIParam")) {"$strRestCmd_base$AdditionalURIParam"} else {$strRestCmd_base}
-					## populate the array of hashtables for getting XIO info with just one computername/HREF hashtable
-					$arrDataHashtablesForGettingXioInfo += @{
-						ComputerName = $strThisXmsName
-						arrHrefsToGetItemsInfo = New-XioApiURI -ComputerName $strThisXmsName -RestCommand $strRestCommandWithAnyAddlParams
-					} ## end hashtable
-				} ## end if
-				## do all the necessary things to populate $arrDataHashtablesForGettingXioInfo with individual XIO item's HREFs
-				else { ## making arrDataHashtablesForGettingXioInfo
-					## for this XMS appliance name, get a hashtable with computer name and HREFs for which to get info obj
-					$hshParamsForGetXioInfo_allItemsOfThisType = @{
-						Credential = $oThisXioConnection.Credential
-						ComputerName_str = $strThisXmsName
-						RestCommand_str = "$strRestCmd_base"
-						Port_int = $oThisXioConnection.Port
-						TrustAllCert_sw = $oThisXioConnection.TrustAllCert
-					} ## end hsh
-					## the base info for all items of this type known by this XMS appliance (href & name pairs)
-					## the general pattern:  the property returned is named the same as the item type
-					#   however, not the case with:
-					#     volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
-					#     xms:  the property is "xmss"
-					$strPropertyNameToAccess = Switch ($strItemType_plural) {
-													{"volume-folders","ig-folders" -contains $_} {"folders"; break}
-													"xms" {"xmss"; break}
-													default {$strItemType_plural}
-												} ## end switch
-					## get the HREF->Name objects for this type of item
-					$arrKnownItemsOfThisTypeHrefInfo = (Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType).$strPropertyNameToAccess
+			## else, the Item type _does_ exist in this XIOS version -- get its info
+			else {
+				## if not FullUri, need to get the other attributes to use for query (not full URI)
+				if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {
+					## the base portion of the REST command to issue
+					$strRestCmd_base = "/types/$strItemType_plural"
 
-					## get the API Hrefs for getting the detailed info for the desired items (specified items, or all items of this type)
-					$arrHrefsToGetItemsInfo_thisXmsAppl =
-						## if particular initiator names specified, get just the hrefs for those
-						if ($PSBoundParameters.ContainsKey("Name_arr")) {
-							$Name_arr | Select-Object -Unique | Foreach-Object {
-								$strThisItemNameToGet = $_
-								## if any of the names are like the specified name, add those HREFs to the array of HREFs to get
-								if ( (($arrKnownItemsOfThisTypeHrefInfo | Foreach-Object {$_.Name}) -like $strThisItemNameToGet | Measure-Object).Count -gt 0 ) {
-									($arrKnownItemsOfThisTypeHrefInfo | Where-Object {$_.Name -like $strThisItemNameToGet}).href
-								} ## end if
-								else {Write-Verbose "$strLogEntry_ToAdd No '$ItemType_str' item of name '$_' found on '$strThisXmsName'. Valid item name/type pair?"}
-							} ## end foreach-object
-						} ## end if
-						## else, getting all initiators known; get all the hrefs
-						else {$arrKnownItemsOfThisTypeHrefInfo | Foreach-Object {$_.href}} ## end else
+					## this XMS appliance name
+					$strThisXmsName = $oThisXioConnection.ComputerName
 
-					## if there are HREFs from which to get info, add new hashtable to the overall array
-					if (($arrHrefsToGetItemsInfo_thisXmsAppl | Measure-Object).Count -gt 0) {
+					## if the item type is "event"
+					if ($ItemType_str -eq "event") {
+						## REST command to use (with URIParams added, if any)
+						$strRestCommandWithAnyAddlParams = if ($PSBoundParameters.ContainsKey("AdditionalURIParam")) {"$strRestCmd_base$AdditionalURIParam"} else {$strRestCmd_base}
+						## populate the array of hashtables for getting XIO info with just one computername/HREF hashtable
 						$arrDataHashtablesForGettingXioInfo += @{
 							ComputerName = $strThisXmsName
-							## HREFs to get are the unique HREFs (depending on the -Name value provided, user might have made overlapping matches)
-							arrHrefsToGetItemsInfo = $arrHrefsToGetItemsInfo_thisXmsAppl | Select-Object -Unique
+							arrHrefsToGetItemsInfo = New-XioApiURI -ComputerName $strThisXmsName -RestCommand $strRestCommandWithAnyAddlParams
 						} ## end hashtable
 					} ## end if
-				} ## end else "making arrDataHashtablesForGettingXioInfo"
-			} ## end else "not full URI"
-
-			## if there are hrefs from which to get item info, do so for each
-			if ($arrDataHashtablesForGettingXioInfo) {
-				#Write-Debug "$strLogEntry_ToAdd Soon to make custom objects from Get-XIOInfo returns; num arrays to contact: '$(($arrDataHashtablesForGettingXioInfo | Measure-Object).Count)'"
-				foreach ($hshDataForGettingInfoFromThisXmsAppl in $arrDataHashtablesForGettingXioInfo) {
-					$hshDataForGettingInfoFromThisXmsAppl.arrHrefsToGetItemsInfo | Foreach-Object {
-						## make the params hash for this item
-						$hshParamsForGetXioInfo_thisItem = @{
+					## do all the necessary things to populate $arrDataHashtablesForGettingXioInfo with individual XIO item's HREFs
+					else { ## making arrDataHashtablesForGettingXioInfo
+						## for this XMS appliance name, get a hashtable with computer name and HREFs for which to get info obj
+						$hshParamsForGetXioInfo_allItemsOfThisType = @{
 							Credential = $oThisXioConnection.Credential
-							URI_str = $_
+							ComputerName_str = $strThisXmsName
+							RestCommand_str = "$strRestCmd_base"
+							Port_int = $oThisXioConnection.Port
+							TrustAllCert_sw = $oThisXioConnection.TrustAllCert
 						} ## end hsh
-						$hshParamsForGetXioInfo_thisItem["TrustAllCert_sw"] = $oThisXioConnection.TrustAllCert
-						## call main Get-Info function with given params, getting a web response object back
-						$oResponseCustObj = Get-XIOInfo @hshParamsForGetXioInfo_thisItem
+						## the base info for all items of this type known by this XMS appliance (href & name pairs)
+						## the general pattern:  the property returned is named the same as the item type
+						#   however, not the case with:
+						#     volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
+						#     xms:  the property is "xmss"
+						$strPropertyNameToAccess = Switch ($strItemType_plural) {
+														{"volume-folders","ig-folders" -contains $_} {"folders"; break}
+														"xms" {"xmss"; break}
+														default {$strItemType_plural}
+													} ## end switch
+						## get the HREF->Name objects for this type of item
+						$arrKnownItemsOfThisTypeHrefInfo = (Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType).$strPropertyNameToAccess
 
-						if ($ReturnFullResponse_sw) {$oResponseCustObj} else {
-							## FYI:  for all types except Events, $oResponseCustObj is an array of items whose Content property is a PSCustomObject with all of the juicy properties of info
-							##   for type Events, $oResponseCustObj is one object with an Events property, which is an array of PSCustomObject
-							$oResponseCustObj | Foreach-Object {
-								$oThisResponseObj = $_
-								## the URI of this item (or of all of the events, if this item type is "events", due to the difference in the way event objects are returned from API)
-								$strUriThisItem = ($oThisResponseObj.Links | Where-Object {$_.Rel -eq "Self"}).Href
-								## FYI:  name of the property of the response object that holds the details about the XIO item is "Content" for nearly all types, but "events" for event type
-								## if the item type is events, access the "events" property of the response object; else, access the "Content" property
-								$(if ($strItemType_plural -eq "events") {$oThisResponseObj.$strItemType_plural} else {$oThisResponseObj."Content"}) | Foreach-Object {
-									$oThisResponseObjectContent = $_
-									## the TypeName to use for the new object
-									$strPSTypeNameForNewObj = if ($strItemType_plural -eq "xms") {"XioItemInfo.XMS"} else {"XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()).Replace('-',''))"}
-									## make a new object with some juicy info (and a new property for the XMS "computer" name used here)
-									$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemType_plural -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj
-									## set ComputerName property
-									$oObjToReturn.ComputerName = $hshDataForGettingInfoFromThisXmsAppl["ComputerName"]
-									## set URI property that uniquely identifies this object
-									$oObjToReturn.Uri = $strUriThisItem
-									## return the object
-									return $oObjToReturn
+						## get the API Hrefs for getting the detailed info for the desired items (specified items, or all items of this type)
+						$arrHrefsToGetItemsInfo_thisXmsAppl =
+							## if particular initiator names specified, get just the hrefs for those
+							if ($PSBoundParameters.ContainsKey("Name_arr")) {
+								$Name_arr | Select-Object -Unique | Foreach-Object {
+									$strThisItemNameToGet = $_
+									## if any of the names are like the specified name, add those HREFs to the array of HREFs to get
+									if ( (($arrKnownItemsOfThisTypeHrefInfo | Foreach-Object {$_.Name}) -like $strThisItemNameToGet | Measure-Object).Count -gt 0 ) {
+										($arrKnownItemsOfThisTypeHrefInfo | Where-Object {$_.Name -like $strThisItemNameToGet}).href
+									} ## end if
+									else {Write-Verbose "$strLogEntry_ToAdd No '$ItemType_str' item of name '$_' found on '$strThisXmsName'. Valid item name/type pair?"}
 								} ## end foreach-object
-							} ## end foreach-object
-						} ## end else
-					} ## end foreach-object
-				} ## end foreach
-			} ## end if
+							} ## end if
+							## else, getting all initiators known; get all the hrefs
+							else {$arrKnownItemsOfThisTypeHrefInfo | Foreach-Object {$_.href}} ## end else
+
+						## if there are HREFs from which to get info, add new hashtable to the overall array
+						if (($arrHrefsToGetItemsInfo_thisXmsAppl | Measure-Object).Count -gt 0) {
+							$arrDataHashtablesForGettingXioInfo += @{
+								ComputerName = $strThisXmsName
+								## HREFs to get are the unique HREFs (depending on the -Name value provided, user might have made overlapping matches)
+								arrHrefsToGetItemsInfo = $arrHrefsToGetItemsInfo_thisXmsAppl | Select-Object -Unique
+							} ## end hashtable
+						} ## end if
+					} ## end else "making arrDataHashtablesForGettingXioInfo"
+				} ## end else "not full URI"
+
+				## if there are hrefs from which to get item info, do so for each
+				if ($arrDataHashtablesForGettingXioInfo) {
+					#Write-Debug "$strLogEntry_ToAdd Soon to make custom objects from Get-XIOInfo returns; num arrays to contact: '$(($arrDataHashtablesForGettingXioInfo | Measure-Object).Count)'"
+					foreach ($hshDataForGettingInfoFromThisXmsAppl in $arrDataHashtablesForGettingXioInfo) {
+						$hshDataForGettingInfoFromThisXmsAppl.arrHrefsToGetItemsInfo | Foreach-Object {
+							## make the params hash for this item
+							$hshParamsForGetXioInfo_thisItem = @{
+								Credential = $oThisXioConnection.Credential
+								URI_str = $_
+							} ## end hsh
+							$hshParamsForGetXioInfo_thisItem["TrustAllCert_sw"] = $oThisXioConnection.TrustAllCert
+							## call main Get-Info function with given params, getting a web response object back
+							$oResponseCustObj = Get-XIOInfo @hshParamsForGetXioInfo_thisItem
+
+							if ($ReturnFullResponse_sw) {$oResponseCustObj} else {
+								## FYI:  for all types except Events, $oResponseCustObj is an array of items whose Content property is a PSCustomObject with all of the juicy properties of info
+								##   for type Events, $oResponseCustObj is one object with an Events property, which is an array of PSCustomObject
+								$oResponseCustObj | Foreach-Object {
+									$oThisResponseObj = $_
+									## the URI of this item (or of all of the events, if this item type is "events", due to the difference in the way event objects are returned from API)
+									$strUriThisItem = ($oThisResponseObj.Links | Where-Object {$_.Rel -eq "Self"}).Href
+									## FYI:  name of the property of the response object that holds the details about the XIO item is "Content" for nearly all types, but "events" for event type
+									## if the item type is events, access the "events" property of the response object; else, access the "Content" property
+									$(if ($strItemType_plural -eq "events") {$oThisResponseObj.$strItemType_plural} else {$oThisResponseObj."Content"}) | Foreach-Object {
+										$oThisResponseObjectContent = $_
+										## the TypeName to use for the new object
+										$strPSTypeNameForNewObj = if ($strItemType_plural -eq "xms") {"XioItemInfo.XMS"} else {"XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($strItemType_plural.TrimEnd('s').ToLower()).Replace('-',''))"}
+										## make a new object with some juicy info (and a new property for the XMS "computer" name used here)
+										$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemType_plural -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj
+										## set ComputerName property
+										$oObjToReturn.ComputerName = $hshDataForGettingInfoFromThisXmsAppl["ComputerName"]
+										## set URI property that uniquely identifies this object
+										$oObjToReturn.Uri = $strUriThisItem
+										## return the object
+										return $oObjToReturn
+									} ## end foreach-object
+								} ## end foreach-object
+							} ## end else
+						} ## end foreach-object
+					} ## end foreach
+				} ## end if
+			} ## end else (item type _does_ exist in this XIOS version)
 		} ## end foreach-object
 	} ## end process
 } ## end function
