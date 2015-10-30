@@ -1197,6 +1197,66 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"bbus" {
+			[ordered]@{
+				Name = $oContent.name
+				Battery = New-Object -Type PSObject -Property ([ordered]@{
+					LowBattery_hasInput = ([string]"true" -eq $oContent."is-low-battery-has-input")
+					LowBattery_noInput = ([string]"true" -eq $oContent."is-low-battery-no-input")
+					LowBatteryRuntime = ([string]"true" -eq $oContent."is-low-battery-runtime")
+					NeedsReplacement = ([string]"true" -eq $oContent."ups-need-battery-replacement")
+					ReplacementReason = $oContent."fru-replace-failure-reason"
+					RuntimeSec = [int]$oContent."battery-runtime"
+					Voltage = [Double]$oContent."battery-voltage"
+				}) ## end new-object
+				BatteryChargePct = [int]$oContent."ups-battery-charge-in-percent"
+				BBUId = $oContent."ups-id"[0]
+				BrickId = $oContent."brick-id"
+				BypassActive = ([string]"true" -eq $oContent."is-bypass-active")
+				ConnectedToSC = ($oContent."ups-conn-state" -eq "connected")
+				ClusterId = $oContent."sys-id"[0]
+				ClusterName = $oContent."sys-id"[1]
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				FWVersion = $oContent."fw-version"
+				FWVersionError = $oContent."fw-version-error"
+				Guid = $oContent.guid
+				HWRevision = $oContent."hw-revision"
+				IdLED = $oContent."identify-led"
+				Index = $oContent.index
+				IndexInXbrick = [int]$oContent."index-in-brick"
+				Input = $oContent."ups-input"
+				InputHz = [Double]$oContent."input-frequency"
+				InputVoltage = [int]$oContent."ups-voltage"
+				LifecycleState = $oContent."fru-lifecycle-state"
+				LoadPct = [int]$oContent."ups-load-in-percent"
+				LoadPctLevel = $oContent."ups-load-percent-level"
+				Model = $oContent."model-name"
+				Outlet1Status = $oContent."outlet1-status"
+				Outlet2Status = $oContent."outlet2-status"
+				OutputA = [Double]$oContent."output-current"
+				OutputHz = [Double]$oContent."output-frequency"
+				OutputVoltage = [Double]$oContent."output-voltage"
+				PartNumber = $oContent."part-number"
+				PowerFeed = $oContent."power-feed"
+				PowerW = [int]$oContent.power
+				RealPowerW = [int]$oContent."real-power"
+				SerialNumber = $oContent."serial-number"
+				Severity = $oContent.severity
+				Status = $oContent."ups-status"
+				StatusLED = $oContent."status-led"
+				StorageController = $oContent."monitoring-nodes-obj-id-list" | Foreach-Object {
+					New-Object -Type PSObject -Property ([ordered]@{
+						Name = $_[1]
+						StorageControllerId = $_[0]
+					}) ## end New-Object
+				} ## end foreach-object
+				TagList = $oContent."tag-list"
+				UPSAlarm = $oContent."ups-alarm"
+				UPSOverloaded = ([string]"true" -eq $oContent."is-ups-overload")
+				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"xms" {
 			[ordered]@{
 				Name = $oContent.name

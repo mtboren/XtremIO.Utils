@@ -24,9 +24,9 @@ function Get-XIOItemInfo {
 		##   for all XIOS versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
 		##   and, for XIOS versions 2.2.3 and up:  "brick", "snapshot", "ssd", "storage-controller", "xenv"
 		##   and, for XIOS versions 2.4 and up:    "data-protection-group", "event", "ig-folder", "volume-folder"
-		##   and, for XIOS version 4.0 and up:     "alert-definition", "xms"
+		##   and, for XIOS version 4.0 and up:     "alert-definition", "bbu", "xms"
 		[parameter(ParameterSetName="ByComputerName")]
-		[ValidateSet("alert-definition", "cluster", "data-protection-group", "event", "ig-folder", "initiator-group", "initiator", "lun-map", "target-group", "target", "volume", "volume-folder", "brick", "snapshot", "ssd", "storage-controller", "xenv", "xms")]
+		[ValidateSet("alert-definition", "bbu", "cluster", "data-protection-group", "event", "ig-folder", "initiator-group", "initiator", "lun-map", "target-group", "target", "volume", "volume-folder", "brick", "snapshot", "ssd", "storage-controller", "xenv", "xms")]
 		[string]$ItemType_str = "cluster",
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -1086,11 +1086,7 @@ function Get-XIOEvent {
 	Function to get XtremIO AlertDefinition info using REST API from XtremIO XMS appliance
 	.Example
 	Get-XIOAlertDefinition
-	Request info from current XMS connection and return an object with the "AlertDefinition" info for the XMS
-	.Example
-	Get-XIOAlertDefinition
 	Get the "AlertDefinition" items
-	.Example
 	.Outputs
 	XioItemInfo.AlertDefinition
 #>
@@ -1126,14 +1122,49 @@ function Get-XIOAlertDefinition {
 
 
 <#	.Description
+	Function to get XtremIO BBU info using REST API from XtremIO XMS appliance
+	.Example
+	Get-XIOBBU
+	Get the "BBU" items
+	.Outputs
+	XioItemInfo.BBU
+#>
+function Get-XIOBBU {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.BBU])]
+	param(
+		## XMS appliance address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "bbu"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+	} ## end begin
+
+	Process {
+		## call the base function to get the given item
+		Get-XIOItemInfo @hshParamsForGetXioInfo
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Function to get XtremIO XMS info using REST API from XtremIO XMS appliance
 	.Example
 	Get-XIOXMS
 	Request info from current XMS connection and return an object with the "XMS" info for the XMS
-	.Example
-	Get-XIOXMS
-	Get the "XMS" items
-	.Example
 	.Outputs
 	XioItemInfo.XMS
 #>

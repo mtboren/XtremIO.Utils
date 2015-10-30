@@ -28,6 +28,36 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_bbus</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.BBU</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PowerFeed</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ConnectedToSC</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>BatteryChargePct</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LoadPct</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>OutputVoltage</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_bricks</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Brick</TypeName></ViewSelectedBy>
 			<TableControl>

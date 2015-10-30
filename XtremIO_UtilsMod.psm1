@@ -7,7 +7,7 @@
 } ## end foreach-object
 
 ## export these items for use by consumer
-Export-ModuleMember -Function Get-XIOItemInfo, Get-XIOAlertDefinition, Get-XIOBrick, Get-XIOCluster, Get-XIODataProtectionGroup, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOXenv, Open-XIOMgmtConsole, Get-XIOStoredCred, Get-XIOXMS, New-XIOStoredCred, Remove-XIOStoredCred, Update-TitleBarForXioConnection, Connect-XIOServer, Disconnect-XIOServer,
+Export-ModuleMember -Function Get-XIOItemInfo, Get-XIOAlertDefinition, Get-XIOBBU, Get-XIOBrick, Get-XIOCluster, Get-XIODataProtectionGroup, Get-XIOEvent, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOLunMap, Get-XIOSnapshot, Get-XIOSsd, Get-XIOStorageController, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOXenv, Open-XIOMgmtConsole, Get-XIOStoredCred, Get-XIOXMS, New-XIOStoredCred, Remove-XIOStoredCred, Update-TitleBarForXioConnection, Connect-XIOServer, Disconnect-XIOServer,
 	## performance items
 	Get-XIOClusterPerformance, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance,
 	## "New-" items
