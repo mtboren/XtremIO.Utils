@@ -1,5 +1,27 @@
 Add-Type -TypeDefinition @"
 	namespace XioItemInfo {
+		public class AlertDefinition {
+			public string Name;
+			public string AlertCode;
+			public string AlertType;
+			public string Class;
+			public string ClearanceMode;
+			public System.String ComputerName;
+			public System.Boolean Enabled;
+			public string Guid;
+			public System.Int32 Index;
+			public System.Boolean SendToCallHome;
+			public string Severity;
+			public string ThresholdType;
+			public System.Int32 ThresholdValue;
+			public System.Boolean UserModified;
+			public string Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public AlertDefinition () {}
+		}
+
 		// XIO Brick
 		public class Brick {
 			public System.Object[] BrickId;

@@ -2,6 +2,32 @@
 <Configuration>
 	<ViewDefinitions>
 		<View>
+			<Name>XioItem_alert-definitions</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.AlertDefinition</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>40</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>AlertType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Class</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>AlertCode</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Severity</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClearanceMode</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_bricks</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Brick</TypeName></ViewSelectedBy>
 			<TableControl>

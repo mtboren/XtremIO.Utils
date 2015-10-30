@@ -1178,6 +1178,25 @@ function _New-Object_fromItemTypeAndContent {
 			} ## end ordered dictionary
 			break} ## end case
 		#### API v2 items
+		"alert-definitions" {
+			[ordered]@{
+				Name = $oContent.name
+				AlertCode = [string]$oContent."alert-code"
+				## generally the same value as .name
+				AlertType = $oContent."alert-type"
+				Class = $oContent."class-name"
+				ClearanceMode = $oContent."clearance-mode"
+				Enabled = ($oContent."activity-mode" -eq "enabled")
+				Guid = $oContent.guid
+				Index = $oContent.index
+				SendToCallHome = ($oContent."send-to-call-home" -eq "yes")
+				Severity = $oContent.severity
+				ThresholdType = $oContent."threshold-type"
+				ThresholdValue = [int]$oContent."threshold-value"
+				UserModified = ([string]"true" -eq $oContent."user-modified")
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"xms" {
 			[ordered]@{
 				Name = $oContent.name
