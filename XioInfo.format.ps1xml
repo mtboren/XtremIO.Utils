@@ -103,6 +103,34 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_daes</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.DAE</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PartNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_data-protection-groups</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.DataProtectionGroup</TypeName></ViewSelectedBy>
 			<TableControl>
@@ -115,6 +143,30 @@
 							<TableColumnItem><PropertyName>TotSSDTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>UsedSSDTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_email-notifier</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.EmailNotifier</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader><Width>19</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>CompanyName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Recipient</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>MailRelayAddress</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>TransportProtocol</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>

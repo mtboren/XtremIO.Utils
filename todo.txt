@@ -160,12 +160,12 @@ doing:
 	-need to update all places that specify API types as singular to use real API type name
 -have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
 -add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
-	-Alerts, Object Performance, Schedulers, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, DAEs, Storage Controller PSUs, DAE Controllers, DAE PSUs, SYSLOG Notifiers, Email Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, Local Disks, ?SYR Notifiers?
-	-type names in v2 API:  alerts, consistency-group-volumes, consistency-groups, dae-controllers, dae-psus, daes, email-notifier, infiniband-switches, ldap-configs, local-disks, performance, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts
+	-Alerts, Object Performance, Schedulers, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, Storage Controller PSUs, DAE Controllers, DAE PSUs, SYSLOG Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, Local Disks, ?SYR Notifiers?
+	-type names in v2 API:  alerts, consistency-group-volumes, consistency-groups, dae-controllers, dae-psus, infiniband-switches, ldap-configs, local-disks, performance, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts
 	-include GUID type of property when possible
 	done:
-	type names:  alert-definitions, bbus, xms
-	Types:  Alert Definitions, BBUs, XMS
+	type names:  alert-definitions, bbus, daes, email-notifier, xms
+	Types:  Alert Definitions, BBUs, DAEs, Email Notifiers, XMS
 	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIoConnection RestAPI version is 2 or greater
 
 

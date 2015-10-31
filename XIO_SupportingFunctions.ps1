@@ -1210,6 +1210,7 @@ function _New-Object_fromItemTypeAndContent {
 					Voltage = [Double]$oContent."battery-voltage"
 				}) ## end new-object
 				BatteryChargePct = [int]$oContent."ups-battery-charge-in-percent"
+				## this should be the same value as the .guid property
 				BBUId = $oContent."ups-id"[0]
 				BrickId = $oContent."brick-id"
 				BypassActive = ([string]"true" -eq $oContent."is-bypass-active")
@@ -1254,6 +1255,53 @@ function _New-Object_fromItemTypeAndContent {
 				UPSAlarm = $oContent."ups-alarm"
 				UPSOverloaded = ([string]"true" -eq $oContent."is-ups-overload")
 				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"daes" {
+			[ordered]@{
+				Name = $oContent.name
+				BrickId = $oContent."brick-id"
+				ClusterId = $oContent."sys-id"[0]
+				ClusterName = $oContent."sys-id"[1]
+				## this should be the same value as the .guid property
+				DAEId = $oContent."jbod-id"[0]
+				FWVersion = $oContent."fw-version"
+				Guid = $oContent.guid
+				HWRevision = $oContent."hw-revision"
+				IdLED = $oContent."identify-led"
+				Index = $oContent.index
+				LifecycleState = $oContent."fru-lifecycle-state"
+				Model = $oContent."model-name"
+				NumJBODController = [int]$oContent."num-of-jbod-controllers"
+				NumJBODPSU = [int]$oContent."num-of-jbod-psus"
+				PartNumber = $oContent."part-number"
+				ReplacementReason = $oContent."fru-replace-failure-reason"
+				SerialNumber = $oContent."serial-number"
+				Severity = $oContent.severity
+				StatusLED = $oContent."status-led"
+				TagList = $oContent."tag-list"
+				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"email-notifier" {
+			[ordered]@{
+				Name = $oContent.name
+				CompanyName = $oContent."company-name"
+				ContactDetails = $oContent."contact-details"
+				Enabled = ($oContent.enabled -eq "true")
+				FrequencySec = [int]$oContent.frequency
+				Guid = $oContent.guid
+				Index = $oContent.index
+				MailRelayAddress = $oContent."mail-relay-address"
+				MailUsername = $oContent."mail-user"
+				ProxyAddress = $oContent."proxy-address"
+				ProxyPort = $oContent."proxy-port"
+				ProxyUser = $oContent."proxy-user"
+				Recipient = $oContent.recipients
+				Severity = $oContent."obj-severity"
+				TransportProtocol = $oContent.transport
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case

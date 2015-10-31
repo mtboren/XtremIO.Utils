@@ -148,6 +148,37 @@ Add-Type -TypeDefinition @"
 		// ClusterPerformance (inherits from class PerformanceTotal)
 		public class ClusterPerformance : PerformanceTotal {}
 
+		// XIO DAE (Disk Array Enclosure)
+		public class DAE {
+			public System.String Name;
+			public System.Object[] BrickId;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String DAEId;
+			public System.String FWVersion;
+			public System.String Guid;
+			public System.String HWRevision;
+			public System.String IdLED;
+			public System.Int32 Index;
+			public System.String LifecycleState;
+			public System.String Model;
+			public System.Int32 NumJBODController;
+			public System.Int32 NumJBODPSU;
+			public System.String PartNumber;
+			public System.String ReplacementReason;
+			public System.String SerialNumber;
+			public System.String Severity;
+			public System.String StatusLED;
+			public System.Object[] TagList;
+			public string ComputerName;
+			public System.Object[] SysId;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public DAE () {}
+		}
+
 		public class DataProtectionGroup {
 			public System.Int32 AvailableRebuild;
 			public System.Int32 BrickIndex;
@@ -182,6 +213,32 @@ Add-Type -TypeDefinition @"
 
 		// DataProtectionGroupPerformance (inherits from class PerformanceBase)
 		public class DataProtectionGroupPerformance : PerformanceBase {}
+
+
+		// XIO Email Notifier
+		public class EmailNotifier {
+			public System.String CompanyName;
+			public System.String ContactDetails;
+			public System.Boolean Enabled;
+			public System.Int32 FrequencySec;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.String MailRelayAddress;
+			public System.String MailUsername;
+			public System.String Name;
+			public System.String ProxyAddress;
+			public System.String ProxyPort;
+			public System.String ProxyUser;
+			public System.String[] Recipient;
+			public System.String Severity;
+			public System.String TransportProtocol;
+			public System.String ComputerName;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public EmailNotifier () {}
+		}
 
 		// XIO Events
 		public class Event {
