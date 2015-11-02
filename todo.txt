@@ -168,6 +168,7 @@ doing:
 		Get-XIODAEController | Get-XIODAE
 		Get-XIOBBU | Get-XIOStorageController
 		Get-XIO<BBU,DAE,DAEController> | Get-XIOCluster (since they have ClusterId property)
+	-use HardwareBase parent type for hardware types of objects (need to update BBU, DAE, XMS objects to use this)
 
 	done:
 	type names:  alert-definitions, bbus, daes, dae-controllers, email-notifier, xms

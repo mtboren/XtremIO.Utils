@@ -22,9 +22,8 @@ Add-Type -TypeDefinition @"
 			public AlertDefinition () {}
 		}
 
-		// XIO BBU
-		public class BBU {
-			public System.String Name;
+		// XIO BBU (inherites from class HardwareBase)
+		public class BBU : HardwareBase {
 			public System.Object[] Battery;
 			public System.Int32 BatteryChargePct;
 			public System.String BBUId;
@@ -34,12 +33,7 @@ Add-Type -TypeDefinition @"
 			public System.String ClusterId;
 			public System.String ClusterName;
 			public System.Boolean Enabled;
-			public System.String FWVersion;
 			public System.String FWVersionError;
-			public System.String Guid;
-			public System.String HWRevision;
-			public System.String IdLED;
-			public System.Int32 Index;
 			public System.Int32 IndexInXbrick;
 			public System.String Input;
 			public System.Double InputHz;
@@ -47,28 +41,20 @@ Add-Type -TypeDefinition @"
 			public System.String LifecycleState;
 			public System.Int32 LoadPct;
 			public System.String LoadPctLevel;
-			public System.String Model;
 			public System.String Outlet1Status;
 			public System.String Outlet2Status;
 			public System.Double OutputA;
 			public System.Double OutputHz;
 			public System.Double OutputVoltage;
-			public System.String PartNumber;
 			public System.String PowerFeed;
 			public System.Int32 PowerW;
 			public System.Int32 RealPowerW;
-			public System.String SerialNumber;
-			public System.String Severity;
 			public System.String Status;
-			public System.String StatusLED;
 			public System.Object[] StorageController;
 			public System.Object[] TagList;
 			public System.String UPSAlarm;
 			public System.Boolean UPSOverloaded;
-			public string ComputerName;
 			public System.Object[] SysId;
-			public System.String Uri;
-			public System.Object[] XmsId;
 
 			// Implicit constructor
 			public BBU () {}
@@ -148,32 +134,18 @@ Add-Type -TypeDefinition @"
 		// ClusterPerformance (inherits from class PerformanceTotal)
 		public class ClusterPerformance : PerformanceTotal {}
 
-		// XIO DAE (Disk Array Enclosure)
-		public class DAE {
-			public System.String Name;
+		// XIO DAE (Disk Array Enclosure) (inherits from class HardwareBase)
+		public class DAE : HardwareBase {
 			public System.Object[] BrickId;
 			public System.String ClusterId;
 			public System.String ClusterName;
 			public System.String DAEId;
-			public System.String FWVersion;
-			public System.String Guid;
-			public System.String HWRevision;
-			public System.String IdLED;
-			public System.Int32 Index;
 			public System.String LifecycleState;
-			public System.String Model;
 			public System.Int32 NumDAEController;
 			public System.Int32 NumDAEPSU;
-			public System.String PartNumber;
 			public System.String ReplacementReason;
-			public System.String SerialNumber;
-			public System.String Severity;
-			public System.String StatusLED;
 			public System.Object[] TagList;
-			public string ComputerName;
 			public System.Object[] SysId;
-			public System.String Uri;
-			public System.Object[] XmsId;
 
 			// Implicit constructor
 			public DAE () {}
@@ -622,18 +594,14 @@ Add-Type -TypeDefinition @"
 			public XEnv () {}
 		}
 
-		// XMS itself
-		public class XMS {
-			public System.String ComputerName;
-			public System.String Name;
-			public System.Int32 Index;
+		// XMS itself (inherits from class InfoBase)
+		public class XMS : InfoBase {
 			public System.Int32 BuildNumber;
 			public System.Object[] Config;
 			public System.String DiskSpaceUtilizationLevel;
 			public System.String DiskSpaceSecUtilizationLevel;
 			public System.Version DBVersion;
 			public System.Object[] EventlogInfo;
-			public System.String Guid;
 			public System.String IPVersion;
 			public System.String ISO8601DateTime;
 			public System.Double LogSizeTotalGB;
@@ -643,7 +611,6 @@ Add-Type -TypeDefinition @"
 			public System.Int32 NumCluster;
 			public System.Int32 NumInitiatorGroup;
 			public System.Int32 NumIscsiRoute;
-			public System.String Severity;
 			public System.Double OverallEfficiency;
 			public System.Version RestApiVersion;
 			public System.String ServerName;
@@ -651,8 +618,6 @@ Add-Type -TypeDefinition @"
 			public System.Int32 ThinProvSavingsPct;
 			public System.Version Version;
 			public System.Object[] PerformanceInfo;
-			public System.String Uri;
-			public System.Object[] XmsId;
 
 			// Implicit constructor
 			public XMS () {}
