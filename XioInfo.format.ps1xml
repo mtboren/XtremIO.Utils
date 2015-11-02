@@ -131,6 +131,36 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_dae-controllers</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.DAEController</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>17</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>12</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Location</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>HWRevision</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_data-protection-groups</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.DataProtectionGroup</TypeName></ViewSelectedBy>
 			<TableControl>

@@ -162,8 +162,8 @@ Add-Type -TypeDefinition @"
 			public System.Int32 Index;
 			public System.String LifecycleState;
 			public System.String Model;
-			public System.Int32 NumJBODController;
-			public System.Int32 NumJBODPSU;
+			public System.Int32 NumDAEController;
+			public System.Int32 NumDAEPSU;
 			public System.String PartNumber;
 			public System.String ReplacementReason;
 			public System.String SerialNumber;
@@ -177,6 +177,29 @@ Add-Type -TypeDefinition @"
 
 			// Implicit constructor
 			public DAE () {}
+		}
+
+		// XIO DAE Controller (inherits from class HardwareBase)
+		public class DAEController : HardwareBase {
+			public System.Object[] BrickId;
+			public System.String ConnectivityState;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String DAEId;
+			public System.String DAEControllerId;
+			public System.Boolean Enabled;
+			public System.String FailureReason;
+			public System.String FWVersionError;
+			public System.String HealthLevel;
+			public System.String Identification;
+			public System.String Location;
+			public System.String LifecycleState;
+			public System.String ReplacementReason;
+			public System.Object[] SAS;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public DAEController () {}
 		}
 
 		public class DataProtectionGroup {
@@ -257,6 +280,20 @@ Add-Type -TypeDefinition @"
 			public Event () {}
 		}
 
+		// general HardwareBase class (inherits from class InfoBase)
+		public class HardwareBase : InfoBase {
+			public System.String FWVersion;
+			public System.String HWRevision;
+			public System.String IdLED;
+			public System.String Model;
+			public System.String PartNumber;
+			public System.String SerialNumber;
+			public System.String StatusLED;
+
+			// Implicit constructor
+			public HardwareBase() {}
+		}
+
 		// Initiator Group Folder
 		public class IgFolder {
 			public System.String Caption;
@@ -277,6 +314,20 @@ Add-Type -TypeDefinition @"
 
 			// Implicit constructor
 			public IgFolder () {}
+		}
+
+		// general InfoBase class
+		public class InfoBase {
+			public System.String ComputerName;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.String Name;
+			public System.String Severity;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public InfoBase() {}
 		}
 
 		// Initiator Group Folder Performance (inherits from class PerformanceTotal)
@@ -592,7 +643,7 @@ Add-Type -TypeDefinition @"
 			public System.Int32 NumCluster;
 			public System.Int32 NumInitiatorGroup;
 			public System.Int32 NumIscsiRoute;
-			public System.String ObjSeverity;
+			public System.String Severity;
 			public System.Double OverallEfficiency;
 			public System.Version RestApiVersion;
 			public System.String ServerName;

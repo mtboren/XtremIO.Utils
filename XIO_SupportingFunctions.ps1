@@ -1273,14 +1273,61 @@ function _New-Object_fromItemTypeAndContent {
 				Index = $oContent.index
 				LifecycleState = $oContent."fru-lifecycle-state"
 				Model = $oContent."model-name"
-				NumJBODController = [int]$oContent."num-of-jbod-controllers"
-				NumJBODPSU = [int]$oContent."num-of-jbod-psus"
+				NumDAEController = [int]$oContent."num-of-jbod-controllers"
+				NumDAEPSU = [int]$oContent."num-of-jbod-psus"
 				PartNumber = $oContent."part-number"
 				ReplacementReason = $oContent."fru-replace-failure-reason"
 				SerialNumber = $oContent."serial-number"
-				Severity = $oContent.severity
+				Severity = $oContent."obj-severity"
 				StatusLED = $oContent."status-led"
 				TagList = $oContent."tag-list"
+				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"dae-controllers" {
+			[ordered]@{
+				Name = $oContent.name
+				BrickId = $oContent."brick-id"
+				ClusterId = $oContent."sys-id"[0]
+				ClusterName = $oContent."sys-id"[1]
+				ConnectivityState = $oContent."jbod-controller-connectivity-state"
+				DAEId = $oContent."jbod-id"[0]
+				DAEControllerId = $oContent."jbod-controller-id"[0]
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				FailureReason = $oContent."failure-reason"
+				FWVersion = $oContent."fw-version"
+				FWVersionError = $oContent."fw-version-error"
+				Guid = $oContent.guid
+				HealthLevel = $oContent."lcc-health-level"
+				HWRevision = $oContent."hw-revision"
+				Identification = $oContent.identification
+				IdLED = $oContent."identify-led"
+				Index = $oContent.index
+				LifecycleState = $oContent."fru-lifecycle-state"
+				Location = $oContent.location
+				Model = $oContent."model-name"
+				PartNumber = $oContent."part-number"
+				ReplacementReason = $oContent."fru-replace-failure-reason"
+				SAS = New-Object -Type PSObject -Property ([ordered]@{
+					ConnectivityState = $oContent."sas-connectivity-state"
+					PortInfo = $(1..2 | Foreach-Object {
+						$intI = $_
+						New-Object -Type PSObject -Property ([ordered]@{
+							Location = $oContent."sas${intI}-port-location"
+							NodeIndex = [int]$oContent."sas${intI}-node-index"
+							Port = "SAS${intI}"
+							PortInNodeIndex = [int]$oContent."sas${intI}-port-in-node-index"
+							Rate = $oContent."sas${intI}-port-rate"
+							State = $oContent."sas${intI}-port-state"
+							XbrickIndex = [int]$oContent."sas${intI}-brick-index"
+						}) ## end new-object
+					} ## end Foreach-Object
+					) ## end sub-expression
+				}) ## end new-object
+				SerialNumber = $oContent."serial-number"
+				Severity = $oContent."obj-severity"
+				StatusLED = $oContent."status-led"
 				SysId = $oContent."sys-id"
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
@@ -1346,10 +1393,10 @@ function _New-Object_fromItemTypeAndContent {
 				NumCluster = [int]$oContent."num-of-systems"
 				NumInitiatorGroup = [int]$oContent."num-of-igs"
 				NumIscsiRoute = [int]$oContent."num-of-iscsi-routes"
-				ObjSeverity = $oContent."obj-severity"
 				## "The aggregated value of the ratio of provisioned Volume capacity to the cluster’s actual used physical capacity"
 				OverallEfficiency = [System.Double]$oContent."overall-efficiency-ratio"
 				RestApiVersion = [System.Version]($oContent."restapi-protocol-version")
+				Severity = $oContent."obj-severity"
 				ServerName = $oContent."server-name"
 				## string representation, like 4.0.1-41
 				SWVersion = $oContent."sw-version"
