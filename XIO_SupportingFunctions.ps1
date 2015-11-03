@@ -1352,6 +1352,43 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"local-disks" {
+			[ordered]@{
+				Name = $oContent.name
+				BrickId = $oContent."brick-id"
+				ClusterId = $oContent."sys-id"[0]
+				ClusterName = $oContent."sys-id"[1]
+				EncryptionStatus = $oContent."encryption-status"
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				ExpectedType = $oContent."local-disk-expected-type"
+				FailureReason = $oContent."disk-failure"
+				FWVersion = $oContent."fw-version"
+				FWVersionError = $oContent."fw-version-error"
+				Guid = $oContent.guid
+				HWRevision = $oContent."hw-revision"
+				IdLED = $oContent."identify-led"
+				Index = $oContent.index
+				LifecycleState = $oContent."fru-lifecycle-state"
+				LocalDiskId = $oContent."local-disk-id"[0]
+				Model = $oContent."model-name"
+				NumBadSector = $oContent."num-bad-sectors"
+				PartNumber = $oContent."part-number"
+				Purpose = $oContent."local-disk-purpose"
+				ReplacementReason = $oContent."fru-replace-failure-reason"
+				## have to string-manip to get this and Wwn -- weak
+				SerialNumber = $oContent."local-disk-uid".Split("_")[3].Trim("][")
+				Severity = $oContent."obj-severity"
+				SlotNum = $oContent."slot-num"
+				StatusLED = $oContent."status-led"
+				StorageControllerId = $oContent."node-id"[0]
+				StorageControllerName = $oContent."node-id"[1]
+				SysId = $oContent."sys-id"
+				TagList = $oContent."tag-list"
+				Type = $oContent."local-disk-type"
+				Wwn = $oContent."local-disk-uid".Split("_")[1].Trim("][")
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"xms" {
 			[ordered]@{
 				Name = $oContent.name

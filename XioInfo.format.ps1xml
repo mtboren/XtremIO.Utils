@@ -244,6 +244,36 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_local-disks</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.LocalDisk</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>5</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Type</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Purpose</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_volumes</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Volume</TypeName></ViewSelectedBy>
 			<TableControl>

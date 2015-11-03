@@ -38,7 +38,6 @@ Add-Type -TypeDefinition @"
 			public System.String Input;
 			public System.Double InputHz;
 			public System.Int32 InputVoltage;
-			public System.String LifecycleState;
 			public System.Int32 LoadPct;
 			public System.String LoadPctLevel;
 			public System.String Outlet1Status;
@@ -140,7 +139,6 @@ Add-Type -TypeDefinition @"
 			public System.String ClusterId;
 			public System.String ClusterName;
 			public System.String DAEId;
-			public System.String LifecycleState;
 			public System.Int32 NumDAEController;
 			public System.Int32 NumDAEPSU;
 			public System.String ReplacementReason;
@@ -165,7 +163,6 @@ Add-Type -TypeDefinition @"
 			public System.String HealthLevel;
 			public System.String Identification;
 			public System.String Location;
-			public System.String LifecycleState;
 			public System.String ReplacementReason;
 			public System.Object[] SAS;
 			public System.Object[] SysId;
@@ -257,6 +254,7 @@ Add-Type -TypeDefinition @"
 			public System.String FWVersion;
 			public System.String HWRevision;
 			public System.String IdLED;
+			public System.String LifecycleState;
 			public System.String Model;
 			public System.String PartNumber;
 			public System.String SerialNumber;
@@ -343,6 +341,32 @@ Add-Type -TypeDefinition @"
 
 		// InitiatorPerformance (inherits from class PerformanceTotal)
 		public class InitiatorPerformance : PerformanceTotal {}
+
+		// XIO LocalDisk in StorageControllers (inherits from class HardwareBase)
+		public class LocalDisk : HardwareBase {
+			public System.Object[] BrickId;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.Boolean Enabled;
+			public System.String EncryptionStatus;
+			public System.String ExpectedType;
+			public System.String FailureReason;
+			public System.String FWVersionError;
+			public System.String LocalDiskId;
+			public System.Int32 NumBadSector;
+			public System.String Purpose;
+			public System.String ReplacementReason;
+			public System.Int32 SlotNum;
+			public System.String StorageControllerId;
+			public System.String StorageControllerName;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.String Type;
+			public System.String Wwn;
+
+			// Implicit constructor
+			public LocalDisk () {}
+		}
 
 		public class LunMap {
 			public System.String ComputerName;
