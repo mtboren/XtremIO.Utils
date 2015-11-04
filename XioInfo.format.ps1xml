@@ -304,6 +304,28 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_user-accounts</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.UserAccount</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>20</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Role</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>InactivityTimeoutMin</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>IsExternal</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_volumes</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Volume</TypeName></ViewSelectedBy>
 			<TableControl>

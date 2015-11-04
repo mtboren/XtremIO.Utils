@@ -427,6 +427,17 @@ Add-Type -TypeDefinition @"
 			public SnmpNotifier () {}
 		}
 
+		// User Account (inherits from class InfoBase)
+		public class UserAccount : InfoBase {
+			public System.Int32 InactivityTimeoutMin;
+			public System.Boolean IsExternal;
+			public System.String Role;
+			public System.String UserAccountId;
+
+			// Implicit constructor
+			public UserAccount () {}
+		}
+
 		// SSD
 		public class Ssd {
 			public System.Object[] BrickId;

@@ -1407,6 +1407,19 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"user-accounts" {
+			[ordered]@{
+				Name = $oContent.name
+				Guid = $oContent.guid
+				InactivityTimeoutMin = [int]$oContent."inactivity-timeout"
+				Index = $oContent.index
+				IsExternal = ($oContent."external-user" -eq "true")
+				Role = $oContent.role
+				Severity = $oContent."obj-severity"
+				UserAccountId = $oContent."user-id"[0]
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"xms" {
 			[ordered]@{
 				Name = $oContent.name
