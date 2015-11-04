@@ -274,6 +274,36 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_snmp-notifier</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.SnmpNotifier</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>17</Width></TableColumnHeader>
+					<TableColumnHeader><Width>6</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Community</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>HeartbeatFreqSec</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SNMPVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PrivacyProtocol</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Port</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Recipient</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_volumes</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Volume</TypeName></ViewSelectedBy>
 			<TableControl>

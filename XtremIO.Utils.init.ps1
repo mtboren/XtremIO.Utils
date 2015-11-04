@@ -411,6 +411,22 @@ Add-Type -TypeDefinition @"
 		// Snapshot (inherits Volume class)
 		public class Snapshot : Volume {}
 
+		// SNMP Notifier (inherits from class InfoBase)
+		public class SnmpNotifier : InfoBase {
+			public System.String AuthProtocol;
+			public System.String Community;
+			public System.Boolean Enabled;
+			public System.Int32 HeartbeatFreqSec;
+			public System.Int32 Port;
+			public System.String PrivacyProtocol;
+			public System.String[] Recipient;
+			public System.String SNMPVersion;
+			public System.String Username;
+
+			// Implicit constructor
+			public SnmpNotifier () {}
+		}
+
 		// SSD
 		public class Ssd {
 			public System.Object[] BrickId;

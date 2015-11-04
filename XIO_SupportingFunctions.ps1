@@ -1389,6 +1389,24 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"snmp-notifier" {
+			[ordered]@{
+				Name = $oContent.name
+				AuthProtocol = $oContent."auth-protocol"
+				Community = $oContent.community
+				Enabled = ($oContent.enabled -eq "true")
+				Guid = $oContent.guid
+				HeartbeatFreqSec = [int]$oContent."heartbeat-frequency"
+				Index = $oContent.index
+				Port = [int]$oContent.port
+				PrivacyProtocol = $oContent."priv-protocol"
+				Recipient = $oContent.recipients
+				Severity = $oContent."obj-severity"
+				SNMPVersion = $oContent.version
+				Username = $oContent.username
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"xms" {
 			[ordered]@{
 				Name = $oContent.name

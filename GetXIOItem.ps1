@@ -24,9 +24,9 @@ function Get-XIOItemInfo {
 		##   for all XIOS versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
 		##   and, for XIOS versions 2.2.3 and up:  "brick", "snapshot", "ssd", "storage-controller", "xenv"
 		##   and, for XIOS versions 2.4 and up:    "data-protection-group", "event", "ig-folder", "volume-folder"
-		##   and, for XIOS version 4.0 and up:     "alert-definition", "bbu", "dae", "dae-controller", "email-notifier", "local-disk", "xms"
+		##   and, for XIOS version 4.0 and up:     "alert-definition", "bbu", "dae", "dae-controller", "email-notifier", "local-disk", "snmp-notifier", "xms"
 		[parameter(ParameterSetName="ByComputerName")]
-		[ValidateSet("alert-definition", "bbu", "cluster", "dae", "dae-controller", "data-protection-group", "email-notifier", "event", "ig-folder", "initiator-group", "initiator", "local-disk", "lun-map", "target-group", "target", "volume", "volume-folder", "brick", "snapshot", "ssd", "storage-controller", "xenv", "xms")]
+		[ValidateSet("alert-definition", "bbu", "cluster", "dae", "dae-controller", "data-protection-group", "email-notifier", "event", "ig-folder", "initiator-group", "initiator", "local-disk", "lun-map", "snmp-notifier", "target-group", "target", "volume", "volume-folder", "brick", "snapshot", "ssd", "storage-controller", "xenv", "xms")]
 		[string]$ItemType_str = "cluster",
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -68,7 +68,7 @@ function Get-XIOItemInfo {
 			## else, use ItemType
 			else {
 				## from the param value, make the plural form (the item types in the API are all plural; adding "s" here to the singular form used for valid param values, the singular form being the standard for PowerShell-y things)
-				$strItemType_plural = if (@("email-notifier", "xms") -notcontains $ItemType_str) {"${ItemType_str}s"} else {$ItemType_str}
+				$strItemType_plural = if (@("email-notifier", "snmp-notifier", "xms") -notcontains $ItemType_str) {"${ItemType_str}s"} else {$ItemType_str}
 			} ## end else
 
 			## is this a type that is supported in this XioConnection's XIOS version? (and, was this not a "by URI" request? excluding those so that user can explor other objects, like /json/api/types)
@@ -1305,6 +1305,45 @@ function Get-XIOLocalDisk {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "local-disk"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+	} ## end begin
+
+	Process {
+		## call the base function to get the given item
+		Get-XIOItemInfo @hshParamsForGetXioInfo
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO SNMP Notifier info using REST API from XtremIO XMS appliance
+	.Example
+	Get-XIOSnmpNotifier
+	Get the "SnmpNotifier" items
+	.Outputs
+	XioItemInfo.SnmpNotifier
+#>
+function Get-XIOSnmpNotifier {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.SnmpNotifier])]
+	param(
+		## XMS appliance address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "snmp-notifier"
 		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
 		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
