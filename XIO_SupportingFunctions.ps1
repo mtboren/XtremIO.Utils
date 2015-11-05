@@ -1389,6 +1389,26 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"slots" {
+			[ordered]@{
+				Name = $oContent.name
+				BrickId = $oContent."brick-id"
+				ErrorReason = $oContent."slot-error-reason"
+				FailureReason = $oContent."failure-reason"
+				Guid = $oContent.guid
+				Index = $oContent.index
+				SlotNum = [int]$oContent."slot-num"
+				SsdId = $oContent."ssd-o-signature"
+				SsdModel = $oContent."product-model"
+				SsdSizeGB = [Double]($oContent."ssd-size" / 1MB)
+				SsdUid = $oContent."ssd-uid"
+				State = $oContent."slot-state"
+				## Slots do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
+				Severity = $oContent."obj-severity"
+				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"snmp-notifier" {
 			[ordered]@{
 				Name = $oContent.name

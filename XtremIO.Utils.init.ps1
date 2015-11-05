@@ -438,6 +438,23 @@ Add-Type -TypeDefinition @"
 			public UserAccount () {}
 		}
 
+		// Slot (inherits from class InfoBase)
+		public class Slot : InfoBase {
+			public System.Object[] BrickId;
+			public System.String ErrorReason;
+			public System.String FailureReason;
+			public System.String SsdModel;
+			public System.Int32 SlotNum;
+			public System.String SsdId;
+			public System.Double SsdSizeGB;
+			public System.String SsdUid;
+			public System.String State;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public Slot () {}
+		}
+
 		// SSD
 		public class Ssd {
 			public System.Object[] BrickId;

@@ -274,6 +274,32 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_slots</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.Slot</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>12</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SlotNum</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SsdSizeGB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
+							<TableColumnItem><PropertyName>SsdUid</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SsdModel</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ErrorReason</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_snmp-notifier</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.SnmpNotifier</TypeName></ViewSelectedBy>
 			<TableControl>
@@ -433,11 +459,11 @@
 				<TableHeaders>
 					<TableColumnHeader><Width>25</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>17</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 				</TableHeaders>
 				<TableRowEntries>
