@@ -415,6 +415,39 @@ function _Test-XIOObjectIsInThisXIOSVersion {
 } ## end function
 
 
+function _New-ScheduleDisplayString {
+<#	.Description
+	Helper function to take a schedule type and schedule "triplet" and return a display string
+	.Outputs
+	String
+#>
+	param (
+		## Type of scheduler:  explicit or interval
+		[parameter(Mandatory=$true)][ValidateSet("explicit","interval")][string]$ScheduleType,
+		## Schedule string.  Like "hrs:mins:secs" for interval scheduler, or "intDayOfWeek_1-basedIndex:h:min" for explicit scheduler
+		[string]$ScheduleTriplet
+	)
+	process {
+		[int]$intSchedPiece0,[int]$intSchedPiece1,[int]$intSchedPiece2 = $ScheduleTriplet.Split(":")
+		Switch ($ScheduleType) {
+			"explicit" {
+				## the day of the week is either "Every day" when the first piece is 0, or the <piece0 - 1> for the DayOfWeek enum (zero-based index)
+				$strDayOfWeek = if ($intSchedPiece0 -eq 0) {"Every day"} else {[System.Enum]::GetName([System.DayOfWeek], ($intSchedPiece0 - 1))}
+				$strTimeOfDay = "{0:00}:{1:00}" -f $intSchedPiece1, $intSchedPiece2
+				"{0} at {1}" -f $strDayOfWeek, $strTimeOfDay
+			} ## end case
+			"interval" {
+				$strHrOutput = if ($intSchedPiece0 -gt 0) {"$intSchedPiece0 hour{0}" -f $(if ($intSchedPiece0 -ne 1) {"s"})}
+				$strMinOutput = if ($intSchedPiece1 -gt 0) {"$intSchedPiece1 min{0}" -f $(if ($intSchedPiece1 -ne 1) {"s"})}
+				$strSecOutput = if ($intSchedPiece2 -gt 0) {"$intSchedPiece2 sec{0}" -f $(if ($intSchedPiece2 -ne 1) {"s"})}
+				(@("Every",$strHrOutput,$strMinOutput,$strSecOutput) | Where-Object {$null -ne $_}) -join " "
+			} ## end case
+			default {Write-Verbose "scheduler type '$ScheduleType' not expected"}
+		} ## end switch
+	} ## end process
+} ## end fn
+
+
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	All item types (including some that are only on XMS v2.2.3 rel 25):  "target-groups", "lun-maps", "storage-controllers", "bricks", "snapshots", "iscsi-portals", "xenvs", "iscsi-routes", "initiator-groups", "volumes", "clusters", "initiators", "ssds", "targets"
@@ -1428,6 +1461,29 @@ function _New-Object_fromItemTypeAndContent {
 				Severity = $oContent."obj-severity"
 				SysId = $oContent."sys-id"
 				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"schedulers" {
+			[ordered]@{
+				Name = $oContent.name
+				Guid = $oContent.guid
+				Index = $oContent.index
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				LastActivated = $(if ($oContent."last-activation-time" -gt 0) {(Get-Date "01 Jan 1970").AddSeconds($oContent."last-activation-time").ToLocalTime()})
+				LastActivationResult = $oContent."last-activation-status"
+				NumSnapToKeep = [int]$oContent."snapshots-to-keep-number"
+				Retain = (New-TimeSpan -Seconds $oContent."snapshots-to-keep-time")
+				Schedule = (_New-ScheduleDisplayString -ScheduleType $oContent."scheduler-type" -ScheduleTriplet $oContent.schedule)
+				SnappedObject = New-Object -Type PSObject -Property ([ordered]@{
+					Guid = $oContent."snapped-object-id"[0]
+					Index = $oContent."snapped-object-index"
+					Name = $oContent."snapped-object-id"[1]
+					Type = $oContent."snapped-object-type"
+				}) ## end new-object
+				SnapType = $oContent."snapshot-type"
+				State = $oContent."scheduler-state"
+				Suffix = $oContent.suffix
+				Type = $oContent."scheduler-type"
 			} ## end ordered dictionary
 			break} ## end case
 		"snmp-notifier" {

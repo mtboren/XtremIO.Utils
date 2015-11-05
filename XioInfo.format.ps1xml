@@ -298,6 +298,32 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_schedulers</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.Scheduler</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SnapType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Retain</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LastActivated</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LastActivationResult</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_slots</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Slot</TypeName></ViewSelectedBy>
 			<TableControl>

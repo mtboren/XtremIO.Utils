@@ -426,6 +426,29 @@ Add-Type -TypeDefinition @"
 			public System.Int64 TotWriteIOs;
 		}
 
+		// Snapshot Scheduler
+		public class Scheduler {
+			public System.String Name;
+			public System.Boolean Enabled;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.DateTime? LastActivated;
+			public System.String LastActivationResult;
+			public System.Int32 NumSnapToKeep;
+			public System.TimeSpan Retain;
+			public System.String Schedule;
+			public System.Object SnappedObject;
+			public System.String SnapType;
+			public System.String State;
+			public System.String Suffix;
+			public System.String Type;
+			public System.String ComputerName;
+			public System.String Uri;
+
+			// Implicit constructor
+			public Scheduler () {}
+		}
+
 		// Snapshot (inherits Volume class)
 		public class Snapshot : Volume {}
 

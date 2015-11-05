@@ -25,6 +25,6 @@ $hshCfg = @{
 	GetEventDatetimeFormat = "yyyy-MM-dd HH:mm:ss"
 	ItemTypeInfoPerXiosVersion = @{
 		"3.0" = "clusters", "data-protection-groups", "events", "ig-folders", "initiator-groups", "initiators", "lun-maps", "target-groups", "targets", "volumes", "volume-folders", "bricks", "snapshots", "ssds", "storage-controllers", "xenvs"
-		"4.0" = "alert-definitions", "bbus", "daes", "dae-controllers", "email-notifier", "ldap-configs", "local-disks", "slots", "snmp-notifier", "user-accounts", "xms"
+		"4.0" = "alert-definitions", "bbus", "daes", "dae-controllers", "email-notifier", "ldap-configs", "local-disks", "schedulers", "slots", "snmp-notifier", "user-accounts", "xms"
 	}
 } ## end hashtable
