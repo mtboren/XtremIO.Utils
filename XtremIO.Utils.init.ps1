@@ -342,6 +342,24 @@ Add-Type -TypeDefinition @"
 		// InitiatorPerformance (inherits from class PerformanceTotal)
 		public class InitiatorPerformance : PerformanceTotal {}
 
+		// LDAP Config (inherits from class InfoBase)
+		public class LdapConfig : InfoBase {
+			public System.String BindDN;
+			public System.String CACertData;
+			public System.String CACertFile;
+			public System.Int32 CacheExpireH;
+			public System.String[] Role;
+			public System.String SearchBaseDN;
+			public System.String SearchFilter;
+			public System.String[] ServerUrl;
+			public System.String[] ServerUrlExample;
+			public System.Int32 TimeoutSec;
+			public System.String UserToDnRule;
+
+			// Implicit constructor
+			public LdapConfig () {}
+		}
+
 		// XIO LocalDisk in StorageControllers (inherits from class HardwareBase)
 		public class LocalDisk : HardwareBase {
 			public System.Object[] BrickId;

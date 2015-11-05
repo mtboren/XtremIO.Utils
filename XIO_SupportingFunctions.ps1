@@ -1352,6 +1352,27 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"ldap-configs" {
+			[ordered]@{
+				Name = $oContent.name
+				BindDN = $oContent."bind-dn"
+				CACertData = $oContent."ca-cert-data"
+				CACertFile = $oContent."ca-cert-file"
+				CacheExpireH = [int]$oContent."cache-expire-hours"
+				Guid = $oContent.guid
+				Index = $oContent.index
+				Role = $oContent.roles
+				SearchBaseDN = $oContent."search-base"
+				SearchFilter = $oContent."search-filter"
+				ServerUrl = $oContent."server-url"
+				ServerUrlExample = $oContent."server-urls"
+				## LDAP configs do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
+				Severity = $oContent."obj-severity"
+				TimeoutSec = [int]$oContent.timeout
+				UserToDnRule = $oContent."user-to-dn-rule"
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"local-disks" {
 			[ordered]@{
 				Name = $oContent.name

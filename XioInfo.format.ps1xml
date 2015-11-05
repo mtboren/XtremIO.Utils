@@ -244,6 +244,30 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_ldap-configs</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.LdapConfig</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>27</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>BindDN</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SearchBaseDN</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SearchFilter</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>UserToDnRule</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ServerUrl</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_local-disks</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.LocalDisk</TypeName></ViewSelectedBy>
 			<TableControl>
