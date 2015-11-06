@@ -448,6 +448,20 @@ function _New-ScheduleDisplayString {
 } ## end fn
 
 
+function _Get-LocalDatetimeFromUTCUnixEpoch {
+<#	.Description
+	Helper function to get the current, local datetime from a UNIX Epoch time
+#>
+	param(
+		## UNIX Epoch time (number of seconds since 00:00:00 on 01 Jan 1970)
+		[Double]$UnixEpochTime
+	) ## end param
+
+	process {
+		(Get-Date "01 Jan 1970 00:00:00").AddSeconds($UnixEpochTime).ToLocalTime()
+	} ## end process
+} ## end fn
+
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	All item types (including some that are only on XMS v2.2.3 rel 25):  "target-groups", "lun-maps", "storage-controllers", "bricks", "snapshots", "iscsi-portals", "xenvs", "iscsi-routes", "initiator-groups", "volumes", "clusters", "initiators", "ssds", "targets"
@@ -725,7 +739,7 @@ function _New-Object_fromItemTypeAndContent {
 				## available in 2.4.0 and up
 				SizeAndCapacity = $oContent."size-and-capacity"
 				SWVersion = $oContent."sys-sw-version"
-				SystemActivationDateTime = ([System.DateTime]"01 Jan 1970").AddSeconds($oContent."sys-activation-timestamp")
+				SystemActivationDateTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."sys-activation-timestamp"
 				SystemActivationTimestamp = $oContent."sys-activation-timestamp"
 				SystemSN = $oContent."sys-psnt-serial-number"
 				SystemState = $oContent."sys-state"
@@ -1230,6 +1244,28 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"alerts" {
+			[ordered]@{
+				Name = $oContent.name
+				AlertCode = [string]$oContent."alert-code"
+				AlertType = $oContent."alert-type"
+				AssociatedObjId = $oContent."assoc-obj-id"[0]
+				AssociatedObjIndex = $oContent."assoc-obj-index"
+				AssociatedObjName = $oContent."assoc-obj-name"
+				Class = $oContent."class-name"
+				ClusterId = $oContent."sys-id"[0]
+				ClusterName = $oContent."sys-name"
+				## is milliseconds since UNIX epoch (not seconds like a "regular" UNIX epoch time)
+				CreationTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."raise-time" / 1000)
+				Description = $oContent.description
+				Guid = $oContent.guid
+				Index = $oContent.index
+				Severity = $oContent.severity
+				State = $oContent."alert-state"
+				Threshold = $oContent.threshold
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"bbus" {
 			[ordered]@{
 				Name = $oContent.name
@@ -1469,7 +1505,7 @@ function _New-Object_fromItemTypeAndContent {
 				Guid = $oContent.guid
 				Index = $oContent.index
 				Enabled = ($oContent."enabled-state" -eq "enabled")
-				LastActivated = $(if ($oContent."last-activation-time" -gt 0) {(Get-Date "01 Jan 1970").AddSeconds($oContent."last-activation-time").ToLocalTime()})
+				LastActivated = $(if ($oContent."last-activation-time" -gt 0) {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."last-activation-time"})
 				LastActivationResult = $oContent."last-activation-status"
 				NumSnapToKeep = [int]$oContent."snapshots-to-keep-number"
 				Retain = (New-TimeSpan -Seconds $oContent."snapshots-to-keep-time")

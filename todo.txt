@@ -160,8 +160,8 @@ doing:
 	-need to update all places that specify API types as singular to use real API type name
 -have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
 -add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
-	-Alerts, Object Performance, Consistency Groups, Snapshot Sets, Consistency Group Volumes, Storage Controller PSUs, DAE PSUs, SYSLOG Notifiers, Tags, InfiniBand Switches, ?SYR Notifiers?
-	-type names in v2 API:  alerts, consistency-group-volumes, consistency-groups, dae-psus, infiniband-switches, performance, schedulers, snapshot-sets, storage-controller-psus, syslog-notifier, tags
+	-Object Performance, Consistency Groups, Snapshot Sets, Consistency Group Volumes, Storage Controller PSUs, DAE PSUs, SYSLOG Notifiers, Tags, InfiniBand Switches, ?SYR Notifiers?
+	-type names in v2 API: consistency-group-volumes, consistency-groups, dae-psus, infiniband-switches, performance, snapshot-sets, storage-controller-psus, syslog-notifier, tags
 	-include GUID type of property when possible
 	-include pipelining support
 		Get-XIODAE | Get-XIODAEController
@@ -174,8 +174,8 @@ doing:
 	-include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 
 	done:
-	type names:  alert-definitions, bbus, daes, dae-controllers, email-notifier, ldap-configs, local-disks, schedulers, slots, snmp-notifier, user-accounts, xms
-	Types:  Alert Definitions, BBUs, DAEs, DAE Controllers, Email Notifiers, LDAP Configurations, Local Disks, Schedulers, Slots, SNMP Notifiers, User Accounts, XMS
+	type names:  alert-definitions, alerts, bbus, daes, dae-controllers, email-notifier, ldap-configs, local-disks, schedulers, slots, snmp-notifier, user-accounts, xms
+	Types:  Alert Definitions, Alerts, BBUs, DAEs, DAE Controllers, Email Notifiers, LDAP Configurations, Local Disks, Schedulers, Slots, SNMP Notifiers, User Accounts, XMS
 	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIOConnection RestAPI version is 2 or greater
 
 

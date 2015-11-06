@@ -1,22 +1,34 @@
 Add-Type -TypeDefinition @"
 	namespace XioItemInfo {
-		public class AlertDefinition {
-			public string Name;
-			public string AlertCode;
-			public string AlertType;
-			public string Class;
-			public string ClearanceMode;
-			public System.String ComputerName;
+		// Alert (inherites from class InfoBase)
+		public class Alert : InfoBase {
+			public System.String AlertCode;
+			public System.String AlertType;
+			public System.String AssociatedObjId;
+			public System.String AssociatedObjIndex;
+			public System.String AssociatedObjName;
+			public System.String Class;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.DateTime CreationTime;
+			public System.String Description;
+			public System.String State;
+			public System.String Threshold;
+
+			// Implicit constructor
+			public Alert () {}
+		}
+
+		public class AlertDefinition : InfoBase {
+			public System.String AlertCode;
+			public System.String AlertType;
+			public System.String Class;
+			public System.String ClearanceMode;
 			public System.Boolean Enabled;
-			public string Guid;
-			public System.Int32 Index;
 			public System.Boolean SendToCallHome;
-			public string Severity;
-			public string ThresholdType;
+			public System.String ThresholdType;
 			public System.Int32 ThresholdValue;
 			public System.Boolean UserModified;
-			public string Uri;
-			public System.Object[] XmsId;
 
 			// Implicit constructor
 			public AlertDefinition () {}

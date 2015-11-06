@@ -2,6 +2,32 @@
 <Configuration>
 	<ViewDefinitions>
 		<View>
+			<Name>XioItem_alerts</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.Alert</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>30</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>AlertType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>AssociatedObjName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>AlertCode</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Severity</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>State</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_alert-definitions</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.AlertDefinition</TypeName></ViewSelectedBy>
 			<TableControl>
