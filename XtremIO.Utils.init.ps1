@@ -145,6 +145,23 @@ Add-Type -TypeDefinition @"
 		// ClusterPerformance (inherits from class PerformanceTotal)
 		public class ClusterPerformance : PerformanceTotal {}
 
+		// ConsistencyGroup (inherits from InfoBase)
+		public class ConsistencyGroup : InfoBase {
+			public System.String Certainty;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String ConsistencyGrpId;
+			public System.String ConsistencyGrpShortId;
+			public System.String CreatedByApp;
+			public System.Int32 NumVol;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.Object[] VolList;
+
+			// Implicit constructor
+			public ConsistencyGroup () {}
+		}
+
 		// XIO DAE (Disk Array Enclosure) (inherits from class HardwareBase)
 		public class DAE : HardwareBase {
 			public System.Object[] BrickId;

@@ -129,6 +129,30 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_consistency-groups</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.ConsistencyGroup</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<!-- <TableColumnHeader><Width>40</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader> -->
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreatedByApp</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Certainty</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_daes</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.DAE</TypeName></ViewSelectedBy>
 			<TableControl>

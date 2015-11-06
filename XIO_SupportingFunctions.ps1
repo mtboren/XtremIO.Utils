@@ -462,6 +462,30 @@ function _Get-LocalDatetimeFromUTCUnixEpoch {
 	} ## end process
 } ## end fn
 
+
+function _New-ObjListFromProperty {
+<#	.Description
+	Helper function to create objects from typical XIO "list" object arrays, which have members that are like:  <someLongId>, <theObjectDisplayName>, <theObjectIndex>
+#>
+	param(
+		## The prefix to add to the Id property name
+		[string]$IdPropertyPrefix,
+		## The array of objects from which to get Id, Name, and Index
+		[PSObject[]]$ObjectArray
+	) ## end param
+
+	process {
+		$ObjectArray | Where-Object {$null -ne $_} | Foreach-Object {
+			New-Object -TypeName PSObject -Property ([ordered]@{
+				"${IdPropertyPrefix}Id" = $_[0]
+				Name = $_[1]
+				Index = $_[2]
+			}) ## end new-object
+		} ## end foreach-object
+	} ## end process
+} ## end fn
+
+
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	All item types (including some that are only on XMS v2.2.3 rel 25):  "target-groups", "lun-maps", "storage-controllers", "bricks", "snapshots", "iscsi-portals", "xenvs", "iscsi-routes", "initiator-groups", "volumes", "clusters", "initiators", "ssds", "targets"
@@ -1320,10 +1344,30 @@ function _New-Object_fromItemTypeAndContent {
 						StorageControllerId = $_[0]
 					}) ## end New-Object
 				} ## end foreach-object
-				TagList = $oContent."tag-list"
+				TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 				UPSAlarm = $oContent."ups-alarm"
 				UPSOverloaded = ([string]"true" -eq $oContent."is-ups-overload")
 				SysId = $oContent."sys-id"
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"consistency-groups" {
+			[ordered]@{
+				Name = $oContent.name
+				Certainty = $oContent.certainty
+				ClusterId = $oContent."sys-id"[0]
+				ClusterName = $oContent."sys-id"[1]
+				CreatedByApp = $oContent."created-by-app"
+				ConsistencyGrpId = $oContent."cg-id"[0]
+				ConsistencyGrpShortId = $oContent."cg-short-id"
+				Guid = $oContent.guid
+				Index = $oContent.index
+				NumVol = $oContent."num-of-vols"
+				Severity = $oContent."obj-severity"
+				SysId = $oContent."sys-id"
+				TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+				VolList = _New-ObjListFromProperty -IdPropertyPrefix "Vol" -ObjectArray $oContent."vol-list"
+				## $null?  (property not defined on Consistency-groups?)
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
@@ -1349,7 +1393,7 @@ function _New-Object_fromItemTypeAndContent {
 				SerialNumber = $oContent."serial-number"
 				Severity = $oContent."obj-severity"
 				StatusLED = $oContent."status-led"
-				TagList = $oContent."tag-list"
+				TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 				SysId = $oContent."sys-id"
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
@@ -1473,7 +1517,7 @@ function _New-Object_fromItemTypeAndContent {
 				StorageControllerId = $oContent."node-id"[0]
 				StorageControllerName = $oContent."node-id"[1]
 				SysId = $oContent."sys-id"
-				TagList = $oContent."tag-list"
+				TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 				Type = $oContent."local-disk-type"
 				Wwn = $oContent."local-disk-uid".Split("_")[1].Trim("][")
 				XmsId = $oContent."xms-id"
