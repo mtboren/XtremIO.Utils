@@ -132,13 +132,6 @@
 			<Name>XioItem_consistency-groups</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.ConsistencyGroup</TypeName></ViewSelectedBy>
 			<TableControl>
-				<TableHeaders>
-					<!-- <TableColumnHeader><Width>40</Width></TableColumnHeader>
-					<TableColumnHeader><Width>18</Width></TableColumnHeader>
-					<TableColumnHeader><Width>11</Width></TableColumnHeader>
-					<TableColumnHeader><Width>13</Width></TableColumnHeader>
-					<TableColumnHeader><Width>9</Width></TableColumnHeader> -->
-				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
@@ -480,6 +473,28 @@
 							<TableColumnItem><PropertyName>VolSizeTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>UsedLogicalTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_snapshot-sets</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.SnapshotSet</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ConsistencyGrpName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>

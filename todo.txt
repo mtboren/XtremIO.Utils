@@ -160,8 +160,8 @@ doing:
 	-need to update all places that specify API types as singular to use real API type name
 -have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
 -add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
-	-Object Performance, Snapshot Sets, Consistency Group Volumes, Storage Controller PSUs, DAE PSUs, SYSLOG Notifiers, Tags, InfiniBand Switches, ?SYR Notifiers?
-	-type names in v2 API: consistency-group-volumes, dae-psus, infiniband-switches, performance, snapshot-sets, storage-controller-psus, syslog-notifier, tags
+	-Object Performance, Storage Controller PSUs, DAE PSUs, SYSLOG Notifiers, Tags, InfiniBand Switches, ?SYR Notifiers?
+	-type names in v2 API: dae-psus, infiniband-switches, performance, storage-controller-psus, syslog-notifier, tags
 	-include GUID type of property when possible
 	-include pipelining support
 		Get-XIODAE | Get-XIODAEController
@@ -171,12 +171,18 @@ doing:
 		Get-XIOStorageController | Get-XIOLocalDisk
 		Get-XIOLocalDisk | Get-XIOStorageController
 		Get-XIOSlot | Get-XIOSsd
+		Get-XIOSnapshotSet | Get-XIOVolume
 	-include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 
 	done:
-	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, email-notifier, ldap-configs, local-disks, schedulers, slots, snmp-notifier, user-accounts, xms
-	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, Email Notifiers, LDAP Configurations, Local Disks, Schedulers, Slots, SNMP Notifiers, User Accounts, XMS
+	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, email-notifier, ldap-configs, local-disks, schedulers, slots, snapshot-sets, snmp-notifier, user-accounts, xms
+	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, Email Notifiers, LDAP Configurations, Local Disks, Schedulers, Slots, Snapshot Sets, SNMP Notifiers, User Accounts, XMS
 	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIOConnection RestAPI version is 2 or greater
+
+	not doing yet:
+	consistency-group-volumes, as their properties returned seem to just be consistency groups, not consistency group volumes (properties match identically, and there are none of the Performance types of properties in the object as there are in the advertised object per the API guide)
+		-and, from initial query of "https://xms.dom.com/api/json/types/consistency-group-volumes", the sub-property is "consistency-groups" (instead of the expected "consistency-group-volumes")
+		-seems like a mix-up in the API
 
 
 

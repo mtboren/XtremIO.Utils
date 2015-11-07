@@ -1566,6 +1566,28 @@ function _New-Object_fromItemTypeAndContent {
 				Type = $oContent."scheduler-type"
 			} ## end ordered dictionary
 			break} ## end case
+		"snapshot-sets" {
+			[ordered]@{
+				Name = $oContent.name
+				ClusterId = $oContent."sys-id"[0]
+				ClusterName = $oContent."sys-id"[1]
+				ConsistencyGrpId = $(if ($null -ne $oContent."cg-id") {$oContent."cg-id"[0]})
+				ConsistencyGrpName = $oContent."cg-name"
+				## "creation-time-long" is milliseconds since UNIX epoch (instead of traditional seconds)
+				CreationTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)
+				Guid = $oContent.guid
+				Index = $oContent.index
+				NumVol = $oContent."num-of-vols"
+				Severity = $oContent."obj-severity"
+				SnapshotSetId = $oContent."snapset-id"[0]
+				SnapshotSetShortId = $oContent."snapset-short-id"
+				SysId = $oContent."sys-id"
+				TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+				VolList = _New-ObjListFromProperty -IdPropertyPrefix "Vol" -ObjectArray $oContent."vol-list"
+				## $null?  (property not defined on Consistency-groups?)
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"snmp-notifier" {
 			[ordered]@{
 				Name = $oContent.name

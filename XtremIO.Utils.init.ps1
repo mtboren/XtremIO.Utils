@@ -481,6 +481,24 @@ Add-Type -TypeDefinition @"
 		// Snapshot (inherits Volume class)
 		public class Snapshot : Volume {}
 
+		// SnapshotSet (inherits from InfoBase)
+		public class SnapshotSet : InfoBase {
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String ConsistencyGrpId;
+			public System.String ConsistencyGrpName;
+			public System.DateTime CreationTime;
+			public System.Int32 NumVol;
+			public System.String SnapshotSetId;
+			public System.String SnapshotSetShortId;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.Object[] VolList;
+
+			// Implicit constructor
+			public SnapshotSet () {}
+		}
+
 		// SNMP Notifier (inherits from class InfoBase)
 		public class SnmpNotifier : InfoBase {
 			public System.String AuthProtocol;
