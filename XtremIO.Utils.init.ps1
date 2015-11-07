@@ -629,6 +629,30 @@ Add-Type -TypeDefinition @"
 			public StorageController () {}
 		}
 
+		// XIO StorageController (inherites from class HardwareBase)
+		public class StorageControllerPsu : InfoBase {
+			public System.Object[] BrickId;
+			public System.Boolean Enabled;
+			public System.String FWVersionError;
+			public System.String HWRevision;
+			public System.String Input;
+			public System.String LifecycleState;
+			public System.String Location;
+			public System.String Model;
+			public System.String PartNumber;
+			public System.String PowerFailure;
+			public System.String PowerFeed;
+			public System.String ReplacementReason;
+			public System.String SerialNumber;
+			public System.String StatusLED;
+			public System.Object[] StorageController;
+			public System.String StorageControllerPSUId;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public StorageControllerPsu () {}
+		}
+
 		// Target
 		public class Target {
 			public System.Object[] BrickId;

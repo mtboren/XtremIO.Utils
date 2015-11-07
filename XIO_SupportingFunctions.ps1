@@ -1338,12 +1338,7 @@ function _New-Object_fromItemTypeAndContent {
 				Severity = $oContent.severity
 				Status = $oContent."ups-status"
 				StatusLED = $oContent."status-led"
-				StorageController = $oContent."monitoring-nodes-obj-id-list" | Foreach-Object {
-					New-Object -Type PSObject -Property ([ordered]@{
-						Name = $_[1]
-						StorageControllerId = $_[0]
-					}) ## end New-Object
-				} ## end foreach-object
+				StorageController = _New-ObjListFromProperty -IdPropertyPrefix "StorageController" -ObjectArray @($oContent."monitoring-nodes-obj-id-list" | Select-Object -First 1)
 				TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 				UPSAlarm = $oContent."ups-alarm"
 				UPSOverloaded = ([string]"true" -eq $oContent."is-ups-overload")
@@ -1603,6 +1598,33 @@ function _New-Object_fromItemTypeAndContent {
 				Severity = $oContent."obj-severity"
 				SNMPVersion = $oContent.version
 				Username = $oContent.username
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"storage-controller-psus" {
+			[ordered]@{
+				Name = $oContent.name
+				BrickId = $oContent."brick-id"
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				FWVersionError = $oContent."fw-version-error"
+				Guid = $oContent.guid
+				HWRevision = $oContent."hw-revision"
+				Index = $oContent.index
+				Input = $oContent.input
+				LifecycleState = $oContent."fru-lifecycle-state"
+				Location = $oContent.location
+				Model = $oContent."model-name"
+				PartNumber = $oContent."part-number"
+				PowerFailure = $oContent."power-failure"
+				PowerFeed = $oContent."power-feed"
+				ReplacementReason = $oContent."fru-replace-failure-reason"
+				SerialNumber = $oContent."serial-number"
+				Severity = $oContent."obj-severity"
+				StatusLED = $oContent."status-led"
+				StorageController = _New-ObjListFromProperty -IdPropertyPrefix "StorageController" -ObjectArray (,$oContent."node-id")
+				StorageControllerPSUId = $oContent."node-psu-id"[0]
+				SysId = $oContent."sys-id"
+				## $null?  (property not defined on storage-controller-psus?)
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case

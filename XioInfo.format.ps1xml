@@ -502,6 +502,34 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_storage-controller-psus</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.StorageControllerPsu</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>19</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>7</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PowerFeed</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Input</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Location</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_volume-folders</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.VolumeFolder</TypeName></ViewSelectedBy>
 			<TableControl>
