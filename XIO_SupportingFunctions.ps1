@@ -1440,6 +1440,36 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"dae-psus" {
+			[ordered]@{
+				Name = $oContent.name
+				BrickId = $oContent."brick-id"
+				DAE = _New-ObjListFromProperty -IdPropertyPrefix "DAE" -ObjectArray (,$oContent."jbod-id")
+				DAEPSUId = $oContent."jbod-psu-id"[0]
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				FWVersion = $oContent."fw-version"
+				FWVersionError = $oContent."fw-version-error"
+				Guid = $oContent.guid
+				HWRevision = $oContent."hw-revision"
+				Identification = $oContent.identification
+				IdLED = $oContent."identify-led"
+				Index = $oContent.index
+				Input = $oContent.input
+				LifecycleState = $oContent."fru-lifecycle-state"
+				Location = $oContent.location
+				Model = $oContent."model-name"
+				PartNumber = $oContent."part-number"
+				PowerFailure = $oContent."power-failure"
+				PowerFeed = $oContent."power-feed"
+				ReplacementReason = $oContent."fru-replace-failure-reason"
+				SerialNumber = $oContent."serial-number"
+				Severity = $oContent."obj-severity"
+				StatusLED = $oContent."status-led"
+				SysId = $oContent."sys-id"
+				## $null?  (property not defined on dae-psus?)
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"email-notifier" {
 			[ordered]@{
 				Name = $oContent.name

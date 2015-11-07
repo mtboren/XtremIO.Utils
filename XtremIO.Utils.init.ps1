@@ -178,6 +178,25 @@ Add-Type -TypeDefinition @"
 			public DAE () {}
 		}
 
+		// XIO DAE (Disk Array Enclosure) PSU (inherits from class HardwareBase)
+		public class DAEPsu : HardwareBase {
+			public System.Object[] BrickId;
+			public System.Object[] DAE;
+			public System.String DAEPSUId;
+			public System.Boolean Enabled;
+			public System.String FWVersionError;
+			public System.String Identification;
+			public System.String Input;
+			public System.String Location;
+			public System.String PowerFailure;
+			public System.String PowerFeed;
+			public System.String ReplacementReason;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public DAEPsu () {}
+		}
+
 		// XIO DAE Controller (inherits from class HardwareBase)
 		public class DAEController : HardwareBase {
 			public System.Object[] BrickId;
