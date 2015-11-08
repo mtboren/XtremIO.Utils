@@ -334,6 +334,30 @@ Add-Type -TypeDefinition @"
 			public IgFolder () {}
 		}
 
+		// InfiniBand Switch (inherits from class HardwareBase)
+		public class InfinibandSwitch : HardwareBase {
+			public System.Boolean Enabled;
+			public System.Int32 Fan1RPM;
+			public System.Int32 Fan2RPM;
+			public System.Int32 Fan3RPM;
+			public System.Int32 Fan4RPM;
+			public System.String FanDrawerStatus;
+			public System.String FWVersionError;
+			public System.String IbSwitchId;
+			public System.String InterswitchIb1Port;
+			public System.String InterswitchIb2Port;
+			public System.Object[] Port;
+			public System.String ReplacementReason;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.Object[] TemperatureSensor;
+			public System.Object[] VoltageSensor;
+			public System.String WrongSCConnection;
+
+			// Implicit constructor
+			public InfinibandSwitch () {}
+		}
+
 		// general InfoBase class
 		public class InfoBase {
 			public System.String ComputerName;

@@ -317,6 +317,32 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_infiniband-switches</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.InfinibandSwitch</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>20</Width></TableColumnHeader>
+					<TableColumnHeader><Width>34</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FanDrawerStatus</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_ldap-configs</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.LdapConfig</TypeName></ViewSelectedBy>
 			<TableControl>

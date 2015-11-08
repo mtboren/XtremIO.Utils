@@ -486,6 +486,32 @@ function _New-ObjListFromProperty {
 } ## end fn
 
 
+function _New-ObjListFromProperty_byObjName {
+<#	.Description
+	Helper function to eventually call function to create objects from typical XIO "list" object arrays, based on the object type name (like Storagecontroller or Switch (IBSwitch))
+#>
+	param(
+		## The name of the object type, like Storagecontroller or Switch
+		[string]$Name,
+		## The array of objects from which to get Id, Name, and Index
+		[PSObject[]]$ObjectArray
+	) ## end param
+
+	begin {
+		## mapping of "raw" object name from API to desired display name used for object ID prefix in subsequent helper function
+		$hshObjNameToObjPrefixMap = @{
+			Storagecontroller = "StorageController"
+			"Switch" = "IbSwitch"
+		} ## end hashtable
+		$strObjPrefixToUse = if ($hshObjNameToObjPrefixMap.ContainsKey($Name)) {$hshObjNameToObjPrefixMap[$Name]} else {"UnkItemType"}
+	}
+
+	process {
+		## for some objects (like ports with no connection on them), the Name value is "none", indicating that it has no connection; return nothing for those
+		if ($Name -ne "none") {_New-ObjListFromProperty -IdPropertyPrefix $strObjPrefixToUse -ObjectArray (,$ObjectArray)}
+	} ## end process
+} ## end fn
+
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	All item types (including some that are only on XMS v2.2.3 rel 25):  "target-groups", "lun-maps", "storage-controllers", "bricks", "snapshots", "iscsi-portals", "xenvs", "iscsi-routes", "initiator-groups", "volumes", "clusters", "initiators", "ssds", "targets"
@@ -1487,6 +1513,58 @@ function _New-Object_fromItemTypeAndContent {
 				Recipient = $oContent.recipients
 				Severity = $oContent."obj-severity"
 				TransportProtocol = $oContent.transport
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"infiniband-switches" {
+			[ordered]@{
+				Name = $oContent.name
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				Fan1RPM = [int]$oContent."fan-1-rpm"
+				Fan2RPM = [int]$oContent."fan-2-rpm"
+				Fan3RPM = [int]$oContent."fan-3-rpm"
+				Fan4RPM = [int]$oContent."fan-4-rpm"
+				FanDrawerStatus = $oContent."fan-drawer-status"
+				FWVersion = $oContent."fw-version"
+				FWVersionError = $oContent."fw-version-error"
+				Guid = $oContent.guid
+				HWRevision = $oContent."hw-revision"
+				IbSwitchId = $oContent."ib-switch-id"[0]
+				IdLED = $oContent."identify-led"
+				Index = $oContent.index
+				InterswitchIb1Port = $oContent."inter-switch-ib1-port-state"
+				InterswitchIb2Port = $oContent."inter-switch-ib2-port-state"
+				LifecycleState = $oContent."fru-lifecycle-state"
+				Model = $oContent."model-name"
+				PartNumber = $oContent."part-number"
+				Port = $oContent.ports | Foreach-Object {
+					New-Object -TypeName PSObject -Property ([ordered]@{
+						PortNumber = $_[0]
+						SpeedGbps = $_[1]
+						State = $_[2]
+						Connection =  _New-ObjListFromProperty_byObjName -Name $_[4] -ObjectArray $_[3]
+					}) ## end new-object
+				} ## end foreach-object
+				ReplacementReason = $oContent."fru-replace-failure-reason"
+				SerialNumber = $oContent."serial-number"
+				Severity = $oContent."obj-severity"
+				StatusLED = $oContent."status-led"
+				SysId = $oContent."sys-id"
+				TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+				TemperatureSensor = $oContent."temp-sensors-array" | Foreach-Object {
+					New-Object -TypeName PSObject -Property ([ordered]@{
+						SensorDescription = $_[0]
+						TemperatureC = $_[1]
+						TemperatureF = ($_[1] * 9/5) + 32
+					}) ## end new-object
+				} ## end foreach-object
+				VoltageSensor = $oContent."voltage-sensors-array" | Foreach-Object {
+					New-Object -TypeName PSObject -Property ([ordered]@{
+						SensorDescription = $_[0]
+						Voltage = $_[1]
+					}) ## end new-object
+				} ## end foreach-object
+				WrongSCConnection = $oContent."wrong-sc-connection-detected"
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
