@@ -475,7 +475,7 @@ function _New-ObjListFromProperty {
 	) ## end param
 
 	process {
-		$ObjectArray | Where-Object {$null -ne $_} | Foreach-Object {
+		$ObjectArray | Where-Object {($null -ne $_) -and ($null -ne $_[0])} | Foreach-Object {
 			New-Object -TypeName PSObject -Property ([ordered]@{
 				"${IdPropertyPrefix}Id" = $_[0]
 				Name = $_[1]
@@ -502,13 +502,20 @@ function _New-ObjListFromProperty_byObjName {
 		$hshObjNameToObjPrefixMap = @{
 			Storagecontroller = "StorageController"
 			"Switch" = "IbSwitch"
+			SnapSet = "SnapshotSet"
+			Scheduler = "SnapshotScheduler"
+			Volume = "Vol"
+			ConsistencyGroup = "ConsistencyGrp"
+			InitiatorGroup = "InitiatorGrp"
+			Initiator = "Initiator"
+			Tag = "Tag"
 		} ## end hashtable
 		$strObjPrefixToUse = if ($hshObjNameToObjPrefixMap.ContainsKey($Name)) {$hshObjNameToObjPrefixMap[$Name]} else {"UnkItemType"}
-	}
+	} ## end begin
 
 	process {
 		## for some objects (like ports with no connection on them), the Name value is "none", indicating that it has no connection; return nothing for those
-		if ($Name -ne "none") {_New-ObjListFromProperty -IdPropertyPrefix $strObjPrefixToUse -ObjectArray (,$ObjectArray)}
+		if ($Name -ne "none") {_New-ObjListFromProperty -IdPropertyPrefix $strObjPrefixToUse -ObjectArray $ObjectArray}
 	} ## end process
 } ## end fn
 
@@ -1542,7 +1549,7 @@ function _New-Object_fromItemTypeAndContent {
 						PortNumber = $_[0]
 						SpeedGbps = $_[1]
 						State = $_[2]
-						Connection =  _New-ObjListFromProperty_byObjName -Name $_[4] -ObjectArray $_[3]
+						Connection =  _New-ObjListFromProperty_byObjName -Name $_[4] -ObjectArray (,$_[3])
 					}) ## end new-object
 				} ## end foreach-object
 				ReplacementReason = $oContent."fru-replace-failure-reason"
@@ -1626,6 +1633,30 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"schedulers" {
+			[ordered]@{
+				Name = $oContent.name
+				Guid = $oContent.guid
+				Index = $oContent.index
+				Enabled = ($oContent."enabled-state" -eq "enabled")
+				LastActivated = $(if ($oContent."last-activation-time" -gt 0) {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."last-activation-time"})
+				LastActivationResult = $oContent."last-activation-status"
+				NumSnapToKeep = [int]$oContent."snapshots-to-keep-number"
+				Retain = (New-TimeSpan -Seconds $oContent."snapshots-to-keep-time")
+				Schedule = (_New-ScheduleDisplayString -ScheduleType $oContent."scheduler-type" -ScheduleTriplet $oContent.schedule)
+				SnappedObject = New-Object -Type PSObject -Property ([ordered]@{
+					Guid = $oContent."snapped-object-id"[0]
+					Index = $oContent."snapped-object-index"
+					Name = $oContent."snapped-object-id"[1]
+					Type = $oContent."snapped-object-type"
+				}) ## end new-object
+				SnapshotSchedulerId = $oContent.oid[0]
+				SnapType = $oContent."snapshot-type"
+				State = $oContent."scheduler-state"
+				Suffix = $oContent.suffix
+				Type = $oContent."scheduler-type"
+			} ## end ordered dictionary
+			break} ## end case
 		"slots" {
 			[ordered]@{
 				Name = $oContent.name
@@ -1644,29 +1675,6 @@ function _New-Object_fromItemTypeAndContent {
 				Severity = $oContent."obj-severity"
 				SysId = $oContent."sys-id"
 				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"schedulers" {
-			[ordered]@{
-				Name = $oContent.name
-				Guid = $oContent.guid
-				Index = $oContent.index
-				Enabled = ($oContent."enabled-state" -eq "enabled")
-				LastActivated = $(if ($oContent."last-activation-time" -gt 0) {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."last-activation-time"})
-				LastActivationResult = $oContent."last-activation-status"
-				NumSnapToKeep = [int]$oContent."snapshots-to-keep-number"
-				Retain = (New-TimeSpan -Seconds $oContent."snapshots-to-keep-time")
-				Schedule = (_New-ScheduleDisplayString -ScheduleType $oContent."scheduler-type" -ScheduleTriplet $oContent.schedule)
-				SnappedObject = New-Object -Type PSObject -Property ([ordered]@{
-					Guid = $oContent."snapped-object-id"[0]
-					Index = $oContent."snapped-object-index"
-					Name = $oContent."snapped-object-id"[1]
-					Type = $oContent."snapped-object-type"
-				}) ## end new-object
-				SnapType = $oContent."snapshot-type"
-				State = $oContent."scheduler-state"
-				Suffix = $oContent.suffix
-				Type = $oContent."scheduler-type"
 			} ## end ordered dictionary
 			break} ## end case
 		"snapshot-sets" {
@@ -1733,6 +1741,30 @@ function _New-Object_fromItemTypeAndContent {
 				StorageControllerPSUId = $oContent."node-psu-id"[0]
 				SysId = $oContent."sys-id"
 				## $null?  (property not defined on storage-controller-psus?)
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
+		"tags" {
+			[ordered]@{
+				Name = $oContent.name
+				Caption = $oContent.caption
+				ChildTagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."child-list"
+				ColorHex = $oContent.color
+				## "creation-time-long" is milliseconds since UNIX epoch (instead of traditional seconds)
+				CreationTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)
+				## if the name is one of the currently six predefined tags (as determined by the fact that they have just one "/" and are "root" tags), use Tag, else, use the object-type
+				DirectObjectList = _New-ObjListFromProperty_byObjName -Name $(if ([System.Text.RegularExpressions.Regex]::Matches($oContent.name, "/").Count -eq 1) {"Tag"} else {$oContent."object-type"}) -ObjectArray $oContent."direct-list"
+				Guid = $oContent.guid
+				Index = $oContent.index
+				NumChildTag = $oContent."num-of-children"
+				NumDirectObject = $oContent."num-of-direct-objs"
+				NumItem = $oContent."num-of-items"
+				ObjectList = _New-ObjListFromProperty_byObjName -Name $oContent."object-type" -ObjectArray $oContent."obj-list"
+				ObjectType = $oContent."object-type"
+				ParentTag = _New-ObjListFromProperty -IdPropertyPrefix "Tag" (,$oContent."parent-id")
+				## Tags do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
+				Severity = $oContent."obj-severity"
+				TagId = $oContent.oid[0]
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case

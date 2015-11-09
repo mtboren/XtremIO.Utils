@@ -398,7 +398,7 @@
 		</View>
 		<View>
 			<Name>XioItem_schedulers</Name>
-			<ViewSelectedBy><TypeName>XioItemInfo.Scheduler</TypeName></ViewSelectedBy>
+			<ViewSelectedBy><TypeName>XioItemInfo.SnapshotScheduler</TypeName></ViewSelectedBy>
 			<TableControl>
 				<TableHeaders>
 					<TableColumnHeader><Width>22</Width></TableColumnHeader>
@@ -473,6 +473,30 @@
 							<TableColumnItem><PropertyName>PrivacyProtocol</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Port</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Recipient</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_tags</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.Tag</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>40</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ObjectType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumItem</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ColorHex</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>

@@ -28,6 +28,7 @@ todo:
 		-once done, un-export Set-XIOItemInfo?  Or, leave it exported?
 	Remove:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
+-update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -add pipelining abilities for things like:
 	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name untile adding support for "by IGrpID" when working on XIOSv4 things)
 	Get-XIOVolume | Get-XIOLunMap (just by Volume name untile adding support for "by IGrpID" when working on XIOSv4 things)
@@ -161,8 +162,8 @@ doing:
 	-need to update all places that specify API types as singular to use real API type name
 -have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
 -add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
-	-Object Performance, SYSLOG Notifiers, Tags, ?SYR Notifiers?
-	-type names in v2 API: performance, syslog-notifier, tags
+	-Object Performance, SYSLOG Notifiers, ?SYR Notifiers?
+	-type names in v2 API: performance, syslog-notifier
 	-include GUID type of property when possible
 	-include pipelining support
 		Get-XIODAE | Get-XIODAEController
@@ -174,11 +175,12 @@ doing:
 		Get-XIOLocalDisk | Get-XIOStorageController
 		Get-XIOSlot | Get-XIOSsd
 		Get-XIOSnapshotSet | Get-XIOVolume
+		Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
 	-include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 
 	done:
-	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, dae-psus, email-notifier, infiniband-switches, ldap-configs, local-disks, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, user-accounts, xms
-	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, DAE PSUs, Email Notifiers, InfiniBand Switches, LDAP Configurations, Local Disks, Schedulers, Slots, Snapshot Sets, SNMP Notifiers, Storage Controller PSUs, User Accounts, XMS
+	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, dae-psus, email-notifier, infiniband-switches, ldap-configs, local-disks, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, tags, user-accounts, xms
+	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, DAE PSUs, Email Notifiers, InfiniBand Switches, LDAP Configurations, Local Disks, Schedulers, Slots, Snapshot Sets, SNMP Notifiers, Storage Controller PSUs, Tags, User Accounts, XMS
 	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIOConnection RestAPI version is 2 or greater
 
 	not doing yet:

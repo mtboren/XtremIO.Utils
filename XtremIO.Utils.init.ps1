@@ -499,7 +499,7 @@ Add-Type -TypeDefinition @"
 		}
 
 		// Snapshot Scheduler
-		public class Scheduler {
+		public class SnapshotScheduler {
 			public System.String Name;
 			public System.Boolean Enabled;
 			public System.String Guid;
@@ -510,6 +510,7 @@ Add-Type -TypeDefinition @"
 			public System.TimeSpan Retain;
 			public System.String Schedule;
 			public System.Object SnappedObject;
+			public System.String SnapshotSchedulerId;
 			public System.String SnapType;
 			public System.String State;
 			public System.String Suffix;
@@ -518,7 +519,7 @@ Add-Type -TypeDefinition @"
 			public System.String Uri;
 
 			// Implicit constructor
-			public Scheduler () {}
+			public SnapshotScheduler () {}
 		}
 
 		// Snapshot (inherits Volume class)
@@ -556,17 +557,6 @@ Add-Type -TypeDefinition @"
 
 			// Implicit constructor
 			public SnmpNotifier () {}
-		}
-
-		// User Account (inherits from class InfoBase)
-		public class UserAccount : InfoBase {
-			public System.Int32 InactivityTimeoutMin;
-			public System.Boolean IsExternal;
-			public System.String Role;
-			public System.String UserAccountId;
-
-			// Implicit constructor
-			public UserAccount () {}
 		}
 
 		// Slot (inherits from class InfoBase)
@@ -696,6 +686,25 @@ Add-Type -TypeDefinition @"
 			public StorageControllerPsu () {}
 		}
 
+		// Tag (inherits from class InfoBase)
+		public class Tag : InfoBase {
+			public System.String Caption;
+			public System.Object[] ChildTagList;
+			public System.String ColorHex;
+			public System.DateTime CreationTime;
+			public System.Object[] DirectObjectList;
+			public System.Int32 NumChildTag;
+			public System.Int32 NumDirectObject;
+			public System.Int32 NumItem;
+			public System.Object[] ObjectList;
+			public System.String ObjectType;
+			public System.Object ParentTag;
+			public System.String TagId;
+
+			// Implicit constructor
+			public Tag () {}
+		}
+
 		// Target
 		public class Target {
 			public System.Object[] BrickId;
@@ -736,6 +745,17 @@ Add-Type -TypeDefinition @"
 
 		// TargetPerformance (inherits from class PerformanceTotal)
 		public class TargetPerformance : PerformanceTotal {}
+
+		// User Account (inherits from class InfoBase)
+		public class UserAccount : InfoBase {
+			public System.Int32 InactivityTimeoutMin;
+			public System.Boolean IsExternal;
+			public System.String Role;
+			public System.String UserAccountId;
+
+			// Implicit constructor
+			public UserAccount () {}
+		}
 
 		public class Volume {
 			public System.Int32 AlignmentOffset;

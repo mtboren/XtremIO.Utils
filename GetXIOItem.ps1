@@ -24,9 +24,9 @@ function Get-XIOItemInfo {
 		##   for all XIOS versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
 		##   and, for XIOS versions 2.2.3 and up:  "brick", "snapshot", "ssd", "storage-controller", "xenv"
 		##   and, for XIOS versions 2.4 and up:    "data-protection-group", "event", "ig-folder", "volume-folder"
-		##   and, for XIOS version 4.0 and up:     "alert-definition", "alert", "bbu", "consistency-group", "dae", "dae-controller", "dae-psu", "email-notifier", "infiniband-switch", "ldap-config", "local-disk", "scheduler", "slot", "snapshot-set", "snmp-notifier", "storage-controller-psu", "user-account", "xms"
+		##   and, for XIOS version 4.0 and up:     "alert-definition", "alert", "bbu", "consistency-group", "dae", "dae-controller", "dae-psu", "email-notifier", "infiniband-switch", "ldap-config", "local-disk", "scheduler", "slot", "snapshot-set", "snmp-notifier", "storage-controller-psu", "tag", "user-account", "xms"
 		[parameter(ParameterSetName="ByComputerName")]
-		[ValidateSet("alert-definition", "alert", "bbu", "cluster", "consistency-group", "dae", "dae-controller", "dae-psu", "data-protection-group", "email-notifier", "event", "ig-folder", "infiniband-switch", "initiator-group", "initiator", "ldap-config", "local-disk", "lun-map", "scheduler", "slot", "snmp-notifier", "target-group", "target", "user-account", "volume", "volume-folder", "brick", "snapshot", "snapshot-set", "ssd", "storage-controller", "storage-controller-psu", "xenv", "xms")]
+		[ValidateSet("alert-definition", "alert", "bbu", "cluster", "consistency-group", "dae", "dae-controller", "dae-psu", "data-protection-group", "email-notifier", "event", "ig-folder", "infiniband-switch", "initiator-group", "initiator", "ldap-config", "local-disk", "lun-map", "scheduler", "slot", "snmp-notifier", "target-group", "target", "user-account", "volume", "volume-folder", "brick", "snapshot", "snapshot-set", "ssd", "storage-controller", "storage-controller-psu", "tag", "xenv", "xms")]
 		[string]$ItemType_str = "cluster",
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -179,6 +179,7 @@ function Get-XIOItemInfo {
 										## the TypeName to use for the new object
 										$strPSTypeNameForNewObj = Switch ($strItemType_plural) {
 											"infiniband-switches" {"XioItemInfo.InfinibandSwitch"; break}
+											"schedulers" {"XioItemInfo.SnapshotScheduler"; break}
 											"xms" {"XioItemInfo.XMS"; break}
 											default {"XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($_.TrimEnd('s').ToLower()).Replace('-',''))"}
 										} ## end switch
@@ -1637,6 +1638,45 @@ function Get-XIOStorageControllerPsu {
 
 
 <#	.Description
+	Function to get XtremIO Tag info using REST API from XtremIO XMS appliance
+	.Example
+	Get-XIOTag
+	Get the "Tag" items
+	.Outputs
+	XioItemInfo.Tag
+#>
+function Get-XIOTag {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Tag])]
+	param(
+		## XMS appliance address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "tag"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+	} ## end begin
+
+	Process {
+		## call the base function to get the given item
+		Get-XIOItemInfo @hshParamsForGetXioInfo
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Function to get XtremIO User Account info using REST API from XtremIO XMS appliance
 	.Example
 	Get-XIOUserAccount
@@ -1720,11 +1760,11 @@ function Get-XIOSlot {
 	Get-XIOSnapshotScheduler
 	Get the "SnapshotScheduler" items
 	.Outputs
-	XioItemInfo.Scheduler
+	XioItemInfo.SnapshotScheduler
 #>
 function Get-XIOSnapshotScheduler {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.Scheduler])]
+	[OutputType([XioItemInfo.SnapshotScheduler])]
 	param(
 		## XMS appliance address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
