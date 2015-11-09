@@ -479,6 +479,26 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_syslog-notifier</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.SyslogNotifier</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Target</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_tags</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Tag</TypeName></ViewSelectedBy>
 			<TableControl>

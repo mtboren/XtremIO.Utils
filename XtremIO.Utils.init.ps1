@@ -686,6 +686,16 @@ Add-Type -TypeDefinition @"
 			public StorageControllerPsu () {}
 		}
 
+		// SyslogNotifier (inherits from class InfoBase)
+		public class SyslogNotifier : InfoBase {
+			public System.Boolean Enabled;
+			public System.String SyslogNotifierId;
+			public System.String[] Target;
+
+			// Implicit constructor
+			public SyslogNotifier () {}
+		}
+
 		// Tag (inherits from class InfoBase)
 		public class Tag : InfoBase {
 			public System.String Caption;

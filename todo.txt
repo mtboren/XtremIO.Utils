@@ -162,8 +162,8 @@ doing:
 	-need to update all places that specify API types as singular to use real API type name
 -have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
 -add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
-	-Object Performance, SYSLOG Notifiers, ?SYR Notifiers?
-	-type names in v2 API: performance, syslog-notifier
+	-Object Performance, ?SYR Notifiers?
+	-type names in v2 API: performance
 	-include GUID type of property when possible
 	-include pipelining support
 		Get-XIODAE | Get-XIODAEController
@@ -179,8 +179,8 @@ doing:
 	-include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 
 	done:
-	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, dae-psus, email-notifier, infiniband-switches, ldap-configs, local-disks, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, tags, user-accounts, xms
-	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, DAE PSUs, Email Notifiers, InfiniBand Switches, LDAP Configurations, Local Disks, Schedulers, Slots, Snapshot Sets, SNMP Notifiers, Storage Controller PSUs, Tags, User Accounts, XMS
+	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, dae-psus, email-notifier, infiniband-switches, ldap-configs, local-disks, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts, xms
+	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, DAE PSUs, Email Notifiers, InfiniBand Switches, LDAP Configurations, Local Disks, Schedulers, Slots, Snapshot Sets, SNMP Notifiers, Storage Controller PSUs, SYSLOG Notifiers, Tags, User Accounts, XMS
 	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIOConnection RestAPI version is 2 or greater
 
 	not doing yet:

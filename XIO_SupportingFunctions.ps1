@@ -1744,6 +1744,18 @@ function _New-Object_fromItemTypeAndContent {
 				XmsId = $oContent."xms-id"
 			} ## end ordered dictionary
 			break} ## end case
+		"syslog-notifier" {
+			[ordered]@{
+				Name = $oContent.name
+				Enabled = ($oContent.enabled -eq "true")
+				Guid = $oContent.guid
+				Index = $oContent.index
+				Severity = $oContent."obj-severity"
+				SyslogNotifierId = $oContent.oid[0]
+				Target = $oContent.targets
+				XmsId = $oContent."xms-id"
+			} ## end ordered dictionary
+			break} ## end case
 		"tags" {
 			[ordered]@{
 				Name = $oContent.name
