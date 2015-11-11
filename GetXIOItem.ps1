@@ -24,9 +24,9 @@ function Get-XIOItemInfo {
 		##   for all XIOS versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
 		##   and, for XIOS versions 2.2.3 and up:  "brick", "snapshot", "ssd", "storage-controller", "xenv"
 		##   and, for XIOS versions 2.4 and up:    "data-protection-group", "event", "ig-folder", "volume-folder"
-		##   and, for XIOS version 4.0 and up:     "alert-definition", "alert", "bbu", "consistency-group", "dae", "dae-controller", "dae-psu", "email-notifier", "infiniband-switch", "ldap-config", "local-disk", "scheduler", "slot", "snapshot-set", "snmp-notifier", "storage-controller-psu", "tag", "user-account", "xms"
+		##   and, for XIOS version 4.0 and up:     "alert-definition", "alert", "bbu", "consistency-group", "dae", "dae-controller", "dae-psu", "email-notifier", "infiniband-switch", "ldap-config", "local-disk", "performance", "scheduler", "slot", "snapshot-set", "snmp-notifier", "storage-controller-psu", "tag", "user-account", "xms"
 		[parameter(ParameterSetName="ByComputerName")]
-		[ValidateSet("alert-definition", "alert", "bbu", "cluster", "consistency-group", "dae", "dae-controller", "dae-psu", "data-protection-group", "email-notifier", "event", "ig-folder", "infiniband-switch", "initiator-group", "initiator", "ldap-config", "local-disk", "lun-map", "scheduler", "slot", "snmp-notifier", "target-group", "target", "user-account", "volume", "volume-folder", "brick", "snapshot", "snapshot-set", "ssd", "storage-controller", "storage-controller-psu", "syslog-notifier", "tag", "xenv", "xms")]
+		[ValidateSet("alert-definition", "alert", "bbu", "cluster", "consistency-group", "dae", "dae-controller", "dae-psu", "data-protection-group", "email-notifier", "event", "ig-folder", "infiniband-switch", "initiator-group", "initiator", "ldap-config", "local-disk", "lun-map", "performance", "scheduler", "slot", "snmp-notifier", "target-group", "target", "user-account", "volume", "volume-folder", "brick", "snapshot", "snapshot-set", "ssd", "storage-controller", "storage-controller-psu", "syslog-notifier", "tag", "xenv", "xms")]
 		[string]$ItemType_str = "cluster",
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -71,7 +71,7 @@ function Get-XIOItemInfo {
 				$strItemType_plural = Switch ($ItemType_str) {
 					"infiniband-switch" {"infiniband-switches"; break}
 					## items that are not "plural" in the API URIs
-					{@("email-notifier", "snmp-notifier", "syslog-notifier", "xms") -notcontains $_} {"${ItemType_str}s"; break}
+					{@("email-notifier", "performance", "snmp-notifier", "syslog-notifier", "xms") -notcontains $_} {"${ItemType_str}s"; break}
 					default {$ItemType_str}
 				} ## end switch
 			} ## end else
@@ -92,8 +92,8 @@ function Get-XIOItemInfo {
 					## this XMS appliance name
 					$strThisXmsName = $oThisXioConnection.ComputerName
 
-					## if the item type is "event"
-					if ($ItemType_str -eq "event") {
+					## if the item type is "event" or "performance", add a bit more to the URI
+					if ("event","performance" -contains $ItemType_str) {
 						## REST command to use (with URIParams added, if any)
 						$strRestCommandWithAnyAddlParams = if ($PSBoundParameters.ContainsKey("AdditionalURIParam")) {"$strRestCmd_base$AdditionalURIParam"} else {$strRestCmd_base}
 						## populate the array of hashtables for getting XIO info with just one computername/HREF hashtable
@@ -1517,6 +1517,100 @@ function Get-XIOLocalDisk {
 	Process {
 		## call the base function to get the given item
 		Get-XIOItemInfo @hshParamsForGetXioInfo
+	} ## end process
+} ## end function
+
+
+<#	.Description
+FIXXXXX COMMENT-BASED HELP
+						Function to get XtremIO object performance using REST API from XtremIO XMS appliance.
+						.Example
+						Get-XIOEvent
+						Request info from current XMS connection and return event info
+						.Example
+						Get-XIOEvent -ComputerName somexmsappl01.dom.com -Limit ([System.Int32]::MaxValue)
+						Request info from XMS connection "somexmsappl01" only and return objects with the event info, up to the given number specified by -Limit
+						.Example
+						Get-XIOEvent -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
+						Request info from current XMS connection and return event info from one month ago for one day's amount of time (up to the default limit returned)
+						.Example
+						.Example
+						Get-XIOEvent -EntityType StorageController
+						Request info from current XMS connection and return event info for all events involving entity of type StorageController
+						.Example
+						.Outputs
+						XioItemInfo.Event
+#>
+function Get-XIOPerformanceCounter {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+# FIXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+#	[OutputType([XioItemInfo.Event])]
+	param(
+		## XMS appliance address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Maximum number of performance facts to retrieve per XMS connection. Default is 50
+		[int]$Limit = 50,
+		## Datetime of earliest performance sample to return. Can be an actual System.DateTime object, or a string that can be cast to a DateTime, like "27 Dec 1943 11am"
+		[System.DateTime]$Start,
+		## Datetime of most recent performance sample to return. Can be an actual System.DateTime object, or a string that can be cast to a DateTime, like "Jun 02 1992, 5:30:00"
+		[System.DateTime]$End,
+		## Entity type for which to get performance information; one of Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms
+		[XioItemInfo.Enums.PerfCounter.EntityType]$EntityType = "Cluster",
+		## Name of the entity for which to get performance counter information; wildcarding not yet supported, so must be full object name, like "myvol.44"
+		[Alias("Name")][string[]]$EntityName,
+		## Type of value aggregation to use; one or more of avg, max, min
+		[XioItemInfo.Enums.PerfCounter.AggregationType[]]$AggregationType,
+		## Type of value granularity to use; one of auto, one_minute, ten_minutes, one_hour, one_day, raw
+		[XioItemInfo.Enums.PerfCounter.Granularity]$Granularity,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "performance"
+		## params for URI filtering:  aggregation-type, entity, from-time, granularity, limit, obj-list, to-time
+		## hashtable to "translate" between PowerShell cmdlet parameter name and the API filter parameter name
+
+		$hshCmdletParamNameToXIOAPIParamNameMapping = @{AggregationType = "aggregation-type"; EntityName = "obj-list"; EntityType = "entity"; Granularity = "granularity"; Limit = "limit"; Start = "from-time"; End = "to-time"}
+
+		## array of Parameter names for this cmdlet that can be added to a URI param string as name=value pairs (don't need special formatting like dates or something)
+		$arrCmdletParamNamesForNameValuePairs = "EntityType", "Granularity"
+		## array of URI parameter "pieces" (like 'name=value') to use for filtering
+		$arrUriParamPiecesToAdd = @("limit=$Limit")
+		$PSBoundParameters.GetEnumerator() | Where-Object {$arrCmdletParamNamesForNameValuePairs -contains $_.Key} | Foreach-Object {
+			$arrUriParamPiecesToAdd += ("{0}={1}" -f $hshCmdletParamNameToXIOAPIParamNameMapping[$_.Key], (Convert-UrlEncoding $_.Value).ConvertedString)
+		} ## end foreach-object
+		## add start/end date filters, if any
+		"Start", "End" | Foreach-Object {
+			$strThisCmdletParamName = $_
+			if ($PSBoundParameters.ContainsKey($strThisCmdletParamName)) {
+				$arrUriParamPiecesToAdd += "{0}={1}" -f $hshCmdletParamNameToXIOAPIParamNameMapping[$strThisCmdletParamName], (Convert-UrlEncoding $PSBoundParameters.Item($strThisCmdletParamName).ToString($hshCfg["GetEventDatetimeFormat"])).ConvertedString
+			} ## end if
+		} ## end foreach-object
+		## add AggregationType and EntityName (obj-list) items, if any
+		"AggregationType", "EntityName" | Foreach-Object {
+			if ($PSBoundParameters.ContainsKey($_)) {
+				$strThisParamName = $_
+				$PSBoundParameters.Item($strThisParamName) | Foreach-Object {$arrUriParamPiecesToAdd += ("{0}={1}" -f $hshCmdletParamNameToXIOAPIParamNameMapping[$strThisParamName], (Convert-UrlEncoding $_).ConvertedString)}
+			} ## end if
+		} ## end foreach-object
+		## URI filter portion (may end up $null if no add'l params passed to this function)
+		$strURIFilter = $arrUriParamPiecesToAdd -join "&"
+	} ## end begin
+
+	Process {
+		## start of params for Get-XIOItemInfo call
+		$hshParamsForGetXioItemInfo = @{ItemType_str = $ItemType_str} ## end hash
+		## if any of these params were passed, add them to the hashtable of params to pass along
+		"ComputerName","ReturnFullResponse" | Foreach-Object {if ($PSBoundParameters.ContainsKey($_)) {$hshParamsForGetXIOItemInfo[$_] = $PSBoundParameters[$_]}}
+		## if any of the filtering params were passed (and, so, $strURIFilter is non-null), add param to hashtable
+		if (-not [System.String]::IsNullOrEmpty($strURIFilter)) {$hshParamsForGetXioItemInfo["AdditionalURIParam"] = "/?${strURIFilter}"}
+		#Write-Debug ("${strLogEntry_ToAdd}: string for URI filter: '$strURIFilter'")
+		## call the base function to get the given events
+		Get-XIOItemInfo @hshParamsForGetXioItemInfo
 	} ## end process
 } ## end function
 

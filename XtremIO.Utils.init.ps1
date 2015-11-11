@@ -891,5 +891,12 @@ Add-Type -TypeDefinition @"
 			// Implicit constructor
 			public XioConnection () {}
 		}
-	}
+	} // end namespace
+
+	// Enumerations
+	namespace XioItemInfo.Enums.PerfCounter {
+		public enum AggregationType {avg, max, min}
+		public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
+		public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
+	} // end namespace
 "@
