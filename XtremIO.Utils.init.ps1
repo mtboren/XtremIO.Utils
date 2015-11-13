@@ -492,6 +492,22 @@ Add-Type -TypeDefinition @"
 			public PerformanceBase() {}
 		}
 
+		// PerformanceCounter class
+		public class PerformanceCounter {
+			public System.String Name;
+			public System.Object[] Counters;
+			public System.DateTime DateTime;
+			public XioItemInfo.Enums.PerfCounter.EntityType EntityType;
+			public XioItemInfo.Enums.PerfCounter.Granularity Granularity;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.String ComputerName;
+			public System.String Uri;
+
+			// Implicit constructor
+			public PerformanceCounter() {}
+		}
+
 		// Performance class with Totals (inherits from class PerformanceBase)
 		public class PerformanceTotal : PerformanceBase {
 			public System.Int64 TotReadIOs;
@@ -895,8 +911,10 @@ Add-Type -TypeDefinition @"
 
 	// Enumerations
 	namespace XioItemInfo.Enums.PerfCounter {
-		public enum AggregationType {avg, max, min}
-		public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
+		public enum AggregationType {avg, min, max}
+		//public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
+		public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Target, TargetGroup, Volume, XEnv, Xms}
 		public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
+		public enum TimeFrame {real_time, last_hour, last_day, last_week, last_year}
 	} // end namespace
 "@

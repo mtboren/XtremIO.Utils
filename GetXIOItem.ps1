@@ -96,6 +96,8 @@ function Get-XIOItemInfo {
 					if ("event","performance" -contains $ItemType_str) {
 						## REST command to use (with URIParams added, if any)
 						$strRestCommandWithAnyAddlParams = if ($PSBoundParameters.ContainsKey("AdditionalURIParam")) {"$strRestCmd_base$AdditionalURIParam"} else {$strRestCmd_base}
+						## grab the entity type from the AdditionalURIParam if this is a "performance" item
+						$strPerformanceCounterEntityType = if ("performance" -eq $ItemType_str) {($AdditionalURIParam.Split("&") | Where-Object {$_ -like "entity=*"}).Split("=")[1]}
 						## populate the array of hashtables for getting XIO info with just one computername/HREF hashtable
 						$arrDataHashtablesForGettingXioInfo += @{
 							ComputerName = $strThisXmsName
@@ -174,24 +176,29 @@ function Get-XIOItemInfo {
 									## the URI of this item (or of all of the events, if this item type is "events", due to the difference in the way event objects are returned from API)
 									$strUriThisItem = ($oThisResponseObj.Links | Where-Object {$_.Rel -eq "Self"}).Href
 									## FYI:  name of the property of the response object that holds the details about the XIO item is "Content" for nearly all types, but "events" for event type
-									## if the item type is events, access the "events" property of the response object; else, access the "Content" property
-									$(if ($strItemType_plural -eq "events") {$oThisResponseObj.$strItemType_plural} else {$oThisResponseObj."Content"}) | Foreach-Object {
+									## if the item type is events, access the "events" property of the response object; else, if "performance", use whole object, else, access the "Content" property
+									$(if ($strItemType_plural -eq "events") {$oThisResponseObj.$strItemType_plural} elseif ($strItemType_plural -eq "performance") {$oThisResponseObj} else {$oThisResponseObj."Content"}) | Foreach-Object {
 										$oThisResponseObjectContent = $_
 										## the TypeName to use for the new object
 										$strPSTypeNameForNewObj = Switch ($strItemType_plural) {
 											"infiniband-switches" {"XioItemInfo.InfinibandSwitch"; break}
+											"performance" {"XioItemInfo.PerformanceCounter"; break}
 											"schedulers" {"XioItemInfo.SnapshotScheduler"; break}
 											"xms" {"XioItemInfo.XMS"; break}
 											default {"XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($_.TrimEnd('s').ToLower()).Replace('-',''))"}
 										} ## end switch
-										## make a new object with some juicy info (and a new property for the XMS "computer" name used here)
-										$oObjToReturn = _New-Object_fromItemTypeAndContent -argItemType $strItemType_plural -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj
-										## set ComputerName property
-										$oObjToReturn.ComputerName = $hshDataForGettingInfoFromThisXmsAppl["ComputerName"]
-										## set URI property that uniquely identifies this object
-										$oObjToReturn.Uri = $strUriThisItem
-										## return the object
-										return $oObjToReturn
+										## make new object(s) with some juicy info (and a new property for the XMS "computer" name used here); usually just one object returned per call to _New-Object_from..., but if of item type "performance", could be multiple
+										_New-Object_fromItemTypeAndContent -argItemType $strItemType_plural -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj | Foreach-Object {
+											$oObjToReturn = $_
+											## set ComputerName property
+											$oObjToReturn.ComputerName = $hshDataForGettingInfoFromThisXmsAppl["ComputerName"]
+											## set URI property that uniquely identifies this object
+											$oObjToReturn.Uri = $strUriThisItem
+											## if this is a PerformanceCounter item, add the EntityType property
+											if ("performance" -eq $ItemType_str) {$oObjToReturn.EntityType = $strPerformanceCounterEntityType}
+											## return the object
+											return $oObjToReturn
+										} ## end foreach-object
 									} ## end foreach-object
 								} ## end foreach-object
 							} ## end else
@@ -1522,45 +1529,46 @@ function Get-XIOLocalDisk {
 
 
 <#	.Description
-FIXXXXX COMMENT-BASED HELP
-						Function to get XtremIO object performance using REST API from XtremIO XMS appliance.
-						.Example
-						Get-XIOEvent
-						Request info from current XMS connection and return event info
-						.Example
-						Get-XIOEvent -ComputerName somexmsappl01.dom.com -Limit ([System.Int32]::MaxValue)
-						Request info from XMS connection "somexmsappl01" only and return objects with the event info, up to the given number specified by -Limit
-						.Example
-						Get-XIOEvent -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
-						Request info from current XMS connection and return event info from one month ago for one day's amount of time (up to the default limit returned)
-						.Example
-						.Example
-						Get-XIOEvent -EntityType StorageController
-						Request info from current XMS connection and return event info for all events involving entity of type StorageController
-						.Example
-						.Outputs
-						XioItemInfo.Event
+	Function to get XtremIO object performance counters using REST API from XtremIO XMS appliance.  Typical use of these counters would be for exporting to <some other destination> for further manipulation/massaging.
+	.Example
+	Get-XIOPerformanceCounter
+	Request info from current XMS connection and return PerformanceCounter info
+	.Example
+	Get-XIOPerformanceCounter -ComputerName somexmsappl01.dom.com -Limit ([System.Int32]::MaxValue)
+	Request info from XMS connection "somexmsappl01" only and return PerformanceCounter info, up to the given number specified by -Limit
+	.Example
+	Get-XIOPerformanceCounter -EntityType DataProtectionGroup -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
+	Request info from current XMS connection and return PerformanceCounter info from one month ago for one day's amount of time (up to the default limit returned)
+	.Example
+	Get-XIOPerformanceCounter -EntityType Volume -TimeFrame real_time
+	Request info from current XMS connection and return realtime (most recent sample in the last five seconds) PerformanceCounter info for entities of type Volume
+	.Example
+	Get-XIOPerformanceCounter -EntityType InitiatorGroup -TimeFrame last_hour -EntityName myInitGroup0 | ConvertTo-Json
+	Get the realtime (most recent sample in the last five seconds) PerformanceCounter info for the InitiatorGroup entity myInitGroup0, and then convert it to JSON for later consumption by <some awesome data visualization app>
+	.Outputs
+	XioItemInfo.PerformanceCounter
 #>
 function Get-XIOPerformanceCounter {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-# FIXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-#	[OutputType([XioItemInfo.Event])]
+	[CmdletBinding(DefaultParameterSetName="ByTimeFrameEnum")]
+	[OutputType([XioItemInfo.PerformanceCounter])]
 	param(
 		## XMS appliance address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		[string[]]$ComputerName,
 		## Maximum number of performance facts to retrieve per XMS connection. Default is 50
 		[int]$Limit = 50,
-		## Datetime of earliest performance sample to return. Can be an actual System.DateTime object, or a string that can be cast to a DateTime, like "27 Dec 1943 11am"
-		[System.DateTime]$Start,
+		## Datetime of earliest performance sample to return. Can be an actual System.DateTime object, or a string that can be cast to a DateTime, like "27 Dec 1943 11am".   Can either use -Start and -End parameters, or use -TimeFrame parameter.
+		[parameter(ParameterSetName="ByStartEndDate")][System.DateTime]$Start,
 		## Datetime of most recent performance sample to return. Can be an actual System.DateTime object, or a string that can be cast to a DateTime, like "Jun 02 1992, 5:30:00"
-		[System.DateTime]$End,
-		## Entity type for which to get performance information; one of Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms
+		[parameter(ParameterSetName="ByStartEndDate")][System.DateTime]$End,
+		## Time frame for which to get performance counter information. Can be one of real_time, last_hour, last_day, last_week, last_year.  Can use either -TimeFrame, or use -Start and -End parameters.  If using real_time for -TimeFrame, will ignore the Granularity parameter, as real_time reports in "raw" Granularity
+		[parameter(ParameterSetName="ByTimeFrameEnum")][XioItemInfo.Enums.PerfCounter.TimeFrame]$TimeFrame,
+		## Entity type for which to get performance information; one of Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Target, TargetGroup, Volume, XEnv, Xms. EntityType "Tag" is not yet supported here.
 		[XioItemInfo.Enums.PerfCounter.EntityType]$EntityType = "Cluster",
 		## Name of the entity for which to get performance counter information; wildcarding not yet supported, so must be full object name, like "myvol.44"
 		[Alias("Name")][string[]]$EntityName,
 		## Type of value aggregation to use; one or more of avg, max, min
 		[XioItemInfo.Enums.PerfCounter.AggregationType[]]$AggregationType,
-		## Type of value granularity to use; one of auto, one_minute, ten_minutes, one_hour, one_day, raw
+		## Type of value granularity to use; one of auto, one_minute, ten_minutes, one_hour, one_day, raw.  If using real_time for -TimeFrame, will ignore the -Granularity parameter, as real_time determines the Granularity to use
 		[XioItemInfo.Enums.PerfCounter.Granularity]$Granularity,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse
@@ -1571,17 +1579,21 @@ function Get-XIOPerformanceCounter {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "performance"
-		## params for URI filtering:  aggregation-type, entity, from-time, granularity, limit, obj-list, to-time
+		## params for URI filtering:  aggregation-type, entity, from-time, granularity, limit, obj-list, to-time, time-frame
 		## hashtable to "translate" between PowerShell cmdlet parameter name and the API filter parameter name
+		$hshCmdletParamNameToXIOAPIParamNameMapping = @{AggregationType = "aggregation-type"; EntityName = "obj-list"; EntityType = "entity"; Granularity = "granularity"; Limit = "limit"; Start = "from-time"; End = "to-time"; TimeFrame = "time-frame"}
 
-		$hshCmdletParamNameToXIOAPIParamNameMapping = @{AggregationType = "aggregation-type"; EntityName = "obj-list"; EntityType = "entity"; Granularity = "granularity"; Limit = "limit"; Start = "from-time"; End = "to-time"}
+		## if TimeFrame is "real_time", remove the Granularity paremeter from the bound params, as the only Granularity is auto-determined for real_time TimeFrame
+		if (($TimeFrame -eq "real_time") -and ($PSBoundParameters.ContainsKey("Granularity"))) {$PSBoundParameters.Remove("Granularity")}
 
 		## array of Parameter names for this cmdlet that can be added to a URI param string as name=value pairs (don't need special formatting like dates or something)
-		$arrCmdletParamNamesForNameValuePairs = "EntityType", "Granularity"
+		$arrCmdletParamNamesForNameValuePairs = "EntityType", "Granularity", "TimeFrame"
 		## array of URI parameter "pieces" (like 'name=value') to use for filtering
 		$arrUriParamPiecesToAdd = @("limit=$Limit")
-		$PSBoundParameters.GetEnumerator() | Where-Object {$arrCmdletParamNamesForNameValuePairs -contains $_.Key} | Foreach-Object {
-			$arrUriParamPiecesToAdd += ("{0}={1}" -f $hshCmdletParamNameToXIOAPIParamNameMapping[$_.Key], (Convert-UrlEncoding $_.Value).ConvertedString)
+		## for the params that have values (either because they were passed/bound, or have a default value in the param() section)
+		$arrCmdletParamNamesForNameValuePairs | Where-Object {Get-Variable -ValueOnly -ErrorAction:SilentlyContinue -Name $_} | Foreach-Object {
+			$strThisParamName = $_
+			$arrUriParamPiecesToAdd += ("{0}={1}" -f $hshCmdletParamNameToXIOAPIParamNameMapping[$strThisParamName], (Convert-UrlEncoding (Get-Variable -Name $strThisParamName -ValueOnly)).ConvertedString)
 		} ## end foreach-object
 		## add start/end date filters, if any
 		"Start", "End" | Foreach-Object {
@@ -1609,7 +1621,7 @@ function Get-XIOPerformanceCounter {
 		## if any of the filtering params were passed (and, so, $strURIFilter is non-null), add param to hashtable
 		if (-not [System.String]::IsNullOrEmpty($strURIFilter)) {$hshParamsForGetXioItemInfo["AdditionalURIParam"] = "/?${strURIFilter}"}
 		#Write-Debug ("${strLogEntry_ToAdd}: string for URI filter: '$strURIFilter'")
-		## call the base function to get the given events
+		## call the base function to get the given performance counters
 		Get-XIOItemInfo @hshParamsForGetXioItemInfo
 	} ## end process
 } ## end function

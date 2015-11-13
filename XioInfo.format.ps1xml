@@ -397,6 +397,30 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_performance</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.PerformanceCounter</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>EntityType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>DateTime</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Granularity</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Counters</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_schedulers</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.SnapshotScheduler</TypeName></ViewSelectedBy>
 			<TableControl>
