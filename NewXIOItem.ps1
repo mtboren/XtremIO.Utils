@@ -6,7 +6,7 @@
 function New-XIOItem {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	param(
-		## XMS appliance address to which to connect
+		##  address to which to connect
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Item type to create; currently supported types:
 		##   for all API versions:  "ig-folder", "initiator, "initiator-group", "lun-map", "volume", "volume-folder"
@@ -77,8 +77,8 @@ function New-XIOItem {
 <#	.Description
 	Create a new XtremIO initiator-group, optionally with initiators defined at creation time
 	.Notes
-	One cannot create a new initiator group with a port address that is already used in another initiator on the XMS appliance -- this will fail.
-	Similarly, attempting to create an initiator group that contains an initiator name already defined on the XMS appliance will fail.
+	One cannot create a new initiator group with a port address that is already used in another initiator on the XMS -- this will fail.
+	Similarly, attempting to create an initiator group that contains an initiator name already defined on the XMS will fail.
 	.Example
 	New-XIOInitiatorGroup -Name testIG0 -ParentFolder "/testIGs" -InitiatorList @{"myserver-hba2" = "10:00:00:00:00:00:00:F4"; "myserver-hba3" = "10:00:00:00:00:00:00:F5"}
 	Create an initiator-group named testIG0 with two initiators defined therein
@@ -89,7 +89,7 @@ function New-XIOInitiatorGroup {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.InitiatorGroup])]
 	param(
-		## XMS appliance address to use
+		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator-group being made
 		[parameter(Mandatory=$true)][string]$Name_str,
@@ -160,7 +160,7 @@ function New-XIOInitiator {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.Initiator])]
 	param(
-		## XMS appliance to use
+		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator being made
 		[parameter(Mandatory=$true)][string]$Name_str,
@@ -221,7 +221,7 @@ function New-XIOInitiatorGroupFolder {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.IgFolder])]
 	param(
-		## XMS appliance to use
+		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new volume being made
 		[parameter(Mandatory=$true)][string]$Name_str,
@@ -267,7 +267,7 @@ function New-XIOLunMap {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.LunMap])]
 	param(
-		## XMS appliance to use
+		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## The name of the volume to map
 		[parameter(Mandatory=$true)][string]$Volume,
@@ -335,7 +335,7 @@ function New-XIOVolume {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.Volume])]
 	param(
-		## XMS appliance address to use
+		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new volume being made
 		[parameter(Mandatory=$true)][string]$Name_str,
@@ -414,7 +414,7 @@ function New-XIOVolumeFolder {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.VolumeFolder])]
 	param(
-		## XMS appliance to use
+		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new volume being made
 		[parameter(Mandatory=$true)][string]$Name_str,

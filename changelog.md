@@ -1,6 +1,44 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.next
+Nov 2015
+
+The focus for this version was on updating the module to support new things available in XIOS version 4.0.  Twenty new types, and the ability to get the newly available performance counters for eleven entity types (`Cluster`, `DataProtectionGroup`, `Initiator`, `InitiatorGroup`, `SnapshotGroup`, `SSD`, `Target`, `TargetGroup`, `Volume`, `XEnv`, and `Xms`).
+
+- \[new] added `Get-` cmdlet coverage for new types available in XIOS v4 and newer:
+
+		Get-XIOAlert
+		Get-XIOAlertDefinition
+		Get-XIOBBU
+		Get-XIOConsistencyGroup
+		Get-XIODAE
+		Get-XIODAEController
+		Get-XIODAEPsu
+		Get-XIOEmailNotifier
+		Get-XIOInfinibandSwitch
+		Get-XIOLdapConfig
+		Get-XIOLocalDisk
+		Get-XIOSlot
+		Get-XIOSnapshotScheduler
+		Get-XIOSnapshotSet
+		Get-XIOSnmpNotifier
+		Get-XIOStorageControllerPsu
+		Get-XIOSyslogNotifier
+		Get-XIOTag
+		Get-XIOUserAccount
+		Get-XIOXMS
+
+- \[new] added `Get-XIOPerformanceCounter` cmdlet for getting performance counter values for given entity types, and exposing the ability to set granularity of the counter values and timeframe from which to get the data. Note:  not yet supporting getting performance counters based on Tag entity type, as there may be some further research needed, possibly involving discussions with the vendor
+- \[new] added feature that allows for graceful determination of valid types for given XioConnection; so, executing `Get-XIOTag` when connected to an XIOS v3 or older XMS will not throw error due to non-existent object types, but rather will return verbose message that given type is not available on XMS at older XIOS (API) version 
+- \[improvement] added XIOS REST API version and full XMS version to `XioItemInfo.XioConnection` object (if available via XMS type, which it _is_ for XIOS v4+).  The new properties on the XioConnection type are `RestApiVersion`, `XmsDBVersion`, `XmsSWVersion` (string representation, like "4.0.1-41"), and `XmsVersion`
+
+Other notes:
+
+- not yet adding support for `consistency-group-volumes` API objects, as their returned properties seem to just be consistency groups, not consistency group volumes -- may also require discussion with vendor
+- not yet adding support for SYR Notifiers. While the XIOS v4 release notes talk about API support for these objects, the API on the few systems on which I tested did not surface this object type
+- the new cmdlets are at the base level -- on the to-do list are things like extending/improving them to bring in the additional power of supporting pipelining
+
 ### v0.8.3
 Sep 2015
 

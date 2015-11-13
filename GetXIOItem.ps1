@@ -1,24 +1,27 @@
 <#	.Description
-	Function to get XtremIO item info using REST API with XtremIO XMS appliance; Apr 2014, Matt Boren.  Tries to do some auto-detection of the API version (and, so, the URIs to use) by determining on which port the XMS appliance is listening for API requests.  There was a change from v2.2.2 to v2.2.3 of the XMS appliances in which they stopped listening on the non-SSL port 42503, and began listening on 443.
+	Function to get XtremIO item info using REST API with XtremIO Management Server (XMS); Apr 2014, Matt Boren.  Tries to do some auto-detection of the API version (and, so, the URIs to use) by determining on which port the XMS is listening for API requests.  There was a change from v2.2.2 to v2.2.3 of the XMS in which they stopped listening on the non-SSL port 42503, and began listening on 443.
 	.Example
-	Get-XIOItemInfo -ComputerName somexmsappl01.dom.com
-	Request info from XMS appliance "somexmsappl01" and return an object with the "cluster" info for the logical storage entity defined on the array
+	Get-XIOItemInfo
+	Request info from XMS and return an object with the "cluster" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOItemInfo -ComputerName somexmsappl01.dom.com -ItemType initiator
-	Return some objects with info about the defined intiators on the given XMS appliance
+	Return some objects with info about the defined intiators on the given XMS
 	.Example
-	Get-XIOItemInfo -ComputerName somexmsappl01.dom.com -ItemType volume
-	Return objects with info about each LUN mapping on the XMS appliance
+	Get-XIOItemInfo -ItemType volume
+	Return objects with info about each LUN mapping on the XMS
 	.Example
-	Get-XIOItemInfo -ComputerName somexmsappl01.dom.com -ItemType cluster -ReturnFullResponse
+	Get-XIOItemInfo -ItemType cluster -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+	.Example
+	Get-XIOItemInfo -Uri https://xms.dom.com/api/json/types -ReturnFullResponse | Select-Object -ExpandProperty children
+	Return PSCustomObject that contains the full data from the REST API response (this particular example returns the HREFs for all of the base types supported by the given XMS's API -- helpful for spelunking for when new API versions come out and this XtremIO PowerShell module is not yet updated to cover new types that may have come to be)
 	.Outputs
 	PSCustomObject
 #>
 function Get-XIOItemInfo {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	param(
-		## XMS appliance address to which to connect
+		## XMS address to which to connect
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName_arr,
 		## Item type for which to get info; currently supported types:
 		##   for all XIOS versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
@@ -89,7 +92,7 @@ function Get-XIOItemInfo {
 					## the base portion of the REST command to issue
 					$strRestCmd_base = "/types/$strItemType_plural"
 
-					## this XMS appliance name
+					## this XMS name
 					$strThisXmsName = $oThisXioConnection.ComputerName
 
 					## if the item type is "event" or "performance", add a bit more to the URI
@@ -106,7 +109,7 @@ function Get-XIOItemInfo {
 					} ## end if
 					## do all the necessary things to populate $arrDataHashtablesForGettingXioInfo with individual XIO item's HREFs
 					else { ## making arrDataHashtablesForGettingXioInfo
-						## for this XMS appliance name, get a hashtable with computer name and HREFs for which to get info obj
+						## for this XMS name, get a hashtable with computer name and HREFs for which to get info obj
 						$hshParamsForGetXioInfo_allItemsOfThisType = @{
 							Credential = $oThisXioConnection.Credential
 							ComputerName_str = $strThisXmsName
@@ -114,7 +117,7 @@ function Get-XIOItemInfo {
 							Port_int = $oThisXioConnection.Port
 							TrustAllCert_sw = $oThisXioConnection.TrustAllCert
 						} ## end hsh
-						## the base info for all items of this type known by this XMS appliance (href & name pairs)
+						## the base info for all items of this type known by this XMS (href & name pairs)
 						## the general pattern:  the property returned is named the same as the item type
 						#   however, not the case with:
 						#     volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
@@ -212,7 +215,7 @@ function Get-XIOItemInfo {
 
 
 <#	.Description
-	Function to get XtremIO brick info using REST API from XtremIO XMS appliance
+	Function to get XtremIO brick info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOBrick
 	Request info from current XMS connection and return an object with the "brick" info for the logical storage entity defined on the array
@@ -220,7 +223,7 @@ function Get-XIOItemInfo {
 	Get-XIOBrick X3
 	Get the "brick" named X3
 	.Example
-	Get-XIOBrick -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOBrick -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.Brick
@@ -229,7 +232,7 @@ function Get-XIOBrick {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Brick])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -257,7 +260,7 @@ function Get-XIOBrick {
 
 
 <#	.Description
-	Function to get XtremIO cluster info using REST API from XtremIO XMS appliance
+	Function to get XtremIO cluster info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOCluster
 	Request info from current XMS connection and return an object with the "cluster" info for the logical storage entity defined on the array
@@ -265,7 +268,7 @@ function Get-XIOBrick {
 	Get-XIOCluster myCluster
 	Get the "cluster" named myCluster
 	.Example
-	Get-XIOCluster -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOCluster -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.Cluster
@@ -274,7 +277,7 @@ function Get-XIOCluster {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Cluster])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -302,7 +305,7 @@ function Get-XIOCluster {
 
 
 <#	.Description
-	Function to get XtremIO data-protection-group info using REST API from XtremIO XMS appliance
+	Function to get XtremIO data-protection-group info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIODataProtectionGroup
 	Request info from current XMS connection and return an object with the "data-protection-group" info for the logical storage entity defined on the array
@@ -310,7 +313,7 @@ function Get-XIOCluster {
 	Get-XIODataProtectionGroup X[34]-DPG
 	Get the "data-protection-group" objects named X3-DPG and X4-DPG
 	.Example
-	Get-XIODataProtectionGroup -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIODataProtectionGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.DataProtectionGroup
@@ -319,7 +322,7 @@ function Get-XIODataProtectionGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.DataProtectionGroup])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -347,7 +350,7 @@ function Get-XIODataProtectionGroup {
 
 
 <#	.Description
-	Function to get XtremIO initiator info using REST API from XtremIO XMS appliance
+	Function to get XtremIO initiator info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOInitiator
 	Request info from current XMS connection and return an object with the "initiator" info for the logical storage entity defined on the array
@@ -361,7 +364,7 @@ function Get-XIODataProtectionGroup {
 	Get-XIOInitiatorGroup someIG | Get-XIOInitiator
 	Get the "initiator" object in the given initiator group
 	.Example
-	Get-XIOInitiator -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOInitiator -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.Initiator
@@ -370,7 +373,7 @@ function Get-XIOInitiator {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Initiator])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -411,13 +414,13 @@ function Get-XIOInitiator {
 
 
 <#	.Description
-	Function to get XtremIO initiator group info using REST API from XtremIO XMS appliance
+	Function to get XtremIO initiator group info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOInitiatorGroup
 	Request info from current XMS connection and return an object with the "initiator group" info for the logical storage entity defined on the array
 	.Example
-	Get-XIOInitiatorGroup whatchamacallit
-	Get the "initiator group" named whatchamacallit
+	Get-XIOInitiatorGroup myIG0
+	Get the "initiator group" named myIG0
 	.Example
 	Get-XIOInitiator mysvr-hba* | Get-XIOInitiatorGroup
 	Get the "initiator group" of which the given initiator is a part
@@ -431,7 +434,7 @@ function Get-XIOInitiator {
 	Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
 	Get the "initiator group(s)" that are mapped to the given snapshot
 	.Example
-	Get-XIOInitiatorGroup -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOInitiatorGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.InitiatorGroup
@@ -440,7 +443,7 @@ function Get-XIOInitiatorGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.InitiatorGroup])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -477,7 +480,7 @@ function Get-XIOInitiatorGroup {
 
 
 <#	.Description
-	Function to get XtremIO initiator group folder info using REST API from XtremIO XMS appliance
+	Function to get XtremIO initiator group folder info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOInitiatorGroupFolder
 	Request info from current XMS connection and return an object with the "initiator group folder" info for the logical storage entity defined on the array
@@ -485,10 +488,13 @@ function Get-XIOInitiatorGroup {
 	Get-XIOInitiatorGroupFolder /someVC/someCluster
 	Get the "initiator group folder" named /someVC/someCluster
 	.Example
-	Get-XIOInitiatorGroup whatchamacallit | Get-XIOInitiatorGroupFolder
-	Get the "initiator group folder" that contains the initiator group whatchamacallit
+	Get-XIOInitiatorGroup myIG0 | Get-XIOInitiatorGroupFolder
+	Get the "initiator group folder" that contains the initiator group myIG0
 	.Example
-	Get-XIOInitiatorGroupFolder -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOInitiatorGroupFolder /someVC/someCluster | Get-XIOInitiatorGroup
+	Get the InitiatorGroup objects in the given "initiator group folder"
+	.Example
+	Get-XIOInitiatorGroupFolder -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.IgFolder
@@ -497,7 +503,7 @@ function Get-XIOInitiatorGroupFolder {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.IgFolder])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -534,7 +540,7 @@ function Get-XIOInitiatorGroupFolder {
 
 
 <#	.Description
-	Function to get XtremIO LUN map info using REST API from XtremIO XMS appliance
+	Function to get XtremIO LUN map info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOLunMap
 	Request info from current XMS connection and return an object with the "LUN map" info for the logical storage entity defined on the array
@@ -548,7 +554,7 @@ function Get-XIOInitiatorGroupFolder {
 	Get-XIOLunMap -HostLunId 21,22
 	Get the "LUN map" objects defined with LUN IDs 21 or 22
 	.Example
-	Get-XIOLunMap -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOLunMap -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.LunMap
@@ -557,7 +563,7 @@ function Get-XIOLunMap {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.LunMap])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Volume name(s) for which to get LUN mapping info (or, all volumes' mappings if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Volume,
@@ -600,7 +606,7 @@ function Get-XIOLunMap {
 
 
 <#	.Description
-	Function to get XtremIO snapshot info using REST API from XtremIO XMS appliance
+	Function to get XtremIO snapshot info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSnapshot
 	Request info from current XMS connection and return an object with the "snapshot" info for the logical storage entity defined on the array
@@ -611,7 +617,7 @@ function Get-XIOLunMap {
 	Get-XIOInitiatorGroup myIgroup | Get-XIOSnapshot
 	Get the "snapshot" objects that are mapped to the given initiator group
 	.Example
-	Get-XIOSnapshot -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOSnapshot -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.Snapshot
@@ -620,7 +626,7 @@ function Get-XIOSnapshot {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Snapshot])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -661,7 +667,7 @@ function Get-XIOSnapshot {
 
 
 <#	.Description
-	Function to get XtremIO SSD info using REST API from XtremIO XMS appliance
+	Function to get XtremIO SSD info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSsd
 	Request info from current XMS connection and return an object with the "SSD" info for the logical storage entity defined on the array
@@ -669,7 +675,7 @@ function Get-XIOSnapshot {
 	Get-XIOSsd wwn-0x500000000abcdef0
 	Get the "SSD" named wwn-0x500000000abcdef0
 	.Example
-	Get-XIOSsd -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOSsd -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.Ssd
@@ -678,7 +684,7 @@ function Get-XIOSsd {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Ssd])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -706,7 +712,7 @@ function Get-XIOSsd {
 
 
 <#	.Description
-	Function to get XtremIO storage controller info using REST API from XtremIO XMS appliance
+	Function to get XtremIO storage controller info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOStorageController
 	Request info from current XMS connection and return an object with the "storage controller" info for the logical storage entity defined on the array
@@ -714,7 +720,7 @@ function Get-XIOSsd {
 	Get-XIOStorageController X3-SC1
 	Get the "storage controller" named X3-SC1
 	.Example
-	Get-XIOStorageController -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOStorageController -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.StorageController
@@ -723,7 +729,7 @@ function Get-XIOStorageController {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.StorageController])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -751,7 +757,7 @@ function Get-XIOStorageController {
 
 
 <#	.Description
-	Function to get XtremIO target info using REST API from XtremIO XMS appliance
+	Function to get XtremIO target info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOTarget
 	Request info from current XMS connection and return an object with the "target" info for the logical storage entity defined on the array
@@ -759,7 +765,7 @@ function Get-XIOStorageController {
 	Get-XIOTarget *fc[12]
 	Get the "target" objects with names ending in "fc1" or "fc2"
 	.Example
-	Get-XIOTarget -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOTarget -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.Target
@@ -768,7 +774,7 @@ function Get-XIOTarget {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Target])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -796,7 +802,7 @@ function Get-XIOTarget {
 
 
 <#	.Description
-	Function to get XtremIO target group info using REST API from XtremIO XMS appliance
+	Function to get XtremIO target group info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOTargetGroup
 	Request info from current XMS connection and return an object with the "target group" info for the logical storage entity defined on the array
@@ -804,7 +810,7 @@ function Get-XIOTarget {
 	Get-XIOTargetGroup Default
 	Get the "target group" named Default
 	.Example
-	Get-XIOTargetGroup -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOTargetGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.TargetGroup
@@ -813,7 +819,7 @@ function Get-XIOTargetGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.TargetGroup])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -841,7 +847,7 @@ function Get-XIOTargetGroup {
 
 
 <#	.Description
-	Function to get XtremIO volume info using REST API from XtremIO XMS appliance
+	Function to get XtremIO volume info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOVolume
 	Request info from current XMS connection and return an object with the "volume" info for the logical storage entity defined on the array
@@ -855,7 +861,7 @@ function Get-XIOTargetGroup {
 	Get-XIOInitiatorGroup myIgroup | Get-XIOVolume
 	Get the "volume" objects that are mapped to the given initiator group
 	.Example
-	Get-XIOVolume -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOVolume -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.Volume
@@ -864,7 +870,7 @@ function Get-XIOVolume {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Volume])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -905,7 +911,7 @@ function Get-XIOVolume {
 
 
 <#	.Description
-	Function to get XtremIO volume folder info using REST API from XtremIO XMS appliance
+	Function to get XtremIO volume folder info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOVolumeFolder
 	Request info from current XMS connection and return an object with the "volume folder" info for the logical storage entity defined on the array
@@ -916,7 +922,7 @@ function Get-XIOVolume {
 	Get-XIOVolume myBigVol0 | Get-XIOVolumeFolder
 	Get the "volume folder" for the volume
 	.Example
-	Get-XIOVolumeFolder -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOVolumeFolder -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.VolumeFolder
@@ -925,7 +931,7 @@ function Get-XIOVolumeFolder {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.VolumeFolder])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -962,7 +968,7 @@ function Get-XIOVolumeFolder {
 
 
 <#	.Description
-	Function to get XtremIO XEnv info using REST API from XtremIO XMS appliance
+	Function to get XtremIO XEnv info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOXenv
 	Request info from current XMS connection and return an object with the "XEnv" info for the logical storage entity defined on the array
@@ -970,7 +976,7 @@ function Get-XIOVolumeFolder {
 	Get-XIOXenv X3-SC1-E1,X3-SC1-E2
 	Get the "XEnv" items namedX3-SC1-E1 and X3-SC1-E2
 	.Example
-	Get-XIOXenv -ComputerName somexmsappl01.dom.com -ReturnFullResponse
+	Get-XIOXenv -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
 	XioItemInfo.XEnv
@@ -979,7 +985,7 @@ function Get-XIOXenv {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.XEnv])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
@@ -1007,13 +1013,13 @@ function Get-XIOXenv {
 
 
 <#	.Description
-	Function to get XtremIO event info using REST API from XtremIO XMS appliance.
+	Function to get XtremIO event info using REST API from XtremIO Management Server (XMS).
 	Note about -Start and -End parameters:  via the XIO API, the search is performed starting with the most recent event ang working back through time.  So, to get events from a month ago, one may need to specify and -End value that is (a month ago plus a few days), depending on how many events have occurred. For instance, if -Start is a date of one month ago, and -Limit is 10, this will return the 10 most recent events from _now_ (starting from now, working backwards), not the first 10 events that happened _after_ the -Start value of one month ago.  This is a bit quirky, but one can adjust -Start, -End, -Limit, etc. params to eventually get the events for the desired range.
 	.Example
 	Get-XIOEvent
 	Request info from current XMS connection and return event info
 	.Example
-	Get-XIOEvent -ComputerName somexmsappl01.dom.com -Limit ([System.Int32]::MaxValue)
+	Get-XIOEvent -ComputerName somexmsappl01.dom.com -Limit 100
 	Request info from XMS connection "somexmsappl01" only and return objects with the event info, up to the given number specified by -Limit
 	.Example
 	Get-XIOEvent -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
@@ -1034,7 +1040,7 @@ function Get-XIOEvent {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Event])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Maximum number of events to retrieve per XMS connection. Default is 50
 		[int]$Limit = 50,
@@ -1100,7 +1106,7 @@ function Get-XIOEvent {
 
 #region  new types for API v2 ####################################################################################
 <#	.Description
-	Function to get XtremIO Alert info using REST API from XtremIO XMS appliance
+	Function to get XtremIO Alert info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOAlert
 	Get the "Alert" items
@@ -1111,7 +1117,7 @@ function Get-XIOAlert {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Alert])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1139,7 +1145,7 @@ function Get-XIOAlert {
 
 
 <#	.Description
-	Function to get XtremIO AlertDefinition info using REST API from XtremIO XMS appliance
+	Function to get XtremIO AlertDefinition info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOAlertDefinition
 	Get the "AlertDefinition" items
@@ -1150,7 +1156,7 @@ function Get-XIOAlertDefinition {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.AlertDefinition])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1178,7 +1184,7 @@ function Get-XIOAlertDefinition {
 
 
 <#	.Description
-	Function to get XtremIO BBU info using REST API from XtremIO XMS appliance
+	Function to get XtremIO BBU info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOBBU
 	Get the "BBU" items
@@ -1189,7 +1195,7 @@ function Get-XIOBBU {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.BBU])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1217,7 +1223,7 @@ function Get-XIOBBU {
 
 
 <#	.Description
-	Function to get XtremIO ConsistencyGroup info using REST API from XtremIO XMS appliance
+	Function to get XtremIO ConsistencyGroup info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOConsistencyGroup
 	Get the "ConsistencyGroup" items
@@ -1228,7 +1234,7 @@ function Get-XIOConsistencyGroup {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.ConsistencyGroup])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1256,7 +1262,7 @@ function Get-XIOConsistencyGroup {
 
 
 <#	.Description
-	Function to get XtremIO DAE (Disk Array Enclosure) info using REST API from XtremIO XMS appliance
+	Function to get XtremIO DAE (Disk Array Enclosure) info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIODAE
 	Get the "DAE" items
@@ -1267,7 +1273,7 @@ function Get-XIODAE {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.DAE])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1295,7 +1301,7 @@ function Get-XIODAE {
 
 
 <#	.Description
-	Function to get XtremIO DAE Controller info using REST API from XtremIO XMS appliance
+	Function to get XtremIO DAE Controller info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIODAEController
 	Get the "DAEController" items
@@ -1306,7 +1312,7 @@ function Get-XIODAEController {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.DAEController])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1334,7 +1340,7 @@ function Get-XIODAEController {
 
 
 <#	.Description
-	Function to get XtremIO DAE (Disk Array Enclosure) PSU info using REST API from XtremIO XMS appliance
+	Function to get XtremIO DAE (Disk Array Enclosure) PSU info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIODAEPsu
 	Get the "DAEPsu" items
@@ -1345,7 +1351,7 @@ function Get-XIODAEPsu {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.DAEPsu])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1373,7 +1379,7 @@ function Get-XIODAEPsu {
 
 
 <#	.Description
-	Function to get XtremIO Email Notifier info using REST API from XtremIO XMS appliance
+	Function to get XtremIO Email Notifier info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOEmailNotifier
 	Get the "EmailNotifier" items
@@ -1384,7 +1390,7 @@ function Get-XIOEmailNotifier {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.EmailNotifier])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1412,7 +1418,7 @@ function Get-XIOEmailNotifier {
 
 
 <#	.Description
-	Function to get XtremIO InfiniBand Switch info using REST API from XtremIO XMS appliance
+	Function to get XtremIO InfiniBand Switch info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOInfinibandSwitch
 	Get the "InfinibandSwitch" items
@@ -1423,7 +1429,7 @@ function Get-XIOInfinibandSwitch {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.InfinibandSwitch])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1451,7 +1457,7 @@ function Get-XIOInfinibandSwitch {
 
 
 <#	.Description
-	Function to get XtremIO LDAP Config info using REST API from XtremIO XMS appliance
+	Function to get XtremIO LDAP Config info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOLdapConfig
 	Get the "LdapConfig" items
@@ -1462,7 +1468,7 @@ function Get-XIOLdapConfig {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.LdapConfig])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1490,7 +1496,7 @@ function Get-XIOLdapConfig {
 
 
 <#	.Description
-	Function to get XtremIO LocalDisk info using REST API from XtremIO XMS appliance
+	Function to get XtremIO LocalDisk info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOLocalDisk
 	Get the "LocalDisk" items
@@ -1501,7 +1507,7 @@ function Get-XIOLocalDisk {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.LocalDisk])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1529,7 +1535,7 @@ function Get-XIOLocalDisk {
 
 
 <#	.Description
-	Function to get XtremIO object performance counters using REST API from XtremIO XMS appliance.  Typical use of these counters would be for exporting to <some other destination> for further manipulation/massaging.
+	Function to get XtremIO object performance counters using REST API from XtremIO Management Server (XMS).  Typical use of these counters would be for exporting to <some other destination> for further manipulation/massaging.
 	.Example
 	Get-XIOPerformanceCounter
 	Request info from current XMS connection and return PerformanceCounter info
@@ -1552,7 +1558,7 @@ function Get-XIOPerformanceCounter {
 	[CmdletBinding(DefaultParameterSetName="ByTimeFrameEnum")]
 	[OutputType([XioItemInfo.PerformanceCounter])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[string[]]$ComputerName,
 		## Maximum number of performance facts to retrieve per XMS connection. Default is 50
 		[int]$Limit = 50,
@@ -1628,7 +1634,7 @@ function Get-XIOPerformanceCounter {
 
 
 <#	.Description
-	Function to get XtremIO SnapshotSet info using REST API from XtremIO XMS appliance
+	Function to get XtremIO SnapshotSet info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSnapshotSet
 	Get the "SnapshotSet" items
@@ -1639,7 +1645,7 @@ function Get-XIOSnapshotSet {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.SnapshotSet])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1667,7 +1673,7 @@ function Get-XIOSnapshotSet {
 
 
 <#	.Description
-	Function to get XtremIO SNMP Notifier info using REST API from XtremIO XMS appliance
+	Function to get XtremIO SNMP Notifier info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSnmpNotifier
 	Get the "SnmpNotifier" items
@@ -1678,7 +1684,7 @@ function Get-XIOSnmpNotifier {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.SnmpNotifier])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1706,7 +1712,7 @@ function Get-XIOSnmpNotifier {
 
 
 <#	.Description
-	Function to get XtremIO Storage Controller PSU info using REST API from XtremIO XMS appliance
+	Function to get XtremIO Storage Controller PSU info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOStorageControllerPsu
 	Get the "StorageControllerPsu" items
@@ -1717,7 +1723,7 @@ function Get-XIOStorageControllerPsu {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.StorageControllerPsu])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1745,7 +1751,7 @@ function Get-XIOStorageControllerPsu {
 
 
 <#	.Description
-	Function to get XtremIO Syslog Notifier info using REST API from XtremIO XMS appliance
+	Function to get XtremIO Syslog Notifier info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSyslogNotifier
 	Get the "SyslogNotifier" items
@@ -1756,7 +1762,7 @@ function Get-XIOSyslogNotifier {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.SyslogNotifier])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1784,7 +1790,7 @@ function Get-XIOSyslogNotifier {
 
 
 <#	.Description
-	Function to get XtremIO Tag info using REST API from XtremIO XMS appliance
+	Function to get XtremIO Tag info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOTag
 	Get the "Tag" items
@@ -1795,7 +1801,7 @@ function Get-XIOTag {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Tag])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1823,7 +1829,7 @@ function Get-XIOTag {
 
 
 <#	.Description
-	Function to get XtremIO User Account info using REST API from XtremIO XMS appliance
+	Function to get XtremIO User Account info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOUserAccount
 	Get the "UserAccount" items
@@ -1834,7 +1840,7 @@ function Get-XIOUserAccount {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.UserAccount])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1862,7 +1868,7 @@ function Get-XIOUserAccount {
 
 
 <#	.Description
-	Function to get XtremIO Slot info using REST API from XtremIO XMS appliance
+	Function to get XtremIO Slot info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSlot
 	Get the "Slot" items
@@ -1873,7 +1879,7 @@ function Get-XIOSlot {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.Slot])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1901,7 +1907,7 @@ function Get-XIOSlot {
 
 
 <#	.Description
-	Function to get XtremIO Snapshot Scheduler info using REST API from XtremIO XMS appliance
+	Function to get XtremIO Snapshot Scheduler info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSnapshotScheduler
 	Get the "SnapshotScheduler" items
@@ -1912,7 +1918,7 @@ function Get-XIOSnapshotScheduler {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.SnapshotScheduler])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1940,7 +1946,7 @@ function Get-XIOSnapshotScheduler {
 
 
 <#	.Description
-	Function to get XtremIO XMS info using REST API from XtremIO XMS appliance
+	Function to get XtremIO XMS info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOXMS
 	Request info from current XMS connection and return an object with the "XMS" info for the XMS
@@ -1951,7 +1957,7 @@ function Get-XIOXMS {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.XMS])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
@@ -1999,7 +2005,7 @@ function Get-XIOXMS {
 function Get-XIOPerformanceInfo {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	param(
-		## XMS appliance address to which to connect
+		## XMS address to which to connect
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName_arr,
 		## Item type for which to get info; currently supported types:
 		##   for all API versions:                "cluster", "initiator-group", "initiator", "target", "volume"
@@ -2082,7 +2088,7 @@ function Get-XIOClusterPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.ClusterPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2124,7 +2130,7 @@ function Get-XIODataProtectionGroupPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.DataProtectionGroupPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2166,7 +2172,7 @@ function Get-XIOInitiatorGroupFolderPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.IgFolderPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2208,7 +2214,7 @@ function Get-XIOInitiatorGroupPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.InitiatorGroupPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2250,7 +2256,7 @@ function Get-XIOInitiatorPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.InitiatorPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2292,7 +2298,7 @@ function Get-XIOSsdPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.SsdPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2334,7 +2340,7 @@ function Get-XIOTargetPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.TargetPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2376,7 +2382,7 @@ function Get-XIOVolumeFolderPerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.VolumeFolderPerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
@@ -2418,7 +2424,7 @@ function Get-XIOVolumePerformance {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
 	[OutputType([XioItemInfo.VolumePerformance])]
 	param(
-		## XMS appliance address to use; if none, use default connections
+		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,

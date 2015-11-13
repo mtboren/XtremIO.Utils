@@ -589,6 +589,14 @@
 			<Name>XioItem_snapshots</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Snapshot</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>28</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
@@ -707,6 +715,12 @@
 			<Name>XioItem_lun-maps</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.LunMap</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>7</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>

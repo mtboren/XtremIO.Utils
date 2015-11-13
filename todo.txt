@@ -11,12 +11,18 @@ todo:
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
--XIOS v4 properties to add/update:
+-XIOS v4 properties/types to add/update/handle:
 	-IG-GUID and vol-GUID are available in XIOLunMaps -- add those as property to XIOLunMap object (InitiatorGrpID, VolumeID)
 	-on XMS object:
 		-provide DateTime property from the ISO8601 date/time string that has timezone abbreviation in it
 		-change uptime string to be a timespan (currently a string like, "144 days, 4:50:10.300000")
 		-change NTPServer to be array of addresses (if empty, is "{}" right now)
+	not doing yet:
+		-consistency-group-volumes, as their properties returned seem to just be consistency groups, not consistency group volumes (properties match identically, and there are none of the Performance types of properties in the object as there are in the advertised object per the API guide)
+			-and, from initial query of "https://xms.dom.com/api/json/types/consistency-group-volumes", the sub-property is "consistency-groups" (instead of the expected "consistency-group-volumes")
+			-possible mix-up in the API?
+		-SYR Notifiers -- no corresponding type found in API
+		-getting performance counter for Tag EntityType needs more work (API call needs obj-list defined, apparently, and is throwing errors even when having done so)
 -add about_XtremIO.Utils.help.txt
 	-with the general "here's the module, here are some ways to use it"
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
@@ -176,6 +182,8 @@ doing:
 
 
 done for version 0.next (after v0.8.3):
+## things below here are in changelog/readme
+v0.next
 -add XIOS REST API version and full XMS version (if available via XMS type -- available for XIOS v4+, but, leave blank for XIOS v3 and lower?) to XioConnection object
 	-to be used by other things that need to determine API version available, objects available, when to use Tag version VolumeFolder API path, etc.
 	-new properties on XioItemInfo.XioConnection objects:  RestApiVersion, XmsDBVersion, XmsSWVersion (string representation, like "4.0.1-41"), XmsVersion
@@ -192,8 +200,6 @@ done for version 0.next (after v0.8.3):
 		-possible mix-up in the API?
 	-SYR Notifiers -- no corresponding type found in API
 	-getting performance counter for Tag EntityType needs more work (API call needs obj-list defined, apparently, and is throwing errors even when having done so)
-
-## things below here are in changelog/readme
 
 
 
@@ -273,3 +279,7 @@ foreach ($strItemtype in @("cluster", "initiator-group", "initiator", "lun-map",
 
 -clusters obj
 	-add "brick-list" property (available in 2.2.3 and 2.4, at least)
+
+
+testing:
+gc GetXIOItem.ps1 | sls "^\s+.Example" -Context 0,1 | select -ExpandProperty Context | select -ExpandProperty postcontext
