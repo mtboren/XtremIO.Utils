@@ -851,12 +851,17 @@ function _New-Object_fromItemTypeAndContent {
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
 					IOPS = [int64]$oContent.iops
-					RebalanceInProg = [System.Convert]::ToBoolean($oContent."rebalance-in-progress")
+					RebalanceInProg = ("False","done" -notcontains $oContent."rebalance-in-progress")
+					## the "raw" value returned from the API
+					# RebalanceInProgRaw = $oContent."rebalance-in-progress"
 					RebalanceProgress = $oContent."rebalance-progress"
-					RebuildInProg = [System.Convert]::ToBoolean($oContent."rebuild-in-progress")
+					RebuildInProg = ("False","done" -notcontains $oContent."rebuild-in-progress")
+					## the "raw" value returned from the API
+					# RebuildInProgRaw = $oContent."rebuild-in-progress"
 					RebuildPreventionReason = $oContent."rebuild-prevention-reason"
 					RebuildProgress = [int]$oContent."rebuild-progress"
-					SSDPrepInProg = [System.Convert]::ToBoolean($oContent."ssd-preparation-in-progress")
+					## the "raw" value returned from the API
+					# SSDPrepInProgRaw = $oContent."ssd-preparation-in-progress"
 					SSDPrepProgress = $oContent."ssd-preparation-progress"
 					AvailableRebuild = $oContent."available-rebuilds"
 					BrickName = $oContent."brick-id"[1]

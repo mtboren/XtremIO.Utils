@@ -32,6 +32,7 @@ The focus for this version was on updating the module to support new things avai
 - \[new] added `Get-XIOPerformanceCounter` cmdlet for getting performance counter values for given entity types, and exposing the ability to set granularity of the counter values and timeframe from which to get the data. Note:  not yet supporting getting performance counters based on Tag entity type, as there may be some further research needed, possibly involving discussions with the vendor
 - \[new] added feature that allows for graceful determination of valid types for given XioConnection; so, executing `Get-XIOTag` when connected to an XIOS v3 or older XMS will not throw error due to non-existent object types, but rather will return verbose message that given type is not available on XMS at older XIOS (API) version 
 - \[improvement] added XIOS REST API version and full XMS version to `XioItemInfo.XioConnection` object (if available via XMS type, which it _is_ for XIOS v4+).  The new properties on the XioConnection type are `RestApiVersion`, `XmsDBVersion`, `XmsSWVersion` (string representation, like "4.0.1-41"), and `XmsVersion`
+- \[bugfix] fixed issue in return-object-creation where *in-progress properties from XIOS v4 DataProtectionGroup API objects might have values other than "true" and "false". Module was expecting just these two strings and converting them to boolean; this could have failed in XIOS v4 environments. Affected cmdlets were `Get-XIODataProtectionGroup` and `Get-XIODataProtectionGroupPerformance`
 
 Other notes:
 
