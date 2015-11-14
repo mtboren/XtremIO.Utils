@@ -2,6 +2,88 @@
 <Configuration>
 	<ViewDefinitions>
 		<View>
+			<Name>XioItem_alerts</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.Alert</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>30</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>AlertType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>AssociatedObjName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>AlertCode</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Severity</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>State</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_alert-definitions</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.AlertDefinition</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>40</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>AlertType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Class</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>AlertCode</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Severity</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClearanceMode</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_bbus</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.BBU</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PowerFeed</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ConnectedToSC</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>BatteryChargePct</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LoadPct</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>OutputVoltage</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_bricks</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Brick</TypeName></ViewSelectedBy>
 			<TableControl>
@@ -47,6 +129,111 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_consistency-groups</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.ConsistencyGroup</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreatedByApp</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Certainty</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_daes</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.DAE</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PartNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_dae-controllers</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.DAEController</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>17</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>12</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Location</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>HWRevision</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_dae-psus</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.DAEPsu</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>19</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>7</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PowerFeed</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Input</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Location</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>HWRevision</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_data-protection-groups</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.DataProtectionGroup</TypeName></ViewSelectedBy>
 			<TableControl>
@@ -59,6 +246,30 @@
 							<TableColumnItem><PropertyName>TotSSDTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>UsedSSDTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_email-notifier</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.EmailNotifier</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader><Width>19</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>CompanyName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Recipient</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>MailRelayAddress</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>TransportProtocol</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -106,6 +317,258 @@
 			</TableControl>
 		</View>
 		<View>
+			<Name>XioItem_infiniband-switches</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.InfinibandSwitch</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>20</Width></TableColumnHeader>
+					<TableColumnHeader><Width>34</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FanDrawerStatus</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_ldap-configs</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.LdapConfig</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>27</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>BindDN</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SearchBaseDN</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SearchFilter</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>UserToDnRule</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ServerUrl</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_local-disks</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.LocalDisk</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>23</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>5</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Type</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Purpose</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_performance</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.PerformanceCounter</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>EntityType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>DateTime</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Granularity</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Counters</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_schedulers</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.SnapshotScheduler</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SnapType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Retain</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LastActivated</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LastActivationResult</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_slots</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.Slot</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>12</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SlotNum</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SsdSizeGB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
+							<TableColumnItem><PropertyName>SsdUid</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SsdModel</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ErrorReason</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_snmp-notifier</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.SnmpNotifier</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>13</Width></TableColumnHeader>
+					<TableColumnHeader><Width>17</Width></TableColumnHeader>
+					<TableColumnHeader><Width>6</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Community</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>HeartbeatFreqSec</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SNMPVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PrivacyProtocol</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Port</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Recipient</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_syslog-notifier</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.SyslogNotifier</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Target</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_tags</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.Tag</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>40</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ObjectType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumItem</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ColorHex</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_user-accounts</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.UserAccount</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>20</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Role</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>InactivityTimeoutMin</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>IsExternal</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
 			<Name>XioItem_volumes</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Volume</TypeName></ViewSelectedBy>
 			<TableControl>
@@ -126,6 +589,14 @@
 			<Name>XioItem_snapshots</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Snapshot</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>28</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
@@ -135,6 +606,56 @@
 							<TableColumnItem><PropertyName>UsedLogicalTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_snapshot-sets</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.SnapshotSet</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ConsistencyGrpName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>CreationTime</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_storage-controller-psus</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.StorageControllerPsu</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>19</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>7</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>PowerFeed</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Input</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Location</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -194,6 +715,12 @@
 			<Name>XioItem_lun-maps</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.LunMap</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>7</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
@@ -213,11 +740,11 @@
 				<TableHeaders>
 					<TableColumnHeader><Width>25</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>9</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>17</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 				</TableHeaders>
 				<TableRowEntries>
@@ -325,6 +852,30 @@
 							<TableColumnItem><PropertyName>CPUUsage</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumMdl</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>XEnvState</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+		<View>
+			<Name>XioItem_XMS</Name>
+			<ViewSelectedBy><TypeName>XioItemInfo.XMS</TypeName></ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>36</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ServerName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>SwVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>RestApiVersion</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>IPVersion</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>

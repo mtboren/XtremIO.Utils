@@ -1,4 +1,4 @@
-## configuration items for XIO module
+## configuration items for XIO module (not meant to be user-configurable)
 $hshCfg = @{
 	## default ports for API (varies based on XMS appliance version)
 	DefaultApiPort = @{
@@ -23,4 +23,8 @@ $hshCfg = @{
 	EncrCredFilespec = "${env:temp}\xioCred_by_${env:username}_on_${env:computername}.enc.xml"
 	VerboseDatetimeFormat = "yyyy.MMM.dd HH:mm:ss"
 	GetEventDatetimeFormat = "yyyy-MM-dd HH:mm:ss"
+	ItemTypeInfoPerXiosVersion = @{
+		"3.0" = "clusters", "data-protection-groups", "events", "ig-folders", "initiator-groups", "initiators", "lun-maps", "target-groups", "targets", "volumes", "volume-folders", "bricks", "snapshots", "ssds", "storage-controllers", "xenvs"
+		"4.0" = "alert-definitions", "alerts", "bbus", "consistency-groups", "daes", "dae-controllers", "dae-psus", "email-notifier", "infiniband-switches", "ldap-configs", "local-disks", "performance", "schedulers", "slots", "snapshot-sets", "snmp-notifier", "storage-controller-psus", "syslog-notifier", "tags", "user-accounts", "xms"
+	} ## end hashtable
 } ## end hashtable

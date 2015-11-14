@@ -339,7 +339,6 @@ function Get-ItemTypeFromURI {
 		[parameter(Mandatory=$true)][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
 	) ## end param
 	$strItemType_plural = ([RegEx]("^(/api/json)?/types/(?<itemType>[^/]+)/")).Match(([System.Uri]($URI_str)).AbsolutePath).Groups.Item("itemType").Value
-	Write-Debug "Item type grabbed from URI: '$strItemType_plural'"
 	## get the plural item type from the URI (the part of the URI after "/types/")
 	return $strItemType_plural
 } ## end function
@@ -392,6 +391,133 @@ function dWrite-ObjectToTableString {
 } ## end function
 
 
+function _Test-XIOObjectIsInThisXIOSVersion {
+<#	.Description
+	function to determine if this API Item type is present in the given XIOS version, based on a config table of values -> XIOSVersion
+	.Outputs
+	Boolean
+#>
+	param(
+		## API item type (like volumes, xms, ssds, etc.)
+		[parameter(Mandatory=$true)][string]$ApiItemType,
+		## XIOS version to check
+		[AllowNull()][System.Version]$XiosVersion
+	) ## end param
+	process {
+		## if XiosVersion was $null, which is the case with older XIOConnection objects, as their XmsVersion property is not populated, as the XMS type from which to get such info is not available until XIOS v4
+		if ($null -eq $XiosVersion) {$XiosVersion = [System.Version]"3.0"}
+		## get, from the given global config item, all of the API item types that are available for this API version
+		$arrItemTypeNamesAvailableInThisRestXiosVersion = $hshCfg["ItemTypeInfoPerXiosVersion"].Keys | Where-Object {$XiosVersion -ge [System.Version]$_} | Foreach-Object {$hshCfg["ItemTypeInfoPerXiosVersion"][$_]} | Foreach-Object {$_}
+		## does the resulting array of API item types contain this API item type?
+		$arrItemTypeNamesAvailableInThisRestXiosVersion -contains $ApiItemType
+	} ## end process
+} ## end function
+
+
+function _New-ScheduleDisplayString {
+<#	.Description
+	Helper function to take a schedule type and schedule "triplet" and return a display string
+	.Outputs
+	String
+#>
+	param (
+		## Type of scheduler:  explicit or interval
+		[parameter(Mandatory=$true)][ValidateSet("explicit","interval")][string]$ScheduleType,
+		## Schedule string.  Like "hrs:mins:secs" for interval scheduler, or "intDayOfWeek_1-basedIndex:h:min" for explicit scheduler
+		[string]$ScheduleTriplet
+	)
+	process {
+		[int]$intSchedPiece0,[int]$intSchedPiece1,[int]$intSchedPiece2 = $ScheduleTriplet.Split(":")
+		Switch ($ScheduleType) {
+			"explicit" {
+				## the day of the week is either "Every day" when the first piece is 0, or the <piece0 - 1> for the DayOfWeek enum (zero-based index)
+				$strDayOfWeek = if ($intSchedPiece0 -eq 0) {"Every day"} else {[System.Enum]::GetName([System.DayOfWeek], ($intSchedPiece0 - 1))}
+				$strTimeOfDay = "{0:00}:{1:00}" -f $intSchedPiece1, $intSchedPiece2
+				"{0} at {1}" -f $strDayOfWeek, $strTimeOfDay
+			} ## end case
+			"interval" {
+				$strHrOutput = if ($intSchedPiece0 -gt 0) {"$intSchedPiece0 hour{0}" -f $(if ($intSchedPiece0 -ne 1) {"s"})}
+				$strMinOutput = if ($intSchedPiece1 -gt 0) {"$intSchedPiece1 min{0}" -f $(if ($intSchedPiece1 -ne 1) {"s"})}
+				$strSecOutput = if ($intSchedPiece2 -gt 0) {"$intSchedPiece2 sec{0}" -f $(if ($intSchedPiece2 -ne 1) {"s"})}
+				(@("Every",$strHrOutput,$strMinOutput,$strSecOutput) | Where-Object {$null -ne $_}) -join " "
+			} ## end case
+			default {Write-Verbose "scheduler type '$ScheduleType' not expected"}
+		} ## end switch
+	} ## end process
+} ## end fn
+
+
+function _Get-LocalDatetimeFromUTCUnixEpoch {
+<#	.Description
+	Helper function to get the current, local datetime from a UNIX Epoch time
+#>
+	param(
+		## UNIX Epoch time (number of seconds since 00:00:00 on 01 Jan 1970)
+		[Double]$UnixEpochTime
+	) ## end param
+
+	process {
+		(Get-Date "01 Jan 1970 00:00:00").AddSeconds($UnixEpochTime).ToLocalTime()
+	} ## end process
+} ## end fn
+
+
+function _New-ObjListFromProperty {
+<#	.Description
+	Helper function to create objects from typical XIO "list" object arrays, which have members that are like:  <someLongId>, <theObjectDisplayName>, <theObjectIndex>
+#>
+	param(
+		## The prefix to add to the Id property name
+		[string]$IdPropertyPrefix,
+		## The array of objects from which to get Id, Name, and Index
+		[PSObject[]]$ObjectArray
+	) ## end param
+
+	process {
+		$ObjectArray | Where-Object {($null -ne $_) -and ($null -ne $_[0])} | Foreach-Object {
+			New-Object -TypeName PSObject -Property ([ordered]@{
+				"${IdPropertyPrefix}Id" = $_[0]
+				Name = $_[1]
+				Index = $_[2]
+			}) ## end new-object
+		} ## end foreach-object
+	} ## end process
+} ## end fn
+
+
+function _New-ObjListFromProperty_byObjName {
+<#	.Description
+	Helper function to eventually call function to create objects from typical XIO "list" object arrays, based on the object type name (like Storagecontroller or Switch (IBSwitch))
+#>
+	param(
+		## The name of the object type, like Storagecontroller or Switch
+		[string]$Name,
+		## The array of objects from which to get Id, Name, and Index
+		[PSObject[]]$ObjectArray
+	) ## end param
+
+	begin {
+		## mapping of "raw" object name from API to desired display name used for object ID prefix in subsequent helper function
+		$hshObjNameToObjPrefixMap = @{
+			Storagecontroller = "StorageController"
+			"Switch" = "IbSwitch"
+			SnapSet = "SnapshotSet"
+			Scheduler = "SnapshotScheduler"
+			Volume = "Vol"
+			ConsistencyGroup = "ConsistencyGrp"
+			InitiatorGroup = "InitiatorGrp"
+			Initiator = "Initiator"
+			Tag = "Tag"
+		} ## end hashtable
+		$strObjPrefixToUse = if ($hshObjNameToObjPrefixMap.ContainsKey($Name)) {$hshObjNameToObjPrefixMap[$Name]} else {"UnkItemType"}
+	} ## end begin
+
+	process {
+		## for some objects (like ports with no connection on them), the Name value is "none", indicating that it has no connection; return nothing for those
+		if ($Name -ne "none") {_New-ObjListFromProperty -IdPropertyPrefix $strObjPrefixToUse -ObjectArray $ObjectArray}
+	} ## end process
+} ## end fn
+
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	All item types (including some that are only on XMS v2.2.3 rel 25):  "target-groups", "lun-maps", "storage-controllers", "bricks", "snapshots", "iscsi-portals", "xenvs", "iscsi-routes", "initiator-groups", "volumes", "clusters", "initiators", "ssds", "targets"
@@ -411,777 +537,1439 @@ function _New-Object_fromItemTypeAndContent {
 	)
 	## string to add to messages written by this function; function name in square brackets
 	$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-	Write-Debug "$strLogEntry_ToAdd argItemType: '$argItemType'"
-	$hshPropertyForNewObj = Switch ($argItemType) {
-		"initiator-groups" {
-			[ordered]@{
-				Name = $oContent.Name
-				Index = $oContent.index
-				NumInitiator = $oContent."num-of-initiators"
-				NumVol = $oContent."num-of-vols"
-				IOPS = [int64]$oContent.iops
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-						Small = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."small-bw" / 1KB
-							IOPS = [int]$oContent."small-iops"
-							ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."small-rd-iops"
-							WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."small-wr-iops"
-						}) ## end object
-						Unaligned = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."unaligned-bw" / 1KB
-							IOPS = [int]$oContent."unaligned-iops"
-							ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."unaligned-rd-iops"
-							WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."unaligned-wr-iops"
-						}) ## end object
-					}) ## end New-Object
-					Total = New-Object -Type PSObject -Property ([ordered]@{
-						NumRead = [int64]$oContent."acc-num-of-rd"
-						NumWrite = [int64]$oContent."acc-num-of-wr"
-						ReadTB = $oContent."acc-size-of-rd" / 1GB
-						WriteTB =  $oContent."acc-size-of-wr" / 1GB
-						Small = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-small-rd"
-							NumWrite = [int64]$oContent."acc-num-of-small-wr"
-						} ## end New-Object
-						Unaligned = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
-							NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
-						} ## end New-Object
-					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-				InitiatorGrpId = $oContent."ig-id"[0]
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"initiators" {
-			[ordered]@{
-				Name = $oContent.Name
-				PortAddress = $oContent."port-address"
-				IOPS = [int64]$oContent.iops
-				Index = $oContent.index
-				ConnectionState = $oContent."initiator-conn-state"
-				InitiatorGrpId = $oContent."ig-id"[0]
-				InitiatorId = $oContent."initiator-id"
-				PortType = $oContent."port-type"
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-						Small = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."small-bw" / 1KB
-							IOPS = [int]$oContent."small-iops"
-							ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."small-rd-iops"
-							WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."small-wr-iops"
-						}) ## end object
-						Unaligned = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."unaligned-bw" / 1KB
-							IOPS = [int]$oContent."unaligned-iops"
-							ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."unaligned-rd-iops"
-							WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."unaligned-wr-iops"
-						}) ## end object
-					}) ## end New-Object
-					Total = New-Object -Type PSObject -Property ([ordered]@{
-						NumRead = [int64]$oContent."acc-num-of-rd"
-						NumWrite = [int64]$oContent."acc-num-of-wr"
-						ReadTB = $oContent."acc-size-of-rd" / 1GB
-						WriteTB =  $oContent."acc-size-of-wr" / 1GB
-						Small = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-small-rd"
-							NumWrite = [int64]$oContent."acc-num-of-small-wr"
-						} ## end New-Object
-						Unaligned = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
-							NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
-						} ## end New-Object
-					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-			} ## end ordered dictionary
-			break} ## end case
-		"bricks" {
-			[ordered]@{
-				Name = $oContent."brick-id".Item(1)
-				Index = $oContent."index-in-system"
-				ClusterName = $oContent."sys-id".Item(1)
-				State = $oContent."brick-state"
-				NumSSD = $oContent."num-of-ssds"
-				NumNode = $oContent."num-of-nodes"
-				NodeList = $oContent."node-list"
-				BrickGuid = $oContent."brick-guid"
-				BrickId = $oContent."brick-id"
-				RGrpId = $oContent."rg-id"
-				SsdSlotInfo = $oContent."ssd-slot-array"
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"clusters" {
-			## new API (v3) changes value provided for dedup-ratio; previously it was the percentage (like "0.4" for 2.5:1 dedupe); as of v3, it is the dedupe value (like 2.5 in the "2.5:1" text)
-			#   check if "compression-factor" property exists; if so, this is at least API v3, and has the switched-up value for dedup-ratio
-			$dblDedupeRatio = $(if ($null -ne $oContent."dedup-ratio") {if ($null -eq $oContent."compression-factor") {1/$oContent."dedup-ratio"} else {$oContent."dedup-ratio"}})
-			[ordered]@{
-				Name = $oContent.Name
-				TotSSDTB = $oContent."ud-ssd-space" / 1GB
-				UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
-				## older API version has "free-ud-ssd-space", whereas newer API version does not (as of 2.2.3 rel 25); so, using different math if the given property does not exist
-				FreeSSDTB = $(if (Get-Member -Input $oContent -Name "free-ud-ssd-space") {$oContent."free-ud-ssd-space" / 1GB} else {($oContent."ud-ssd-space" - $oContent."ud-ssd-space-in-use") / 1GB})
-				FreespaceLevel = $oContent."free-ud-ssd-space-level"
-				UsedLogicalTB = $oContent."logical-space-in-use" / 1GB
-				TotProvTB = $oContent."vol-size" / 1GB
-				OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
-				DedupeRatio = $dblDedupeRatio
-				## available in 3.0 and up
-				CompressionFactor = $(if ($null -ne $oContent."compression-factor") {$oContent."compression-factor"})
-				## available in 3.0 and up
-				CompressionMode = $(if ($null -ne $oContent."compression-mode") {$oContent."compression-mode"})
-				## available in 3.x, but went away in v4.0.0-54 (beta) and v4.0.1-7; if not present on this object (due to say, older or newer XIOS/API version on this appliance), the data reduction rate _is_ either the dedupe ratio or the dedupe ratio * compression factor, if compression factor is not $null
-				DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
-				ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
-				BrickList = $oContent."brick-list"
-				Index = [int]$oContent.index
-				ConsistencyState = $oContent."consistency-state"
-				## available in 2.4.0 and up
-				EncryptionMode = $oContent."encryption-mode"
-				## available in 2.4.0 and up
-				EncryptionSupported = $oContent."encryption-supported"
-				FcPortSpeed = $oContent."fc-port-speed"
-				InfiniBandSwitchList = $oContent."ib-switch-list"
-				IOPS = [int64]$oContent.iops
-				LicenseId = $oContent."license-id"
-				NaaSysId = $oContent."naa-sys-id"
-				NumBrick = $oContent."num-of-bricks"
-				NumInfiniBandSwitch = $oContent."num-of-ib-switches"
-				NumSSD = $oContent."num-of-ssds"
-				NumVol = $oContent."num-of-vols"
-				NumXenv = $oContent."num-of-xenvs"
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						## latency in microseconds (탎)
-						Latency = New-Object -Type PSObject -Property ([ordered]@{
-							Average = New-Object -Type PSObject -Property ([ordered]@{
-								AllBlockSize = [int64]$oContent."avg-latency"
-								"512B" = [int64]$oContent."avg-latency-512b"
-								"1KB" = [int64]$oContent."avg-latency-1kb"
-								"2KB" = [int64]$oContent."avg-latency-2kb"
-								"4KB" = [int64]$oContent."avg-latency-4kb"
-								"8KB" = [int64]$oContent."avg-latency-8kb"
-								"16KB" = [int64]$oContent."avg-latency-16kb"
-								"32KB" = [int64]$oContent."avg-latency-32kb"
-								"64KB" = [int64]$oContent."avg-latency-64kb"
-								"128KB" = [int64]$oContent."avg-latency-128kb"
-								"256KB" = [int64]$oContent."avg-latency-256kb"
-								"512KB" = [int64]$oContent."avg-latency-512kb"
-								"1MB" = [int64]$oContent."avg-latency-1mb"
-								"GT1MB" = [int64]$oContent."avg-latency-gt1mb"
+	## if this is a PerformanceCounter object to be
+	if ($argItemType -eq "performance") {
+		## a new variable, to be clear by the name that this is not just a ".content" property of the API return -- it's the whole object
+		$oFullPerfCounterReturn = $oContent
+		## the .members values that are handled separately
+		$arrMembersToAddManually = Write-Output name, guid, timestamp, index
+		## for each set of counters, make a new object to return
+		$oFullPerfCounterReturn.counters | Foreach-Object {
+			$arrThisSetOfCounters = $_
+			$hshPropertiesForNewObj = ([ordered]@{
+				Name = $arrThisSetOfCounters[($oFullPerfCounterReturn.members.IndexOf("name"))]
+				Guid = $arrThisSetOfCounters[($oFullPerfCounterReturn.members.IndexOf("guid"))]
+				Datetime = (Get-Date "00:00:00 01 Jan 1970").AddMilliseconds($arrThisSetOfCounters[($oFullPerfCounterReturn.members.IndexOf("timestamp"))]).ToLocalTime()
+				Index = $arrThisSetOfCounters[($oFullPerfCounterReturn.members.IndexOf("index"))]
+				Granularity = $oFullPerfCounterReturn.granularity
+			}) ## end hashtable
+
+			## now, for the rest of the members for this returned-from-API performance object, add a key/value to the hashtable
+			$oFullPerfCounterReturn.members | Where-Object {$arrMembersToAddManually -notcontains $_} | ForEach-Object -begin {$hshCounterObjProperties = @{}} -Process {
+				$strThisMemberName = $_
+				$intIndexToAccess = $oFullPerfCounterReturn.members.IndexOf($strThisMemberName)
+				$hshCounterObjProperties[$strThisMemberName] = $arrThisSetOfCounters[$intIndexToAccess]
+			} ## end foreach-object
+			## add a new object as the value for the new Counters key in the overall hashtable
+			$hshPropertiesForNewObj["Counters"] = New-Object -Type PSObject -Property $hshCounterObjProperties
+			## create the actual object to eventually return
+			New-Object -Type $PSTypeNameForNewObj -Property $hshPropertiesForNewObj
+		} ## end foreach-object
+	} ## end if
+	## else, create new object as per usual
+	else {
+		$hshPropertyForNewObj = Switch ($argItemType) {
+			"initiator-groups" {
+				[ordered]@{
+					Name = $oContent.Name
+					Index = $oContent.index
+					NumInitiator = $oContent."num-of-initiators"
+					NumVol = $oContent."num-of-vols"
+					IOPS = [int64]$oContent.iops
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							Small = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."small-bw" / 1KB
+								IOPS = [int]$oContent."small-iops"
+								ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."small-rd-iops"
+								WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."small-wr-iops"
 							}) ## end object
-							Read = New-Object -Type PSObject -Property ([ordered]@{
-								AllBlockSize = [int64]$oContent."rd-latency"
-								"512B" = [int64]$oContent."rd-latency-512b"
-								"1KB" = [int64]$oContent."rd-latency-1kb"
-								"2KB" = [int64]$oContent."rd-latency-2kb"
-								"4KB" = [int64]$oContent."rd-latency-4kb"
-								"8KB" = [int64]$oContent."rd-latency-8kb"
-								"16KB" = [int64]$oContent."rd-latency-16kb"
-								"32KB" = [int64]$oContent."rd-latency-32kb"
-								"64KB" = [int64]$oContent."rd-latency-64kb"
-								"128KB" = [int64]$oContent."rd-latency-128kb"
-								"256KB" = [int64]$oContent."rd-latency-256kb"
-								"512KB" = [int64]$oContent."rd-latency-512kb"
-								"1MB" = [int64]$oContent."rd-latency-1mb"
-								"GT1MB" = [int64]$oContent."rd-latency-gt1mb"
+							Unaligned = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."unaligned-bw" / 1KB
+								IOPS = [int]$oContent."unaligned-iops"
+								ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."unaligned-rd-iops"
+								WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."unaligned-wr-iops"
 							}) ## end object
-							Write = New-Object -Type PSObject -Property ([ordered]@{
-								AllBlockSize = [int64]$oContent."wr-latency"
-								"512B" = [int64]$oContent."wr-latency-512b"
-								"1KB" = [int64]$oContent."wr-latency-1kb"
-								"2KB" = [int64]$oContent."wr-latency-2kb"
-								"4KB" = [int64]$oContent."wr-latency-4kb"
-								"8KB" = [int64]$oContent."wr-latency-8kb"
-								"16KB" = [int64]$oContent."wr-latency-16kb"
-								"32KB" = [int64]$oContent."wr-latency-32kb"
-								"64KB" = [int64]$oContent."wr-latency-64kb"
-								"128KB" = [int64]$oContent."wr-latency-128kb"
-								"256KB" = [int64]$oContent."wr-latency-256kb"
-								"512KB" = [int64]$oContent."wr-latency-512kb"
-								"1MB" = [int64]$oContent."wr-latency-1mb"
-								"GT1MB" = [int64]$oContent."wr-latency-gt1mb"
+						}) ## end New-Object
+						Total = New-Object -Type PSObject -Property ([ordered]@{
+							NumRead = [int64]$oContent."acc-num-of-rd"
+							NumWrite = [int64]$oContent."acc-num-of-wr"
+							ReadTB = $oContent."acc-size-of-rd" / 1GB
+							WriteTB =  $oContent."acc-size-of-wr" / 1GB
+							Small = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-small-rd"
+								NumWrite = [int64]$oContent."acc-num-of-small-wr"
+							} ## end New-Object
+							Unaligned = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
+								NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+							} ## end New-Object
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+					InitiatorGrpId = $oContent."ig-id"[0]
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"initiators" {
+				[ordered]@{
+					Name = $oContent.Name
+					PortAddress = $oContent."port-address"
+					IOPS = [int64]$oContent.iops
+					Index = $oContent.index
+					ConnectionState = $oContent."initiator-conn-state"
+					InitiatorGrpId = $oContent."ig-id"[0]
+					InitiatorId = $oContent."initiator-id"
+					PortType = $oContent."port-type"
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							Small = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."small-bw" / 1KB
+								IOPS = [int]$oContent."small-iops"
+								ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."small-rd-iops"
+								WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."small-wr-iops"
 							}) ## end object
-						}) ## end object
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-						Small = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."small-bw" / 1KB
-							IOPS = [int]$oContent."small-iops"
-							ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."small-rd-iops"
-							WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."small-wr-iops"
-						}) ## end object
-						Unaligned = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."unaligned-bw" / 1KB
-							IOPS = [int]$oContent."unaligned-iops"
-							ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."unaligned-rd-iops"
-							WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."unaligned-wr-iops"
-						}) ## end object
+							Unaligned = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."unaligned-bw" / 1KB
+								IOPS = [int]$oContent."unaligned-iops"
+								ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."unaligned-rd-iops"
+								WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."unaligned-wr-iops"
+							}) ## end object
+						}) ## end New-Object
+						Total = New-Object -Type PSObject -Property ([ordered]@{
+							NumRead = [int64]$oContent."acc-num-of-rd"
+							NumWrite = [int64]$oContent."acc-num-of-wr"
+							ReadTB = $oContent."acc-size-of-rd" / 1GB
+							WriteTB =  $oContent."acc-size-of-wr" / 1GB
+							Small = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-small-rd"
+								NumWrite = [int64]$oContent."acc-num-of-small-wr"
+							} ## end New-Object
+							Unaligned = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
+								NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+							} ## end New-Object
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+				} ## end ordered dictionary
+				break} ## end case
+			"bricks" {
+				[ordered]@{
+					Name = $oContent."brick-id".Item(1)
+					Index = $oContent."index-in-system"
+					ClusterName = $oContent."sys-id".Item(1)
+					State = $oContent."brick-state"
+					NumSSD = $oContent."num-of-ssds"
+					NumNode = $oContent."num-of-nodes"
+					NodeList = $oContent."node-list"
+					BrickGuid = $oContent."brick-guid"
+					BrickId = $oContent."brick-id"
+					RGrpId = $oContent."rg-id"
+					SsdSlotInfo = $oContent."ssd-slot-array"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"clusters" {
+				## new API (v3) changes value provided for dedup-ratio; previously it was the percentage (like "0.4" for 2.5:1 dedupe); as of v3, it is the dedupe value (like 2.5 in the "2.5:1" text)
+				#   check if "compression-factor" property exists; if so, this is at least API v3, and has the switched-up value for dedup-ratio
+				$dblDedupeRatio = $(if ($null -ne $oContent."dedup-ratio") {if ($null -eq $oContent."compression-factor") {1/$oContent."dedup-ratio"} else {$oContent."dedup-ratio"}})
+				[ordered]@{
+					Name = $oContent.Name
+					TotSSDTB = $oContent."ud-ssd-space" / 1GB
+					UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
+					## older API version has "free-ud-ssd-space", whereas newer API version does not (as of 2.2.3 rel 25); so, using different math if the given property does not exist
+					FreeSSDTB = $(if (Get-Member -Input $oContent -Name "free-ud-ssd-space") {$oContent."free-ud-ssd-space" / 1GB} else {($oContent."ud-ssd-space" - $oContent."ud-ssd-space-in-use") / 1GB})
+					FreespaceLevel = $oContent."free-ud-ssd-space-level"
+					UsedLogicalTB = $oContent."logical-space-in-use" / 1GB
+					TotProvTB = $oContent."vol-size" / 1GB
+					OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
+					DedupeRatio = $dblDedupeRatio
+					## available in 3.0 and up
+					CompressionFactor = $(if ($null -ne $oContent."compression-factor") {$oContent."compression-factor"})
+					## available in 3.0 and up
+					CompressionMode = $(if ($null -ne $oContent."compression-mode") {$oContent."compression-mode"})
+					## available in 3.x, but went away in v4.0.0-54 (beta) and v4.0.1-7; if not present on this object (due to say, older or newer XIOS/API version on this appliance), the data reduction rate _is_ either the dedupe ratio or the dedupe ratio * compression factor, if compression factor is not $null
+					DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
+					ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
+					BrickList = $oContent."brick-list"
+					Index = [int]$oContent.index
+					ConsistencyState = $oContent."consistency-state"
+					## available in 2.4.0 and up
+					EncryptionMode = $oContent."encryption-mode"
+					## available in 2.4.0 and up
+					EncryptionSupported = $oContent."encryption-supported"
+					FcPortSpeed = $oContent."fc-port-speed"
+					InfiniBandSwitchList = $oContent."ib-switch-list"
+					IOPS = [int64]$oContent.iops
+					LicenseId = $oContent."license-id"
+					NaaSysId = $oContent."naa-sys-id"
+					NumBrick = $oContent."num-of-bricks"
+					NumInfiniBandSwitch = $oContent."num-of-ib-switches"
+					NumSSD = $oContent."num-of-ssds"
+					NumVol = $oContent."num-of-vols"
+					NumXenv = $oContent."num-of-xenvs"
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							## latency in microseconds (탎)
+							Latency = New-Object -Type PSObject -Property ([ordered]@{
+								Average = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."avg-latency"
+									"512B" = [int64]$oContent."avg-latency-512b"
+									"1KB" = [int64]$oContent."avg-latency-1kb"
+									"2KB" = [int64]$oContent."avg-latency-2kb"
+									"4KB" = [int64]$oContent."avg-latency-4kb"
+									"8KB" = [int64]$oContent."avg-latency-8kb"
+									"16KB" = [int64]$oContent."avg-latency-16kb"
+									"32KB" = [int64]$oContent."avg-latency-32kb"
+									"64KB" = [int64]$oContent."avg-latency-64kb"
+									"128KB" = [int64]$oContent."avg-latency-128kb"
+									"256KB" = [int64]$oContent."avg-latency-256kb"
+									"512KB" = [int64]$oContent."avg-latency-512kb"
+									"1MB" = [int64]$oContent."avg-latency-1mb"
+									"GT1MB" = [int64]$oContent."avg-latency-gt1mb"
+								}) ## end object
+								Read = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."rd-latency"
+									"512B" = [int64]$oContent."rd-latency-512b"
+									"1KB" = [int64]$oContent."rd-latency-1kb"
+									"2KB" = [int64]$oContent."rd-latency-2kb"
+									"4KB" = [int64]$oContent."rd-latency-4kb"
+									"8KB" = [int64]$oContent."rd-latency-8kb"
+									"16KB" = [int64]$oContent."rd-latency-16kb"
+									"32KB" = [int64]$oContent."rd-latency-32kb"
+									"64KB" = [int64]$oContent."rd-latency-64kb"
+									"128KB" = [int64]$oContent."rd-latency-128kb"
+									"256KB" = [int64]$oContent."rd-latency-256kb"
+									"512KB" = [int64]$oContent."rd-latency-512kb"
+									"1MB" = [int64]$oContent."rd-latency-1mb"
+									"GT1MB" = [int64]$oContent."rd-latency-gt1mb"
+								}) ## end object
+								Write = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."wr-latency"
+									"512B" = [int64]$oContent."wr-latency-512b"
+									"1KB" = [int64]$oContent."wr-latency-1kb"
+									"2KB" = [int64]$oContent."wr-latency-2kb"
+									"4KB" = [int64]$oContent."wr-latency-4kb"
+									"8KB" = [int64]$oContent."wr-latency-8kb"
+									"16KB" = [int64]$oContent."wr-latency-16kb"
+									"32KB" = [int64]$oContent."wr-latency-32kb"
+									"64KB" = [int64]$oContent."wr-latency-64kb"
+									"128KB" = [int64]$oContent."wr-latency-128kb"
+									"256KB" = [int64]$oContent."wr-latency-256kb"
+									"512KB" = [int64]$oContent."wr-latency-512kb"
+									"1MB" = [int64]$oContent."wr-latency-1mb"
+									"GT1MB" = [int64]$oContent."wr-latency-gt1mb"
+								}) ## end object
+							}) ## end object
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							Small = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."small-bw" / 1KB
+								IOPS = [int]$oContent."small-iops"
+								ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."small-rd-iops"
+								WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."small-wr-iops"
+							}) ## end object
+							Unaligned = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."unaligned-bw" / 1KB
+								IOPS = [int]$oContent."unaligned-iops"
+								ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."unaligned-rd-iops"
+								WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."unaligned-wr-iops"
+							}) ## end object
+						}) ## end New-Object
+						Total = New-Object -Type PSObject -Property ([ordered]@{
+							NumRead = [int64]$oContent."acc-num-of-rd"
+							NumWrite = [int64]$oContent."acc-num-of-wr"
+							ReadTB = $oContent."acc-size-of-rd" / 1GB
+							WriteTB =  $oContent."acc-size-of-wr" / 1GB
+							Small = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-small-rd"
+								NumWrite = [int64]$oContent."acc-num-of-small-wr"
+							} ## end New-Object
+							Unaligned = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
+								NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+							} ## end New-Object
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+					## available in 3.0 and up
+					SharedMemEfficiencyLevel = $oContent."shared-memory-efficiency-level"
+					## available in 3.0 and up
+					SharedMemInUseRatioLevel = $oContent."shared-memory-in-use-ratio-level"
+					## available in 2.4.0 and up
+					SizeAndCapacity = $oContent."size-and-capacity"
+					SWVersion = $oContent."sys-sw-version"
+					SystemActivationDateTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."sys-activation-timestamp"
+					SystemActivationTimestamp = $oContent."sys-activation-timestamp"
+					SystemSN = $oContent."sys-psnt-serial-number"
+					SystemState = $oContent."sys-state"
+					SystemStopType = $oContent."sys-stop-type"
+				} ## end ordered dictionary
+				break} ## end case
+			"data-protection-groups" {
+				[ordered]@{
+					Name = $oContent.name
+					Index = $oContent.index
+					State = $oContent."protection-state"
+					TotSSDTB = $oContent."ud-ssd-space" / 1GB
+					UsefulSSDTB = $oContent."useful-ssd-space" / 1GB
+					UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+					IOPS = [int64]$oContent.iops
+					RebalanceInProg = ("False","done" -notcontains $oContent."rebalance-in-progress")
+					## the "raw" value returned from the API
+					# RebalanceInProgRaw = $oContent."rebalance-in-progress"
+					RebalanceProgress = $oContent."rebalance-progress"
+					RebuildInProg = ("False","done" -notcontains $oContent."rebuild-in-progress")
+					## the "raw" value returned from the API
+					# RebuildInProgRaw = $oContent."rebuild-in-progress"
+					RebuildPreventionReason = $oContent."rebuild-prevention-reason"
+					RebuildProgress = [int]$oContent."rebuild-progress"
+					## the "raw" value returned from the API
+					# SSDPrepInProgRaw = $oContent."ssd-preparation-in-progress"
+					SSDPrepProgress = $oContent."ssd-preparation-progress"
+					AvailableRebuild = $oContent."available-rebuilds"
+					BrickName = $oContent."brick-id"[1]
+					BrickIndex = $oContent."brick-id"[2]
+					ClusterName = $oContent."sys-id"[1]
+					ClusterIndex = $oContent."sys-id"[2]
+					NumNode = $oContent."num-of-nodes"
+					NumSSD = $oContent."num-of-ssds"
+					RGrpId = $oContent."rg-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"events" {
+				[ordered]@{
+					EventID = $oContent.id
+					DateTime = $(if ($null -ne $oContent.timestamp) {[System.DateTime]($oContent.timestamp)})
+					RelAlertCode = $oContent.event_code
+					Category = $oContent.classification
+					Severity = $oContent.severity
+					EntityType = $oContent.entity
+					EntityDetails = $oContent.entity_details
+					Description = $oContent.description
+				} ## end ordered dictionary
+				break} ## end case
+			"ig-folders" {
+				[ordered]@{
+					Name = $oContent.name
+					Caption = $oContent.caption
+					Index = $oContent.index
+					## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
+					InitiatorGrpIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
+					FolderId = $oContent."folder-id"
+					NumIG = $oContent."num-of-direct-objs"
+					NumSubfolder = $oContent."num-of-subfolders"
+					ParentFolder = $oContent."parent-folder-id"[1]
+					ParentFolderId = $oContent."parent-folder-id"[0]
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							Small = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."small-bw" / 1KB
+								IOPS = [int]$oContent."small-iops"
+								ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."small-rd-iops"
+								WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."small-wr-iops"
+							}) ## end object
+							Unaligned = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."unaligned-bw" / 1KB
+								IOPS = [int]$oContent."unaligned-iops"
+								ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."unaligned-rd-iops"
+								WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."unaligned-wr-iops"
+							}) ## end object
+						}) ## end New-Object
+						Total = New-Object -Type PSObject -Property ([ordered]@{
+							NumRead = [int64]$oContent."acc-num-of-rd"
+							NumWrite = [int64]$oContent."acc-num-of-wr"
+							ReadTB = $oContent."acc-size-of-rd" / 1GB
+							WriteTB =  $oContent."acc-size-of-wr" / 1GB
+							Small = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-small-rd"
+								NumWrite = [int64]$oContent."acc-num-of-small-wr"
+							} ## end New-Object
+							Unaligned = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
+								NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+							} ## end New-Object
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+					SubfolderList = $oContent."subfolder-list"
+					IOPS = [int64]$oContent.iops
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"lun-maps" {
+				[ordered]@{
+					VolumeName = $oContent."vol-name"
+					LunId = $oContent.lun
+					## changed property name from "ig-name" after v0.6.0 release
+					InitiatorGroup = $oContent."ig-name"
+					InitiatorGrpIndex = $oContent."ig-index"
+					TargetGrpName = $oContent."tg-name"
+					TargetGrpIndex = $oContent."tg-index"
+					## changed from lm-id to mapping-id in v2.4
+					MappingId = $oContent."mapping-id"
+					## available in 2.4.0 and up
+					MappingIndex = $oContent."mapping-index"
+					XmsId = $oContent."xms-id"
+					VolumeIndex = $oContent."vol-index"
+				} ## end ordered dictionary
+				break} ## end case
+			"ssds" {
+				[ordered]@{
+					Name = $oContent.name
+					CapacityGB = $oContent."ssd-size-in-kb"/1MB
+					UsefulGB = $oContent."useful-ssd-space"/1MB
+					UsedGB = $oContent."ssd-space-in-use"/1MB
+					SlotNum = $oContent."slot-num"
+					ModelName = $oContent."model-name"
+					SerialNumber = $oContent."serial-number"
+					FWVersion = $oContent."fw-version"
+					PartNumber = $oContent."part-number"
+					LifecycleState = $oContent."fru-lifecycle-state"
+					SSDFailureReason = $oContent."ssd-failure-reason"
+					PctEnduranceLeft = $oContent."percent-endurance-remaining"
+					PctEnduranceLeftLvl = $oContent."percent-endurance-remaining-level"
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+						}) ## end New-Object
 					}) ## end New-Object
-					Total = New-Object -Type PSObject -Property ([ordered]@{
-						NumRead = [int64]$oContent."acc-num-of-rd"
-						NumWrite = [int64]$oContent."acc-num-of-wr"
-						ReadTB = $oContent."acc-size-of-rd" / 1GB
-						WriteTB =  $oContent."acc-size-of-wr" / 1GB
-						Small = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-small-rd"
-							NumWrite = [int64]$oContent."acc-num-of-small-wr"
-						} ## end New-Object
-						Unaligned = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
-							NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
-						} ## end New-Object
-					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-				## available in 3.0 and up
-				SharedMemEfficiencyLevel = $oContent."shared-memory-efficiency-level"
-				## available in 3.0 and up
-				SharedMemInUseRatioLevel = $oContent."shared-memory-in-use-ratio-level"
-				## available in 2.4.0 and up
-				SizeAndCapacity = $oContent."size-and-capacity"
-				SWVersion = $oContent."sys-sw-version"
-				SystemActivationDateTime = ([System.DateTime]"01 Jan 1970").AddSeconds($oContent."sys-activation-timestamp")
-				SystemActivationTimestamp = $oContent."sys-activation-timestamp"
-				SystemSN = $oContent."sys-psnt-serial-number"
-				SystemState = $oContent."sys-state"
-				SystemStopType = $oContent."sys-stop-type"
-			} ## end ordered dictionary
-			break} ## end case
-		"data-protection-groups" {
-			[ordered]@{
-				Name = $oContent.name
-				Index = $oContent.index
-				State = $oContent."protection-state"
-				TotSSDTB = $oContent."ud-ssd-space" / 1GB
-				UsefulSSDTB = $oContent."useful-ssd-space" / 1GB
-				UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-				IOPS = [int64]$oContent.iops
-				RebalanceInProg = [System.Convert]::ToBoolean($oContent."rebalance-in-progress")
-				RebalanceProgress = $oContent."rebalance-progress"
-				RebuildInProg = [System.Convert]::ToBoolean($oContent."rebuild-in-progress")
-				RebuildPreventionReason = $oContent."rebuild-prevention-reason"
-				RebuildProgress = [int]$oContent."rebuild-progress"
-				SSDPrepInProg = [System.Convert]::ToBoolean($oContent."ssd-preparation-in-progress")
-				SSDPrepProgress = $oContent."ssd-preparation-progress"
-				AvailableRebuild = $oContent."available-rebuilds"
-				BrickName = $oContent."brick-id"[1]
-				BrickIndex = $oContent."brick-id"[2]
-				ClusterName = $oContent."sys-id"[1]
-				ClusterIndex = $oContent."sys-id"[2]
-				NumNode = $oContent."num-of-nodes"
-				NumSSD = $oContent."num-of-ssds"
-				RGrpId = $oContent."rg-id"
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"events" {
-			[ordered]@{
-				EventID = $oContent.id
-				DateTime = $(if ($null -ne $oContent.timestamp) {[System.DateTime]($oContent.timestamp)})
-				RelAlertCode = $oContent.event_code
-				Category = $oContent.classification
-				Severity = $oContent.severity
-				EntityType = $oContent.entity
-				EntityDetails = $oContent.entity_details
-				Description = $oContent.description
-			} ## end ordered dictionary
-			break} ## end case
-		"ig-folders" {
-			[ordered]@{
-				Name = $oContent.name
-				Caption = $oContent.caption
-				Index = $oContent.index
-				## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-				InitiatorGrpIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
-				FolderId = $oContent."folder-id"
-				NumIG = $oContent."num-of-direct-objs"
-				NumSubfolder = $oContent."num-of-subfolders"
-				ParentFolder = $oContent."parent-folder-id"[1]
-				ParentFolderId = $oContent."parent-folder-id"[0]
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-						Small = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."small-bw" / 1KB
-							IOPS = [int]$oContent."small-iops"
-							ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."small-rd-iops"
-							WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."small-wr-iops"
-						}) ## end object
-						Unaligned = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."unaligned-bw" / 1KB
-							IOPS = [int]$oContent."unaligned-iops"
-							ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."unaligned-rd-iops"
-							WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."unaligned-wr-iops"
-						}) ## end object
-					}) ## end New-Object
-					Total = New-Object -Type PSObject -Property ([ordered]@{
-						NumRead = [int64]$oContent."acc-num-of-rd"
-						NumWrite = [int64]$oContent."acc-num-of-wr"
-						ReadTB = $oContent."acc-size-of-rd" / 1GB
-						WriteTB =  $oContent."acc-size-of-wr" / 1GB
-						Small = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-small-rd"
-							NumWrite = [int64]$oContent."acc-num-of-small-wr"
-						} ## end New-Object
-						Unaligned = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
-							NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
-						} ## end New-Object
-					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-				SubfolderList = $oContent."subfolder-list"
-				IOPS = [int64]$oContent.iops
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"lun-maps" {
-			[ordered]@{
-				VolumeName = $oContent."vol-name"
-				LunId = $oContent.lun
-				## changed property name from "ig-name" after v0.6.0 release
-				InitiatorGroup = $oContent."ig-name"
-				InitiatorGrpIndex = $oContent."ig-index"
-				TargetGrpName = $oContent."tg-name"
-				TargetGrpIndex = $oContent."tg-index"
-				## changed from lm-id to mapping-id in v2.4
-				MappingId = $oContent."mapping-id"
-				## available in 2.4.0 and up
-				MappingIndex = $oContent."mapping-index"
-				XmsId = $oContent."xms-id"
-				VolumeIndex = $oContent."vol-index"
-			} ## end ordered dictionary
-			break} ## end case
-		"ssds" {
-			[ordered]@{
-				Name = $oContent.name
-				CapacityGB = $oContent."ssd-size-in-kb"/1MB
-				UsefulGB = $oContent."useful-ssd-space"/1MB
-				UsedGB = $oContent."ssd-space-in-use"/1MB
-				SlotNum = $oContent."slot-num"
-				ModelName = $oContent."model-name"
-				SerialNumber = $oContent."serial-number"
-				FWVersion = $oContent."fw-version"
-				PartNumber = $oContent."part-number"
-				LifecycleState = $oContent."fru-lifecycle-state"
-				SSDFailureReason = $oContent."ssd-failure-reason"
-				PctEnduranceLeft = $oContent."percent-endurance-remaining"
-				PctEnduranceLeftLvl = $oContent."percent-endurance-remaining-level"
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-					}) ## end New-Object
-				}) ## end New-Object
-				IOPS = [int64]$oContent."iops"
-				HealthState = $oContent."health-state"
-				ObjSeverity = $oContent."obj-severity"
-				Index = $oContent."index"
-				FWVersionError = $oContent."fw-version-error"
-				EnabledState = $oContent."enabled-state"
-				## available in 2.4.0 and up
-				EncryptionStatus = $oContent."encryption-status"
-				IdLED = $oContent."identify-led"
-				StatusLED = $oContent."status-led"
-				SwapLED = $oContent."swap-led"
-				HWRevision = $oContent."hw-revision"
-				DiagHealthState = $oContent."diagnostic-health-state"
-				SSDLink1Health = $oContent."ssd-link1-health-state"
-				SSDLink2Health = $oContent."ssd-link2-health-state"
-				SSDPositionState = $oContent."ssd-position-state"
-				BrickId = $oContent."brick-id"
-				RGrpId = $oContent."rg-id"
-				SsdRGrpState = $oContent."ssd-rg-state"
-				SsdId = $oContent."ssd-id"
-				SsdUid = $oContent."ssd-uid"
-				SysId = $oContent."sys-id"
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"storage-controllers" {
-			[ordered]@{
-				Name = $oContent.name
-				State = $oContent."backend-storage-controller-state"
-				MgrAddr = $oContent."node-mgr-addr"
-				IBAddr1 = $oContent."ib-addr1"
-				IBAddr2 = $oContent."ib-addr2"
-				IPMIAddr = $oContent."ipmi-addr"
-				BiosFWVersion = $oContent."bios-fw-version"
-				## hm, seems to be second item in the 'brick-id' property
-				BrickName = $oContent."brick-id".Item(1)
-				## hm, seems to be second item in the 'sys-id' property
-				Cluster = $oContent."sys-id".Item(1)
-				EnabledState = $oContent."enabled-state"
-				## available in 2.4.0 and up
-				EncryptionMode = $oContent."encryption-mode"
-				## available in 2.4.0 and up
-				EncryptionSwitchStatus = $oContent."encryption-switch-status"
-				FcHba = New-Object -Type PSObject -Property @{
-					## renamed property in XIO module from "fc-hba-fw-version"
-					FWVersion = $oContent."fc-hba-fw-version"
-					HWRevision = $oContent."fc-hba-hw-revision"
-					Model = $oContent."fc-hba-model"
-				} ## end New-Object
-				HealthState = $oContent."node-health-state"
-				IPMIState = $oContent."ipmi-conn-state"
-				## available in 2.4.0 and up
-				JournalState = $oContent."journal-state"
-				## available in 2.4.0 and up
-				MgmtPortSpeed = $oContent."mgmt-port-speed"
-				## available in 2.4.0 and up
-				MgmtPortState = $oContent."mgmt-port-state"
-				NodeMgrConnState = $oContent."node-mgr-conn-state"
-				NumSSD = $oContent."num-of-ssds"
-				NumSSDDown = $oContent."ssd-dn"
-				NumTargetDown = $oContent."targets-dn"
-				PCI = New-Object -Type PSObject -Property ([ordered]@{
-					"10geHba" = New-Object -Type PSObject -Property @{
-						FWVersion = $oContent."pci-10ge-hba-fw-version"
-						HWRevision = $oContent."pci-10ge-hba-hw-revision"
-						Model = $oContent."pci-10ge-hba-model"
+					IOPS = [int64]$oContent."iops"
+					HealthState = $oContent."health-state"
+					ObjSeverity = $oContent."obj-severity"
+					Index = $oContent."index"
+					FWVersionError = $oContent."fw-version-error"
+					EnabledState = $oContent."enabled-state"
+					## available in 2.4.0 and up
+					EncryptionStatus = $oContent."encryption-status"
+					IdLED = $oContent."identify-led"
+					StatusLED = $oContent."status-led"
+					SwapLED = $oContent."swap-led"
+					HWRevision = $oContent."hw-revision"
+					DiagHealthState = $oContent."diagnostic-health-state"
+					SSDLink1Health = $oContent."ssd-link1-health-state"
+					SSDLink2Health = $oContent."ssd-link2-health-state"
+					SSDPositionState = $oContent."ssd-position-state"
+					BrickId = $oContent."brick-id"
+					RGrpId = $oContent."rg-id"
+					SsdRGrpState = $oContent."ssd-rg-state"
+					SsdId = $oContent."ssd-id"
+					SsdUid = $oContent."ssd-uid"
+					SysId = $oContent."sys-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"storage-controllers" {
+				[ordered]@{
+					Name = $oContent.name
+					State = $oContent."backend-storage-controller-state"
+					MgrAddr = $oContent."node-mgr-addr"
+					IBAddr1 = $oContent."ib-addr1"
+					IBAddr2 = $oContent."ib-addr2"
+					IPMIAddr = $oContent."ipmi-addr"
+					BiosFWVersion = $oContent."bios-fw-version"
+					## hm, seems to be second item in the 'brick-id' property
+					BrickName = $oContent."brick-id".Item(1)
+					## hm, seems to be second item in the 'sys-id' property
+					Cluster = $oContent."sys-id".Item(1)
+					EnabledState = $oContent."enabled-state"
+					## available in 2.4.0 and up
+					EncryptionMode = $oContent."encryption-mode"
+					## available in 2.4.0 and up
+					EncryptionSwitchStatus = $oContent."encryption-switch-status"
+					FcHba = New-Object -Type PSObject -Property @{
+						## renamed property in XIO module from "fc-hba-fw-version"
+						FWVersion = $oContent."fc-hba-fw-version"
+						HWRevision = $oContent."fc-hba-hw-revision"
+						Model = $oContent."fc-hba-model"
 					} ## end New-Object
-					DiskController = New-Object -Type PSObject -Property @{
-						FWVersion = $oContent."pci-disk-controller-fw-version"
-						HWRevision = $oContent."pci-disk-controller-hw-revision"
-						Model = $oContent."pci-disk-controller-model"
-					} ## end New-Object
-					IbHba = New-Object -Type PSObject -Property @{
-						FWVersion = $oContent."pci-ib-hba-fw-version"
-						HWRevision = $oContent."pci-ib-hba-hw-revision"
-						Model = $oContent."pci-ib-hba-model"
-					} ## end New-Object
-				}) ## end New-Object
-				PoweredState = $oContent."powered-state"
-				RemoteJournalHealthState = $oContent."remote-journal-health-state"
-				SAS = $(1..2 | Foreach-Object {
-					New-Object -Type PSObject -Property ([ordered]@{
-						Name = "SAS$_"
-						HbaPortHealthLevel = $oContent."sas${_}-hba-port-health-level"
-						PortRate = $oContent."sas${_}-port-rate"
-						PortState = $oContent."sas${_}-port-state"
-					}) ## end New-Object
-				}) ## end sub call
-				SerialNumber = $oContent."serial-number"
-				## available in 2.4.0 and up
-				SdrFWVersion = $oContent."sdr-fw-version"
-				SWVersion = $oContent."sw-version"
-				OSVersion = $oContent."os-version"
-			} ## end ordered dictionary
-			break} ## end case
-		"target-groups" {
-			[ordered]@{
-				Name = $oContent.name
-				Index = $oContent.index
-				ClusterName = $oContent."sys-id"[1]
-				TargetGrpId = $oContent."tg-id"
-				SysId = $oContent."sys-id"
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"targets" {
-			[ordered]@{
-				Name = $oContent.name
-				PortAddress = $oContent."port-address"
-				PortSpeed = $oContent."port-speed"
-				PortState = $oContent."port-state"
-				PortType = $oContent."port-type"
-				BrickId = $oContent."brick-id"
-				DriverVersion = $oContent."driver-version"  ## renamed from "driver-version"
-				FCIssue = New-Object -Type PSObject -Property ([ordered]@{
-					InvalidCrcCount = [int]$oContent."fc-invalid-crc-count"
-					LinkFailureCount = [int]$oContent."fc-link-failure-count"
-					LossOfSignalCount = [int]$oContent."fc-loss-of-signal-count"
-					LossOfSyncCount = [int]$oContent."fc-loss-of-sync-count"
-					NumDumpedFrame = [int]$oContent."fc-dumped-frames"
-					PrimSeqProtErrCount = [int]$oContent."fc-prim-seq-prot-err-count"
-				}) ## end New-Object
-				FWVersion = $oContent."fw-version"  ## renamed from "fw-version"
-				TargetGrpId = $oContent."tg-id"
-				Index = $oContent.index
-				IOPS = [int64]$oContent.iops
-				JumboFrameEnabled = $oContent."jumbo-enabled"
-				MTU = $oContent.mtu
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-						Small = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."small-bw" / 1KB
-							IOPS = [int]$oContent."small-iops"
-							ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."small-rd-iops"
-							WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."small-wr-iops"
-						}) ## end object
-						Unaligned = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."unaligned-bw" / 1KB
-							IOPS = [int]$oContent."unaligned-iops"
-							ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."unaligned-rd-iops"
-							WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."unaligned-wr-iops"
-						}) ## end object
-					}) ## end New-Object
-					Total = New-Object -Type PSObject -Property ([ordered]@{
-						NumRead = [int64]$oContent."acc-num-of-rd"
-						NumWrite = [int64]$oContent."acc-num-of-wr"
-						ReadTB = $oContent."acc-size-of-rd" / 1GB
-						WriteTB =  $oContent."acc-size-of-wr" / 1GB
-						Small = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-small-rd"
-							NumWrite = [int64]$oContent."acc-num-of-small-wr"
+					HealthState = $oContent."node-health-state"
+					IPMIState = $oContent."ipmi-conn-state"
+					## available in 2.4.0 and up
+					JournalState = $oContent."journal-state"
+					## available in 2.4.0 and up
+					MgmtPortSpeed = $oContent."mgmt-port-speed"
+					## available in 2.4.0 and up
+					MgmtPortState = $oContent."mgmt-port-state"
+					NodeMgrConnState = $oContent."node-mgr-conn-state"
+					NumSSD = $oContent."num-of-ssds"
+					NumSSDDown = $oContent."ssd-dn"
+					NumTargetDown = $oContent."targets-dn"
+					PCI = New-Object -Type PSObject -Property ([ordered]@{
+						"10geHba" = New-Object -Type PSObject -Property @{
+							FWVersion = $oContent."pci-10ge-hba-fw-version"
+							HWRevision = $oContent."pci-10ge-hba-hw-revision"
+							Model = $oContent."pci-10ge-hba-model"
 						} ## end New-Object
-						Unaligned = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
-							NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+						DiskController = New-Object -Type PSObject -Property @{
+							FWVersion = $oContent."pci-disk-controller-fw-version"
+							HWRevision = $oContent."pci-disk-controller-hw-revision"
+							Model = $oContent."pci-disk-controller-model"
+						} ## end New-Object
+						IbHba = New-Object -Type PSObject -Property @{
+							FWVersion = $oContent."pci-ib-hba-fw-version"
+							HWRevision = $oContent."pci-ib-hba-hw-revision"
+							Model = $oContent."pci-ib-hba-model"
 						} ## end New-Object
 					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-				#UnalignedIOPS = [int64]$oContent."unaligned-iops"  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-				#AccSizeOfRdTB = $oContent."acc-size-of-rd" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-				#AccSizeOfWrTB = $oContent."acc-size-of-wr" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-			} ## end ordered dictionary
-			break} ## end case
-		## snapshots and volumes have the same properties
-		{"snapshots","volumes" -contains $_} {
-			[ordered]@{
-				Name = $oContent.name
-				NaaName = $oContent."naa-name"
-				VolSizeTB = $oContent."vol-size" / 1GB
-				VolId = $oContent."vol-id"[0]  ## renamed from "vol-id"
-				AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
-				AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
-				DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
-				LBSize = $oContent."lb-size"  ## renamed from "lb-size"
-				NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
-				NumLunMapping = $oContent."num-of-lun-mappings"
-				LunMappingList = $oContent."lun-mapping-list"
-				## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-				InitiatorGrpIdList = $oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}
-				## available in 2.4.0 and up
-				UsedLogicalTB = $(if (Get-Member -Input $oContent -Name "logical-space-in-use") {$oContent."logical-space-in-use" / 1GB} else {$null})
-				IOPS = [int64]$oContent.iops
-				Index = $oContent.index
-				## available in 3.0 and up
-				Compressible = $oContent.compressible
-				CreationTime = [System.DateTime]$oContent."creation-time"
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						## latency in microseconds (탎)
-						Latency = New-Object -Type PSObject -Property ([ordered]@{
-							Average = New-Object -Type PSObject -Property ([ordered]@{
-								AllBlockSize = [int64]$oContent."avg-latency"
+					PoweredState = $oContent."powered-state"
+					RemoteJournalHealthState = $oContent."remote-journal-health-state"
+					SAS = $(1..2 | Foreach-Object {
+						New-Object -Type PSObject -Property ([ordered]@{
+							Name = "SAS$_"
+							HbaPortHealthLevel = $oContent."sas${_}-hba-port-health-level"
+							PortRate = $oContent."sas${_}-port-rate"
+							PortState = $oContent."sas${_}-port-state"
+						}) ## end New-Object
+					}) ## end sub call
+					SerialNumber = $oContent."serial-number"
+					## available in 2.4.0 and up
+					SdrFWVersion = $oContent."sdr-fw-version"
+					SWVersion = $oContent."sw-version"
+					OSVersion = $oContent."os-version"
+				} ## end ordered dictionary
+				break} ## end case
+			"target-groups" {
+				[ordered]@{
+					Name = $oContent.name
+					Index = $oContent.index
+					ClusterName = $oContent."sys-id"[1]
+					TargetGrpId = $oContent."tg-id"
+					SysId = $oContent."sys-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"targets" {
+				[ordered]@{
+					Name = $oContent.name
+					PortAddress = $oContent."port-address"
+					PortSpeed = $oContent."port-speed"
+					PortState = $oContent."port-state"
+					PortType = $oContent."port-type"
+					BrickId = $oContent."brick-id"
+					DriverVersion = $oContent."driver-version"  ## renamed from "driver-version"
+					FCIssue = New-Object -Type PSObject -Property ([ordered]@{
+						InvalidCrcCount = [int]$oContent."fc-invalid-crc-count"
+						LinkFailureCount = [int]$oContent."fc-link-failure-count"
+						LossOfSignalCount = [int]$oContent."fc-loss-of-signal-count"
+						LossOfSyncCount = [int]$oContent."fc-loss-of-sync-count"
+						NumDumpedFrame = [int]$oContent."fc-dumped-frames"
+						PrimSeqProtErrCount = [int]$oContent."fc-prim-seq-prot-err-count"
+					}) ## end New-Object
+					FWVersion = $oContent."fw-version"  ## renamed from "fw-version"
+					TargetGrpId = $oContent."tg-id"
+					Index = $oContent.index
+					IOPS = [int64]$oContent.iops
+					JumboFrameEnabled = $oContent."jumbo-enabled"
+					MTU = $oContent.mtu
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							Small = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."small-bw" / 1KB
+								IOPS = [int]$oContent."small-iops"
+								ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."small-rd-iops"
+								WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."small-wr-iops"
 							}) ## end object
-							Read = New-Object -Type PSObject -Property ([ordered]@{
-								AllBlockSize = [int64]$oContent."rd-latency"
+							Unaligned = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."unaligned-bw" / 1KB
+								IOPS = [int]$oContent."unaligned-iops"
+								ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."unaligned-rd-iops"
+								WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."unaligned-wr-iops"
 							}) ## end object
-							Write = New-Object -Type PSObject -Property ([ordered]@{
-								AllBlockSize = [int64]$oContent."wr-latency"
+						}) ## end New-Object
+						Total = New-Object -Type PSObject -Property ([ordered]@{
+							NumRead = [int64]$oContent."acc-num-of-rd"
+							NumWrite = [int64]$oContent."acc-num-of-wr"
+							ReadTB = $oContent."acc-size-of-rd" / 1GB
+							WriteTB =  $oContent."acc-size-of-wr" / 1GB
+							Small = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-small-rd"
+								NumWrite = [int64]$oContent."acc-num-of-small-wr"
+							} ## end New-Object
+							Unaligned = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
+								NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+							} ## end New-Object
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+					#UnalignedIOPS = [int64]$oContent."unaligned-iops"  ## changed in module v0.5.7 (moved into PerformanceInfo section)
+					#AccSizeOfRdTB = $oContent."acc-size-of-rd" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
+					#AccSizeOfWrTB = $oContent."acc-size-of-wr" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
+				} ## end ordered dictionary
+				break} ## end case
+			## snapshots and volumes have the same properties
+			{"snapshots","volumes" -contains $_} {
+				[ordered]@{
+					Name = $oContent.name
+					NaaName = $oContent."naa-name"
+					VolSizeTB = $oContent."vol-size" / 1GB
+					VolId = $oContent."vol-id"[0]  ## renamed from "vol-id"
+					AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
+					AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
+					DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
+					LBSize = $oContent."lb-size"  ## renamed from "lb-size"
+					NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
+					NumLunMapping = $oContent."num-of-lun-mappings"
+					LunMappingList = $oContent."lun-mapping-list"
+					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
+					InitiatorGrpIdList = $oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}
+					## available in 2.4.0 and up
+					UsedLogicalTB = $(if (Get-Member -Input $oContent -Name "logical-space-in-use") {$oContent."logical-space-in-use" / 1GB} else {$null})
+					IOPS = [int64]$oContent.iops
+					Index = $oContent.index
+					## available in 3.0 and up
+					Compressible = $oContent.compressible
+					CreationTime = [System.DateTime]$oContent."creation-time"
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							## latency in microseconds (탎)
+							Latency = New-Object -Type PSObject -Property ([ordered]@{
+								Average = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."avg-latency"
+								}) ## end object
+								Read = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."rd-latency"
+								}) ## end object
+								Write = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."wr-latency"
+								}) ## end object
 							}) ## end object
-						}) ## end object
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-						Small = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."small-bw" / 1KB
-							IOPS = [int]$oContent."small-iops"
-							ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."small-rd-iops"
-							WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."small-wr-iops"
-						}) ## end object
-						Unaligned = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."unaligned-bw" / 1KB
-							IOPS = [int]$oContent."unaligned-iops"
-							ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."unaligned-rd-iops"
-							WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."unaligned-wr-iops"
-						}) ## end object
-					}) ## end New-Object
-					Total = New-Object -Type PSObject -Property ([ordered]@{
-						NumRead = [int64]$oContent."acc-num-of-rd"
-						NumWrite = [int64]$oContent."acc-num-of-wr"
-						ReadTB = $oContent."acc-size-of-rd" / 1GB
-						WriteTB =  $oContent."acc-size-of-wr" / 1GB
-						Small = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-small-rd"
-							NumWrite = [int64]$oContent."acc-num-of-small-wr"
-						} ## end New-Object
-						Unaligned = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
-							NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
-						} ## end New-Object
-					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-				SmallIOAlertsCfg = $oContent."small-io-alerts"
-				UnalignedIOAlertsCfg = $oContent."unaligned-io-alerts"
-				VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
-				LuName = $oContent."lu-name"
-				SmallIORatio = $oContent."small-io-ratio"
-				SmallIORatioLevel = $oContent."small-io-ratio-level"
-				SnapGrpId = $oContent."snapgrp-id"
-				UnalignedIORatio = $oContent."unaligned-io-ratio"
-				UnalignedIORatioLevel = $oContent."unaligned-io-ratio-level"
-				SysId = $oContent."sys-id"
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"volume-folders" {
-			[ordered]@{
-				Name = $oContent.name
-				ParentFolder = $oContent."parent-folder-id"[1]
-				NumVol = [int]$oContent."num-of-vols"
-				VolSizeTB = $oContent."vol-size" / 1GB
-				FolderId = $oContent."folder-id"[0]
-				ParentFolderId = $oContent."parent-folder-id"[0]
-				NumChild = [int]$oContent."num-of-direct-objs"
-				NumSubfolder = [int]$oContent."num-of-subfolders"
-				## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-				VolIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
-				Index = [int]$oContent.index
-				IOPS = [int64]$oContent.iops
-				PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
-					Current = New-Object -Type PSObject -Property ([ordered]@{
-						BandwidthMB = $oContent.bw / 1KB
-						IOPS = [int64]$oContent.iops
-						ReadBandwidthMB = $oContent."rd-bw" / 1KB
-						ReadIOPS = [int]$oContent."rd-iops"
-						WriteBandwidthMB = $oContent."wr-bw" / 1KB
-						WriteIOPS = [int]$oContent."wr-iops"
-						Small = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."small-bw" / 1KB
-							IOPS = [int]$oContent."small-iops"
-							ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."small-rd-iops"
-							WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."small-wr-iops"
-						}) ## end object
-						Unaligned = New-Object -Type PSObject -Property ([ordered]@{
-							BandwidthMB = $oContent."unaligned-bw" / 1KB
-							IOPS = [int]$oContent."unaligned-iops"
-							ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
-							ReadIOPS = [int]$oContent."unaligned-rd-iops"
-							WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
-							WriteIOPS = [int]$oContent."unaligned-wr-iops"
-						}) ## end object
-					}) ## end New-Object
-					Total = New-Object -Type PSObject -Property ([ordered]@{
-						NumRead = [int64]$oContent."acc-num-of-rd"
-						NumWrite = [int64]$oContent."acc-num-of-wr"
-						ReadTB = $oContent."acc-size-of-rd" / 1GB
-						WriteTB =  $oContent."acc-size-of-wr" / 1GB
-						Small = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-small-rd"
-							NumWrite = [int64]$oContent."acc-num-of-small-wr"
-						} ## end New-Object
-						Unaligned = New-Object -Type PSObject -Property @{
-							NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
-							NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
-						} ## end New-Object
-					}) ## end New-Object
-				}) ## end New-object PerformanceInfo
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		"xenvs" {
-			[ordered]@{
-				Name = $oContent.name
-				Index = $oContent.index
-				CPUUsage = $oContent."cpu-usage"
-				NumMdl = $oContent."num-of-mdls"
-				BrickId = $oContent."brick-id"
-				XEnvId = $oContent."xenv-id"
-				XEnvState = $oContent."xenv-state"
-				XmsId = $oContent."xms-id"
-			} ## end ordered dictionary
-			break} ## end case
-		#### PerformanceInfo items
-		{"ClusterPerformance","Ig-FolderPerformance","Initiator-GroupPerformance","InitiatorPerformance","TargetPerformance","Volume-FolderPerformance","VolumePerformance" -contains $_} {
-			[ordered]@{
-				Name = $oContent.name
-				Index = $oContent.index
-				WriteBW_MBps = $oContent.PerformanceInfo.Current.WriteBandwidthMB
-				WriteIOPS = $oContent.PerformanceInfo.Current.WriteIOPS
-				ReadBW_MBps = $oContent.PerformanceInfo.Current.ReadBandwidthMB
-				ReadIOPS = $oContent.PerformanceInfo.Current.ReadIOPS
-				BW_MBps = $oContent.PerformanceInfo.Current.BandwidthMB
-				IOPS = $oContent.PerformanceInfo.Current.IOPS
-				TotWriteIOs = $oContent.PerformanceInfo.Total.NumWrite
-				TotReadIOs = $oContent.PerformanceInfo.Total.NumRead
-			} ## end ordered dictionary
-			break} ## end case
-		{"Data-Protection-GroupPerformance","SsdPerformance" -contains $_} {
-			[ordered]@{
-				Name = $oContent.name
-				Index = $oContent.index
-				WriteBW_MBps = $oContent.PerformanceInfo.Current.WriteBandwidthMB
-				WriteIOPS = $oContent.PerformanceInfo.Current.WriteIOPS
-				ReadBW_MBps = $oContent.PerformanceInfo.Current.ReadBandwidthMB
-				ReadIOPS = $oContent.PerformanceInfo.Current.ReadIOPS
-				BW_MBps = $oContent.PerformanceInfo.Current.BandwidthMB
-				IOPS = $oContent.PerformanceInfo.Current.IOPS
-			} ## end ordered dictionary
-			break} ## end case
-		#### end PerformanceInfo items
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							Small = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."small-bw" / 1KB
+								IOPS = [int]$oContent."small-iops"
+								ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."small-rd-iops"
+								WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."small-wr-iops"
+							}) ## end object
+							Unaligned = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."unaligned-bw" / 1KB
+								IOPS = [int]$oContent."unaligned-iops"
+								ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."unaligned-rd-iops"
+								WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."unaligned-wr-iops"
+							}) ## end object
+						}) ## end New-Object
+						Total = New-Object -Type PSObject -Property ([ordered]@{
+							NumRead = [int64]$oContent."acc-num-of-rd"
+							NumWrite = [int64]$oContent."acc-num-of-wr"
+							ReadTB = $oContent."acc-size-of-rd" / 1GB
+							WriteTB =  $oContent."acc-size-of-wr" / 1GB
+							Small = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-small-rd"
+								NumWrite = [int64]$oContent."acc-num-of-small-wr"
+							} ## end New-Object
+							Unaligned = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
+								NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+							} ## end New-Object
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+					SmallIOAlertsCfg = $oContent."small-io-alerts"
+					UnalignedIOAlertsCfg = $oContent."unaligned-io-alerts"
+					VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
+					LuName = $oContent."lu-name"
+					SmallIORatio = $oContent."small-io-ratio"
+					SmallIORatioLevel = $oContent."small-io-ratio-level"
+					SnapGrpId = $oContent."snapgrp-id"
+					UnalignedIORatio = $oContent."unaligned-io-ratio"
+					UnalignedIORatioLevel = $oContent."unaligned-io-ratio-level"
+					SysId = $oContent."sys-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"volume-folders" {
+				[ordered]@{
+					Name = $oContent.name
+					ParentFolder = $oContent."parent-folder-id"[1]
+					NumVol = [int]$oContent."num-of-vols"
+					VolSizeTB = $oContent."vol-size" / 1GB
+					FolderId = $oContent."folder-id"[0]
+					ParentFolderId = $oContent."parent-folder-id"[0]
+					NumChild = [int]$oContent."num-of-direct-objs"
+					NumSubfolder = [int]$oContent."num-of-subfolders"
+					## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
+					VolIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
+					Index = [int]$oContent.index
+					IOPS = [int64]$oContent.iops
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							BandwidthMB = $oContent.bw / 1KB
+							IOPS = [int64]$oContent.iops
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							Small = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."small-bw" / 1KB
+								IOPS = [int]$oContent."small-iops"
+								ReadBandwidthMB = $oContent."small-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."small-rd-iops"
+								WriteBandwidthMB = $oContent."small-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."small-wr-iops"
+							}) ## end object
+							Unaligned = New-Object -Type PSObject -Property ([ordered]@{
+								BandwidthMB = $oContent."unaligned-bw" / 1KB
+								IOPS = [int]$oContent."unaligned-iops"
+								ReadBandwidthMB = $oContent."unaligned-rd-bw" / 1KB
+								ReadIOPS = [int]$oContent."unaligned-rd-iops"
+								WriteBandwidthMB = $oContent."unaligned-wr-bw" / 1KB
+								WriteIOPS = [int]$oContent."unaligned-wr-iops"
+							}) ## end object
+						}) ## end New-Object
+						Total = New-Object -Type PSObject -Property ([ordered]@{
+							NumRead = [int64]$oContent."acc-num-of-rd"
+							NumWrite = [int64]$oContent."acc-num-of-wr"
+							ReadTB = $oContent."acc-size-of-rd" / 1GB
+							WriteTB =  $oContent."acc-size-of-wr" / 1GB
+							Small = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-small-rd"
+								NumWrite = [int64]$oContent."acc-num-of-small-wr"
+							} ## end New-Object
+							Unaligned = New-Object -Type PSObject -Property @{
+								NumRead = [int64]$oContent."acc-num-of-unaligned-rd"
+								NumWrite = [int64]$oContent."acc-num-of-unaligned-wr"
+							} ## end New-Object
+						}) ## end New-Object
+					}) ## end New-object PerformanceInfo
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"xenvs" {
+				[ordered]@{
+					Name = $oContent.name
+					Index = $oContent.index
+					CPUUsage = $oContent."cpu-usage"
+					NumMdl = $oContent."num-of-mdls"
+					BrickId = $oContent."brick-id"
+					XEnvId = $oContent."xenv-id"
+					XEnvState = $oContent."xenv-state"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			#### API v2 items
+			"alert-definitions" {
+				[ordered]@{
+					Name = $oContent.name
+					AlertCode = [string]$oContent."alert-code"
+					## generally the same value as .name
+					AlertType = $oContent."alert-type"
+					Class = $oContent."class-name"
+					ClearanceMode = $oContent."clearance-mode"
+					Enabled = ($oContent."activity-mode" -eq "enabled")
+					Guid = $oContent.guid
+					Index = $oContent.index
+					SendToCallHome = ($oContent."send-to-call-home" -eq "yes")
+					Severity = $oContent.severity
+					ThresholdType = $oContent."threshold-type"
+					ThresholdValue = [int]$oContent."threshold-value"
+					UserModified = ([string]"true" -eq $oContent."user-modified")
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"alerts" {
+				[ordered]@{
+					Name = $oContent.name
+					AlertCode = [string]$oContent."alert-code"
+					AlertType = $oContent."alert-type"
+					AssociatedObjId = $oContent."assoc-obj-id"[0]
+					AssociatedObjIndex = $oContent."assoc-obj-index"
+					AssociatedObjName = $oContent."assoc-obj-name"
+					Class = $oContent."class-name"
+					ClusterId = $oContent."sys-id"[0]
+					ClusterName = $oContent."sys-name"
+					## is milliseconds since UNIX epoch (not seconds like a "regular" UNIX epoch time)
+					CreationTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."raise-time" / 1000)
+					Description = $oContent.description
+					Guid = $oContent.guid
+					Index = $oContent.index
+					Severity = $oContent.severity
+					State = $oContent."alert-state"
+					Threshold = $oContent.threshold
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"bbus" {
+				[ordered]@{
+					Name = $oContent.name
+					Battery = New-Object -Type PSObject -Property ([ordered]@{
+						LowBattery_hasInput = ([string]"true" -eq $oContent."is-low-battery-has-input")
+						LowBattery_noInput = ([string]"true" -eq $oContent."is-low-battery-no-input")
+						LowBatteryRuntime = ([string]"true" -eq $oContent."is-low-battery-runtime")
+						NeedsReplacement = ([string]"true" -eq $oContent."ups-need-battery-replacement")
+						ReplacementReason = $oContent."fru-replace-failure-reason"
+						RuntimeSec = [int]$oContent."battery-runtime"
+						Voltage = [Double]$oContent."battery-voltage"
+					}) ## end new-object
+					BatteryChargePct = [int]$oContent."ups-battery-charge-in-percent"
+					## this should be the same value as the .guid property
+					BBUId = $oContent."ups-id"[0]
+					BrickId = $oContent."brick-id"
+					BypassActive = ([string]"true" -eq $oContent."is-bypass-active")
+					ConnectedToSC = ($oContent."ups-conn-state" -eq "connected")
+					ClusterId = $oContent."sys-id"[0]
+					ClusterName = $oContent."sys-id"[1]
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					FWVersion = $oContent."fw-version"
+					FWVersionError = $oContent."fw-version-error"
+					Guid = $oContent.guid
+					HWRevision = $oContent."hw-revision"
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
+					IndexInXbrick = [int]$oContent."index-in-brick"
+					Input = $oContent."ups-input"
+					InputHz = [Double]$oContent."input-frequency"
+					InputVoltage = [int]$oContent."ups-voltage"
+					LifecycleState = $oContent."fru-lifecycle-state"
+					LoadPct = [int]$oContent."ups-load-in-percent"
+					LoadPctLevel = $oContent."ups-load-percent-level"
+					Model = $oContent."model-name"
+					Outlet1Status = $oContent."outlet1-status"
+					Outlet2Status = $oContent."outlet2-status"
+					OutputA = [Double]$oContent."output-current"
+					OutputHz = [Double]$oContent."output-frequency"
+					OutputVoltage = [Double]$oContent."output-voltage"
+					PartNumber = $oContent."part-number"
+					PowerFeed = $oContent."power-feed"
+					PowerW = [int]$oContent.power
+					RealPowerW = [int]$oContent."real-power"
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent.severity
+					Status = $oContent."ups-status"
+					StatusLED = $oContent."status-led"
+					StorageController = _New-ObjListFromProperty -IdPropertyPrefix "StorageController" -ObjectArray @($oContent."monitoring-nodes-obj-id-list" | Select-Object -First 1)
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					UPSAlarm = $oContent."ups-alarm"
+					UPSOverloaded = ([string]"true" -eq $oContent."is-ups-overload")
+					SysId = $oContent."sys-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"consistency-groups" {
+				[ordered]@{
+					Name = $oContent.name
+					Certainty = $oContent.certainty
+					ClusterId = $oContent."sys-id"[0]
+					ClusterName = $oContent."sys-id"[1]
+					CreatedByApp = $oContent."created-by-app"
+					ConsistencyGrpId = $oContent."cg-id"[0]
+					ConsistencyGrpShortId = $oContent."cg-short-id"
+					Guid = $oContent.guid
+					Index = $oContent.index
+					NumVol = $oContent."num-of-vols"
+					Severity = $oContent."obj-severity"
+					SysId = $oContent."sys-id"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					VolList = _New-ObjListFromProperty -IdPropertyPrefix "Vol" -ObjectArray $oContent."vol-list"
+					## $null?  (property not defined on Consistency-groups?)
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"daes" {
+				[ordered]@{
+					Name = $oContent.name
+					BrickId = $oContent."brick-id"
+					ClusterId = $oContent."sys-id"[0]
+					ClusterName = $oContent."sys-id"[1]
+					## this should be the same value as the .guid property
+					DAEId = $oContent."jbod-id"[0]
+					FWVersion = $oContent."fw-version"
+					Guid = $oContent.guid
+					HWRevision = $oContent."hw-revision"
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
+					LifecycleState = $oContent."fru-lifecycle-state"
+					Model = $oContent."model-name"
+					NumDAEController = [int]$oContent."num-of-jbod-controllers"
+					NumDAEPSU = [int]$oContent."num-of-jbod-psus"
+					PartNumber = $oContent."part-number"
+					ReplacementReason = $oContent."fru-replace-failure-reason"
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent."obj-severity"
+					StatusLED = $oContent."status-led"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					SysId = $oContent."sys-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"dae-controllers" {
+				[ordered]@{
+					Name = $oContent.name
+					BrickId = $oContent."brick-id"
+					ClusterId = $oContent."sys-id"[0]
+					ClusterName = $oContent."sys-id"[1]
+					ConnectivityState = $oContent."jbod-controller-connectivity-state"
+					DAEId = $oContent."jbod-id"[0]
+					DAEControllerId = $oContent."jbod-controller-id"[0]
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					FailureReason = $oContent."failure-reason"
+					FWVersion = $oContent."fw-version"
+					FWVersionError = $oContent."fw-version-error"
+					Guid = $oContent.guid
+					HealthLevel = $oContent."lcc-health-level"
+					HWRevision = $oContent."hw-revision"
+					Identification = $oContent.identification
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
+					LifecycleState = $oContent."fru-lifecycle-state"
+					Location = $oContent.location
+					Model = $oContent."model-name"
+					PartNumber = $oContent."part-number"
+					ReplacementReason = $oContent."fru-replace-failure-reason"
+					SAS = New-Object -Type PSObject -Property ([ordered]@{
+						ConnectivityState = $oContent."sas-connectivity-state"
+						PortInfo = $(1..2 | Foreach-Object {
+							$intI = $_
+							New-Object -Type PSObject -Property ([ordered]@{
+								Location = $oContent."sas${intI}-port-location"
+								NodeIndex = [int]$oContent."sas${intI}-node-index"
+								Port = "SAS${intI}"
+								PortInNodeIndex = [int]$oContent."sas${intI}-port-in-node-index"
+								Rate = $oContent."sas${intI}-port-rate"
+								State = $oContent."sas${intI}-port-state"
+								XbrickIndex = [int]$oContent."sas${intI}-brick-index"
+							}) ## end new-object
+						} ## end Foreach-Object
+						) ## end sub-expression
+					}) ## end new-object
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent."obj-severity"
+					StatusLED = $oContent."status-led"
+					SysId = $oContent."sys-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"dae-psus" {
+				[ordered]@{
+					Name = $oContent.name
+					BrickId = $oContent."brick-id"
+					DAE = _New-ObjListFromProperty -IdPropertyPrefix "DAE" -ObjectArray (,$oContent."jbod-id")
+					DAEPSUId = $oContent."jbod-psu-id"[0]
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					FWVersion = $oContent."fw-version"
+					FWVersionError = $oContent."fw-version-error"
+					Guid = $oContent.guid
+					HWRevision = $oContent."hw-revision"
+					Identification = $oContent.identification
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
+					Input = $oContent.input
+					LifecycleState = $oContent."fru-lifecycle-state"
+					Location = $oContent.location
+					Model = $oContent."model-name"
+					PartNumber = $oContent."part-number"
+					PowerFailure = $oContent."power-failure"
+					PowerFeed = $oContent."power-feed"
+					ReplacementReason = $oContent."fru-replace-failure-reason"
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent."obj-severity"
+					StatusLED = $oContent."status-led"
+					SysId = $oContent."sys-id"
+					## $null?  (property not defined on dae-psus?)
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"email-notifier" {
+				[ordered]@{
+					Name = $oContent.name
+					CompanyName = $oContent."company-name"
+					ContactDetails = $oContent."contact-details"
+					Enabled = ($oContent.enabled -eq "true")
+					FrequencySec = [int]$oContent.frequency
+					Guid = $oContent.guid
+					Index = $oContent.index
+					MailRelayAddress = $oContent."mail-relay-address"
+					MailUsername = $oContent."mail-user"
+					ProxyAddress = $oContent."proxy-address"
+					ProxyPort = $oContent."proxy-port"
+					ProxyUser = $oContent."proxy-user"
+					Recipient = $oContent.recipients
+					Severity = $oContent."obj-severity"
+					TransportProtocol = $oContent.transport
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"infiniband-switches" {
+				[ordered]@{
+					Name = $oContent.name
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					Fan1RPM = [int]$oContent."fan-1-rpm"
+					Fan2RPM = [int]$oContent."fan-2-rpm"
+					Fan3RPM = [int]$oContent."fan-3-rpm"
+					Fan4RPM = [int]$oContent."fan-4-rpm"
+					FanDrawerStatus = $oContent."fan-drawer-status"
+					FWVersion = $oContent."fw-version"
+					FWVersionError = $oContent."fw-version-error"
+					Guid = $oContent.guid
+					HWRevision = $oContent."hw-revision"
+					IbSwitchId = $oContent."ib-switch-id"[0]
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
+					InterswitchIb1Port = $oContent."inter-switch-ib1-port-state"
+					InterswitchIb2Port = $oContent."inter-switch-ib2-port-state"
+					LifecycleState = $oContent."fru-lifecycle-state"
+					Model = $oContent."model-name"
+					PartNumber = $oContent."part-number"
+					Port = $oContent.ports | Foreach-Object {
+						New-Object -TypeName PSObject -Property ([ordered]@{
+							PortNumber = $_[0]
+							SpeedGbps = $_[1]
+							State = $_[2]
+							Connection =  _New-ObjListFromProperty_byObjName -Name $_[4] -ObjectArray (,$_[3])
+						}) ## end new-object
+					} ## end foreach-object
+					ReplacementReason = $oContent."fru-replace-failure-reason"
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent."obj-severity"
+					StatusLED = $oContent."status-led"
+					SysId = $oContent."sys-id"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					TemperatureSensor = $oContent."temp-sensors-array" | Foreach-Object {
+						New-Object -TypeName PSObject -Property ([ordered]@{
+							SensorDescription = $_[0]
+							TemperatureC = $_[1]
+							TemperatureF = ($_[1] * 9/5) + 32
+						}) ## end new-object
+					} ## end foreach-object
+					VoltageSensor = $oContent."voltage-sensors-array" | Foreach-Object {
+						New-Object -TypeName PSObject -Property ([ordered]@{
+							SensorDescription = $_[0]
+							Voltage = $_[1]
+						}) ## end new-object
+					} ## end foreach-object
+					WrongSCConnection = $oContent."wrong-sc-connection-detected"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"ldap-configs" {
+				[ordered]@{
+					Name = $oContent.name
+					BindDN = $oContent."bind-dn"
+					CACertData = $oContent."ca-cert-data"
+					CACertFile = $oContent."ca-cert-file"
+					CacheExpireH = [int]$oContent."cache-expire-hours"
+					Guid = $oContent.guid
+					Index = $oContent.index
+					Role = $oContent.roles
+					SearchBaseDN = $oContent."search-base"
+					SearchFilter = $oContent."search-filter"
+					ServerUrl = $oContent."server-url"
+					ServerUrlExample = $oContent."server-urls"
+					## LDAP configs do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
+					Severity = $oContent."obj-severity"
+					TimeoutSec = [int]$oContent.timeout
+					UserToDnRule = $oContent."user-to-dn-rule"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"local-disks" {
+				[ordered]@{
+					Name = $oContent.name
+					BrickId = $oContent."brick-id"
+					ClusterId = $oContent."sys-id"[0]
+					ClusterName = $oContent."sys-id"[1]
+					EncryptionStatus = $oContent."encryption-status"
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					ExpectedType = $oContent."local-disk-expected-type"
+					FailureReason = $oContent."disk-failure"
+					FWVersion = $oContent."fw-version"
+					FWVersionError = $oContent."fw-version-error"
+					Guid = $oContent.guid
+					HWRevision = $oContent."hw-revision"
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
+					LifecycleState = $oContent."fru-lifecycle-state"
+					LocalDiskId = $oContent."local-disk-id"[0]
+					Model = $oContent."model-name"
+					NumBadSector = $oContent."num-bad-sectors"
+					PartNumber = $oContent."part-number"
+					Purpose = $oContent."local-disk-purpose"
+					ReplacementReason = $oContent."fru-replace-failure-reason"
+					## have to string-manip to get this and Wwn -- weak
+					SerialNumber = $oContent."local-disk-uid".Split("_")[3].Trim("][")
+					Severity = $oContent."obj-severity"
+					SlotNum = $oContent."slot-num"
+					StatusLED = $oContent."status-led"
+					StorageControllerId = $oContent."node-id"[0]
+					StorageControllerName = $oContent."node-id"[1]
+					SysId = $oContent."sys-id"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					Type = $oContent."local-disk-type"
+					Wwn = $oContent."local-disk-uid".Split("_")[1].Trim("][")
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"schedulers" {
+				[ordered]@{
+					Name = $oContent.name
+					Guid = $oContent.guid
+					Index = $oContent.index
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					LastActivated = $(if ($oContent."last-activation-time" -gt 0) {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."last-activation-time"})
+					LastActivationResult = $oContent."last-activation-status"
+					NumSnapToKeep = [int]$oContent."snapshots-to-keep-number"
+					Retain = (New-TimeSpan -Seconds $oContent."snapshots-to-keep-time")
+					Schedule = (_New-ScheduleDisplayString -ScheduleType $oContent."scheduler-type" -ScheduleTriplet $oContent.schedule)
+					SnappedObject = New-Object -Type PSObject -Property ([ordered]@{
+						Guid = $oContent."snapped-object-id"[0]
+						Index = $oContent."snapped-object-index"
+						Name = $oContent."snapped-object-id"[1]
+						Type = $oContent."snapped-object-type"
+					}) ## end new-object
+					SnapshotSchedulerId = $oContent.oid[0]
+					SnapType = $oContent."snapshot-type"
+					State = $oContent."scheduler-state"
+					Suffix = $oContent.suffix
+					Type = $oContent."scheduler-type"
+				} ## end ordered dictionary
+				break} ## end case
+			"slots" {
+				[ordered]@{
+					Name = $oContent.name
+					BrickId = $oContent."brick-id"
+					ErrorReason = $oContent."slot-error-reason"
+					FailureReason = $oContent."failure-reason"
+					Guid = $oContent.guid
+					Index = $oContent.index
+					SlotNum = [int]$oContent."slot-num"
+					SsdId = $oContent."ssd-o-signature"
+					SsdModel = $oContent."product-model"
+					SsdSizeGB = [Double]($oContent."ssd-size" / 1MB)
+					SsdUid = $oContent."ssd-uid"
+					State = $oContent."slot-state"
+					## Slots do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
+					Severity = $oContent."obj-severity"
+					SysId = $oContent."sys-id"
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"snapshot-sets" {
+				[ordered]@{
+					Name = $oContent.name
+					ClusterId = $oContent."sys-id"[0]
+					ClusterName = $oContent."sys-id"[1]
+					ConsistencyGrpId = $(if ($null -ne $oContent."cg-id") {$oContent."cg-id"[0]})
+					ConsistencyGrpName = $oContent."cg-name"
+					## "creation-time-long" is milliseconds since UNIX epoch (instead of traditional seconds)
+					CreationTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)
+					Guid = $oContent.guid
+					Index = $oContent.index
+					NumVol = $oContent."num-of-vols"
+					Severity = $oContent."obj-severity"
+					SnapshotSetId = $oContent."snapset-id"[0]
+					SnapshotSetShortId = $oContent."snapset-short-id"
+					SysId = $oContent."sys-id"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					VolList = _New-ObjListFromProperty -IdPropertyPrefix "Vol" -ObjectArray $oContent."vol-list"
+					## $null?  (property not defined on Consistency-groups?)
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"snmp-notifier" {
+				[ordered]@{
+					Name = $oContent.name
+					AuthProtocol = $oContent."auth-protocol"
+					Community = $oContent.community
+					Enabled = ($oContent.enabled -eq "true")
+					Guid = $oContent.guid
+					HeartbeatFreqSec = [int]$oContent."heartbeat-frequency"
+					Index = $oContent.index
+					Port = [int]$oContent.port
+					PrivacyProtocol = $oContent."priv-protocol"
+					Recipient = $oContent.recipients
+					Severity = $oContent."obj-severity"
+					SNMPVersion = $oContent.version
+					Username = $oContent.username
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"storage-controller-psus" {
+				[ordered]@{
+					Name = $oContent.name
+					BrickId = $oContent."brick-id"
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					FWVersionError = $oContent."fw-version-error"
+					Guid = $oContent.guid
+					HWRevision = $oContent."hw-revision"
+					Index = $oContent.index
+					Input = $oContent.input
+					LifecycleState = $oContent."fru-lifecycle-state"
+					Location = $oContent.location
+					Model = $oContent."model-name"
+					PartNumber = $oContent."part-number"
+					PowerFailure = $oContent."power-failure"
+					PowerFeed = $oContent."power-feed"
+					ReplacementReason = $oContent."fru-replace-failure-reason"
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent."obj-severity"
+					StatusLED = $oContent."status-led"
+					StorageController = _New-ObjListFromProperty -IdPropertyPrefix "StorageController" -ObjectArray (,$oContent."node-id")
+					StorageControllerPSUId = $oContent."node-psu-id"[0]
+					SysId = $oContent."sys-id"
+					## $null?  (property not defined on storage-controller-psus?)
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"syslog-notifier" {
+				[ordered]@{
+					Name = $oContent.name
+					Enabled = ($oContent.enabled -eq "true")
+					Guid = $oContent.guid
+					Index = $oContent.index
+					Severity = $oContent."obj-severity"
+					SyslogNotifierId = $oContent.oid[0]
+					Target = $oContent.targets
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"tags" {
+				[ordered]@{
+					Name = $oContent.name
+					Caption = $oContent.caption
+					ChildTagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."child-list"
+					ColorHex = $oContent.color
+					## "creation-time-long" is milliseconds since UNIX epoch (instead of traditional seconds)
+					CreationTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)
+					## if the name is one of the currently six predefined tags (as determined by the fact that they have just one "/" and are "root" tags), use Tag, else, use the object-type
+					DirectObjectList = _New-ObjListFromProperty_byObjName -Name $(if ([System.Text.RegularExpressions.Regex]::Matches($oContent.name, "/").Count -eq 1) {"Tag"} else {$oContent."object-type"}) -ObjectArray $oContent."direct-list"
+					Guid = $oContent.guid
+					Index = $oContent.index
+					NumChildTag = $oContent."num-of-children"
+					NumDirectObject = $oContent."num-of-direct-objs"
+					NumItem = $oContent."num-of-items"
+					ObjectList = _New-ObjListFromProperty_byObjName -Name $oContent."object-type" -ObjectArray $oContent."obj-list"
+					ObjectType = $oContent."object-type"
+					ParentTag = _New-ObjListFromProperty -IdPropertyPrefix "Tag" (,$oContent."parent-id")
+					## Tags do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
+					Severity = $oContent."obj-severity"
+					TagId = $oContent.oid[0]
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"user-accounts" {
+				[ordered]@{
+					Name = $oContent.name
+					Guid = $oContent.guid
+					InactivityTimeoutMin = [int]$oContent."inactivity-timeout"
+					Index = $oContent.index
+					IsExternal = ($oContent."external-user" -eq "true")
+					Role = $oContent.role
+					Severity = $oContent."obj-severity"
+					UserAccountId = $oContent."user-id"[0]
+					XmsId = $oContent."xms-id"
+				} ## end ordered dictionary
+				break} ## end case
+			"xms" {
+				[ordered]@{
+					Name = $oContent.name
+					Index = $oContent.index
+					XmsId = $oContent."xms-id"
+					## the software version's build number; like, "41" for SWVersion "4.0.1-41"
+					BuildNumber = [int]$oContent.build
+					Config = New-Object -Type PSObject -Property ([ordered]@{
+						AllowEmptyPassword = [boolean]$oContent."allow-empty-password"
+						DefaultUserInactivityTimeoutMin = [int]$oContent."default-user-inactivity-timeout"
+						ManagementInterface = $oContent."mgmt-interface"
+						## network config of XMS
+						Network = New-Object -Type PSObject -Property ([ordered]@{
+							DefaultGateway = $oContent."xms-gw"
+							IP = $oContent."xms-ip"
+							SubnetMask = $oContent."xms-ip-sn"
+						}) ## end New-Object
+						NTPMode = $oContent.mode
+						NTPServer = $oContent."ntp-servers"
+						NumUserAccount = [int]$oContent."num-of-user-accounts"
+						WrongCnInCsr = $oContent."wrong-cn-in-csr"
+					}) ## end New-Object Config
+					DiskSpaceUtilizationLevel = $oContent."disk-space-utilization-level"
+					DiskSpaceSecUtilizationLevel = $oContent."disk-space-secondary-utilization-level"
+					DBVersion = [System.Version]($oContent."db-version")
+					EventlogInfo = New-Object -Type PSObject -Property ([ordered]@{
+						NumDaysInEventlog = [int]$oContent."days-in-num-event"
+						MaxEventlogRecords = [int]$oContent."max-recs-in-eventlog"
+						NumEventlogRecords = [int]$oContent."recs-in-event-log"
+					}) ## end New-Object EventlogInfo
+					## leaving as string for now, as casting to System.Guid adds dashes like a "real" GUID, whereas this string value has no dashes
+					Guid = $oContent.guid
+					IPVersion = $oContent."ip-version"
+					ISO8601DateTime = $oContent.datetime
+					LogSizeTotalGB = $oContent."logs-size" / 1MB
+					MemoryTotalGB = $oContent."ram-total" / 1MB
+					MemoryUsageGB = $oContent."ram-usage" / 1MB
+					MemoryUtilizationLevel = $oContent."memory-utilization-level"
+					NumCluster = [int]$oContent."num-of-systems"
+					NumInitiatorGroup = [int]$oContent."num-of-igs"
+					NumIscsiRoute = [int]$oContent."num-of-iscsi-routes"
+					## "The aggregated value of the ratio of provisioned Volume capacity to the cluster뭩 actual used physical capacity"
+					OverallEfficiency = [System.Double]$oContent."overall-efficiency-ratio"
+					RestApiVersion = [System.Version]($oContent."restapi-protocol-version")
+					Severity = $oContent."obj-severity"
+					ServerName = $oContent."server-name"
+					## string representation, like 4.0.1-41
+					SWVersion = $oContent."sw-version"
+					ThinProvSavingsPct = [int]$oContent."thin-provisioning-savings"
+					Version = [System.Version]($oContent.version)
+					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
+						Current = New-Object -Type PSObject -Property ([ordered]@{
+							## latency in microseconds (탎)
+							Latency = New-Object -Type PSObject -Property ([ordered]@{
+								Read = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."rd-latency"
+								}) ## end object
+								Write = New-Object -Type PSObject -Property ([ordered]@{
+									AllBlockSize = [int64]$oContent."wr-latency"
+								}) ## end object
+							}) ## end object
+							BandwidthMB = $oContent.bw / 1KB
+							BandwidthMBByBlock = $oContent."bw-by-block" / 1KB
+							CPUUsagePct = [System.Double]$oContent.cpu
+							IOPS = [int64]$oContent.iops
+							IOPSByBlock = [int64]$oContent."iops-by-block"
+							ReadBandwidthMB = $oContent."rd-bw" / 1KB
+							ReadBandwidthMBByBlock = $oContent."rd-bw-by-block" / 1KB
+							ReadIOPS = [int]$oContent."rd-iops"
+							ReadIOPSByBlock = [int]$oContent."rd-iops-by-block"
+							WriteBandwidthMB = $oContent."wr-bw" / 1KB
+							WriteBandwidthMBByBlock = $oContent."wr-bw-by-block" / 1KB
+							WriteIOPS = [int]$oContent."wr-iops"
+							WriteIOPSByBlock = [int]$oContent."wr-iops-by-block"
+						}) ## end New-Object
+						TopObjectByCategory = New-Object -Type PSObject -Property ([ordered]@{
+							InitiatorGrpByBandwidth = $oContent."top-n-igs-by-bw" | Foreach-Object {
+								$oThisTopObj = $_
+								New-Object -Type PSObject -Property ([ordered]@{
+									## name of XIO cluster in which this IG resides
+									Cluster = $oThisTopObj[7]
+									InitiatorGrpId = $oThisTopObj[0][0]
+									Name = $oThisTopObj[0][1]
+									InitiatorGrpIndex = $oThisTopObj[0][2]
+									LastBandwidthMB = $oThisTopObj[1..6] | Foreach-Object {$_ / 1KB}
+								})
+							} ## end Foreach-Object
+							InitiatorGrpByIOPS = $oContent."top-n-igs-by-iops" | Foreach-Object {
+								$oThisTopObj = $_
+								New-Object -Type PSObject -Property ([ordered]@{
+									## name of XIO cluster in which this IG resides
+									Cluster = $oThisTopObj[7]
+									InitiatorGrpId = $oThisTopObj[0][0]
+									Name = $oThisTopObj[0][1]
+									InitiatorGrpIndex = $oThisTopObj[0][2]
+									LastIOPS = $oThisTopObj[1..6] | Foreach-Object {[int]$_}
+								})
+							} ## end Foreach-Object
+							VolumeByLatency = $oContent."top-n-volumes-by-latency" | Foreach-Object {
+								$oThisTopObj = $_
+								New-Object -Type PSObject -Property ([ordered]@{
+									## name of XIO cluster in which this IG resides
+									Cluster = $oThisTopObj[7]
+									VolId = $oThisTopObj[0][0]
+									Name = $oThisTopObj[0][1]
+									VolumeIndex = $oThisTopObj[0][2]
+									LastLatency = $oThisTopObj[1..6] | Foreach-Object {[int]$_}
+								})
+							} ## end Foreach-Object
+						}) ## end property
+					}) ## end New-object PerformanceInfo
+				} ## end ordered dictionary
+				break} ## end case
+			#### end API v2 items
+			#### PerformanceInfo items
+			{"ClusterPerformance","Ig-FolderPerformance","Initiator-GroupPerformance","InitiatorPerformance","TargetPerformance","Volume-FolderPerformance","VolumePerformance" -contains $_} {
+				[ordered]@{
+					Name = $oContent.name
+					Index = $oContent.index
+					WriteBW_MBps = $oContent.PerformanceInfo.Current.WriteBandwidthMB
+					WriteIOPS = $oContent.PerformanceInfo.Current.WriteIOPS
+					ReadBW_MBps = $oContent.PerformanceInfo.Current.ReadBandwidthMB
+					ReadIOPS = $oContent.PerformanceInfo.Current.ReadIOPS
+					BW_MBps = $oContent.PerformanceInfo.Current.BandwidthMB
+					IOPS = $oContent.PerformanceInfo.Current.IOPS
+					TotWriteIOs = $oContent.PerformanceInfo.Total.NumWrite
+					TotReadIOs = $oContent.PerformanceInfo.Total.NumRead
+				} ## end ordered dictionary
+				break} ## end case
+			{"Data-Protection-GroupPerformance","SsdPerformance" -contains $_} {
+				[ordered]@{
+					Name = $oContent.name
+					Index = $oContent.index
+					WriteBW_MBps = $oContent.PerformanceInfo.Current.WriteBandwidthMB
+					WriteIOPS = $oContent.PerformanceInfo.Current.WriteIOPS
+					ReadBW_MBps = $oContent.PerformanceInfo.Current.ReadBandwidthMB
+					ReadIOPS = $oContent.PerformanceInfo.Current.ReadIOPS
+					BW_MBps = $oContent.PerformanceInfo.Current.BandwidthMB
+					IOPS = $oContent.PerformanceInfo.Current.IOPS
+				} ## end ordered dictionary
+				break} ## end case
+			#### end PerformanceInfo items
 		} ## end switch
-	New-Object -Type $PSTypeNameForNewObj -Property $hshPropertyForNewObj
+		New-Object -Type $PSTypeNameForNewObj -Property $hshPropertyForNewObj
+	} ## end else
 } ## end function
