@@ -1,4 +1,15 @@
 todo:
+-add about_XtremIO.Utils.help.txt
+	-with the general "here's the module, here are some ways to use it"
+-replace usage of singular item type string (essentially used for output type name creation; make config hsh table of plural item type string -> XIOItemInfo output object type)
+	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
+-replace use of WebClient with HttpRequest objects, add add'l verbose error info from InnnerException (if any)
+	-note speed diff (if any) for API request intensive cmdlets (Get-XIOLunMap, for example)
+-replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
+	-do same for Get-XIOItemInfo?
+-add "normal" properties to API v1 objects (properties that are now on API v2 objects, where possible, like GUID and ID and whatnot)
+-reorg dir -- put module files into new subfolder, XtremIO.Utils
+	-include license file
 -?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
 -?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
 -deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
@@ -23,8 +34,6 @@ todo:
 			-possible mix-up in the API?
 		-SYR Notifiers -- no corresponding type found in API
 		-getting performance counter for Tag EntityType needs more work (API call needs obj-list defined, apparently, and is throwing errors even when having done so)
--add about_XtremIO.Utils.help.txt
-	-with the general "here's the module, here are some ways to use it"
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -arrange properties in .NET obj definitions to be in desired order, instead of alphabetical?
 -add object definitions of sub-property objects
