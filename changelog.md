@@ -1,8 +1,8 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
-### v0.next
-Nov 2015
+### v0.9.0
+14 Nov 2015
 
 The focus for this version was on updating the module to support new things available in XIOS version 4.0.  Twenty new types, and the ability to get the newly available performance counters for eleven entity types (`Cluster`, `DataProtectionGroup`, `Initiator`, `InitiatorGroup`, `SnapshotGroup`, `SSD`, `Target`, `TargetGroup`, `Volume`, `XEnv`, and `Xms`).
 

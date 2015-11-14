@@ -1,3 +1,23 @@
+done for version 0.9.0:
+-add XIOS REST API version and full XMS version (if available via XMS type -- available for XIOS v4+, but, leave blank for XIOS v3 and lower?) to XioConnection object
+	-to be used by other things that need to determine API version available, objects available, when to use Tag version VolumeFolder API path, etc.
+	-new properties on XioItemInfo.XioConnection objects:  RestApiVersion, XmsDBVersion, XmsSWVersion (string representation, like "4.0.1-41"), XmsVersion
+-have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
+-add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
+	done:
+	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, dae-psus, email-notifier, infiniband-switches, ldap-configs, local-disks, performance, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts, xms
+	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, DAE PSUs, Email Notifiers, InfiniBand Switches, LDAP Configurations, Local Disks, Object Performance, Schedulers, Slots, Snapshot Sets, SNMP Notifiers, Storage Controller PSUs, SYSLOG Notifiers, Tags, User Accounts, XMS
+	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIOConnection RestAPI version is 2 or greater
+
+	not doing yet:
+	-consistency-group-volumes, as their properties returned seem to just be consistency groups, not consistency group volumes (properties match identically, and there are none of the Performance types of properties in the object as there are in the advertised object per the API guide)
+		-and, from initial query of "https://xms.dom.com/api/json/types/consistency-group-volumes", the sub-property is "consistency-groups" (instead of the expected "consistency-group-volumes")
+		-possible mix-up in the API?
+	-SYR Notifiers -- no corresponding type found in API
+	-getting performance counter for Tag EntityType needs more work (API call needs obj-list defined, apparently, and is throwing errors even when having done so)
+-fixed bug where DataProtectionGroup object creation threw error, as object returned from API could possibly have non "true"/"false" values as of XIOS v4
+
+
 done for version 0.8.3:
 -updated New-XioApiURI to throw error on port-communications test failure (formerly, it did a "break" instead of throwing an error, which would cause a user's try/catch around cmdlets to just exit instead of actually get caught, as there was no error previously)
 -added TestPort param to New-XioApiURI function, and updated Connect-XIOServer to use it; that way, Connect-XIOServer causes a port-comms test, but thereafter, cmdlets assume that the port is still good, and do not test; this is to work through some performance/timeout issues that were happening in certain scenarios (when a port test was happening at high frequency, and default 2s timeout was getting hit)
