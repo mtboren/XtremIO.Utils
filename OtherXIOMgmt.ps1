@@ -161,14 +161,28 @@ function Connect-XIOServer {
 					## get the XIO info object for this XMS machine
 					$oThisXioInfo = Get-XIOInfo -ComputerName $strThisXmsName @hshArgsForGetXIOInfo
 					if ($null -ne $oThisXioInfo) {
-						 $oTmpThisXmsConnection = New-Object -Type XioItemInfo.XioConnection -Property ([ordered]@{
+						$hshPropertiesForNewXmsConnectionObj = @{
 							ComputerName = $strThisXmsName
-							#XIOSSwVersion = $oThisXioInfo.SWVersion
 							ConnectDatetime = (Get-Date)
 							Port = $intPortToUse
 							Credential = $Credential
 							TrustAllCert = if ($TrustAllCert) {$true} else {$false}
-						}) ## end New-Object
+						} ## end New-Object
+						## check for versions of XIOS and REST API (based on presence/availability of XMS type)
+						if ($oThisXioInfo.children.name -contains "xms") {
+							## make URI for the first (only?) XMS object known to this XMS appliance; like https://somexms01.dom.com/api/json/types/xms/1
+							$strThisXmsObjUri = "{0}/1" -f ($oThisXioInfo.children | Where-Object {$_.name -eq "xms"}).href
+							$hshParamForGetXmsInfo = @{Credential = $Credential; "URI" = $strThisXmsObjUri}; if ($TrustAllCert) {$hshParamForGetXmsInfo["TrustAllCert"] = $true}
+							## get the XMS object's info
+							$oThisXmsInfo = Get-XIOInfo @hshParamForGetXmsInfo
+							$hshPropertiesForNewXmsConnectionObj["RestApiVersion"] = [System.Version]($oThisXmsInfo.content."restapi-protocol-version")
+							$hshPropertiesForNewXmsConnectionObj["XmsDBVersion"] = [System.Version]($oThisXmsInfo.content."db-version")
+							$hshPropertiesForNewXmsConnectionObj["XmsSWVersion"] = $oThisXmsInfo.content."sw-version"
+							$hshPropertiesForNewXmsConnectionObj["XmsVersion"] = [System.Version]($oThisXmsInfo.content.version)
+						} ## end if
+						## else, this must be older XIOS/XMS version, which uses the XMS REST API version 1.0
+						else {$hshPropertiesForNewXmsConnectionObj["RestApiVersion"] = [System.Version]"1.0"}
+						$oTmpThisXmsConnection = New-Object -Type XioItemInfo.XioConnection -Property $hshPropertiesForNewXmsConnectionObj
 						## add connection object to global connection variable
 						$Global:DefaultXmsServers += $oTmpThisXmsConnection
 						## update PowerShell window titlebar

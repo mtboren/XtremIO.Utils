@@ -1,5 +1,76 @@
 Add-Type -TypeDefinition @"
 	namespace XioItemInfo {
+		// Alert (inherites from class InfoBase)
+		public class Alert : InfoBase {
+			public System.String AlertCode;
+			public System.String AlertType;
+			public System.String AssociatedObjId;
+			public System.String AssociatedObjIndex;
+			public System.String AssociatedObjName;
+			public System.String Class;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.DateTime CreationTime;
+			public System.String Description;
+			public System.String State;
+			public System.String Threshold;
+
+			// Implicit constructor
+			public Alert () {}
+		}
+
+		public class AlertDefinition : InfoBase {
+			public System.String AlertCode;
+			public System.String AlertType;
+			public System.String Class;
+			public System.String ClearanceMode;
+			public System.Boolean Enabled;
+			public System.Boolean SendToCallHome;
+			public System.String ThresholdType;
+			public System.Int32 ThresholdValue;
+			public System.Boolean UserModified;
+
+			// Implicit constructor
+			public AlertDefinition () {}
+		}
+
+		// XIO BBU (inherites from class HardwareBase)
+		public class BBU : HardwareBase {
+			public System.Object[] Battery;
+			public System.Int32 BatteryChargePct;
+			public System.String BBUId;
+			public System.Object[] BrickId;
+			public System.Boolean BypassActive;
+			public System.Boolean ConnectedToSC;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.Boolean Enabled;
+			public System.String FWVersionError;
+			public System.Int32 IndexInXbrick;
+			public System.String Input;
+			public System.Double InputHz;
+			public System.Int32 InputVoltage;
+			public System.Int32 LoadPct;
+			public System.String LoadPctLevel;
+			public System.String Outlet1Status;
+			public System.String Outlet2Status;
+			public System.Double OutputA;
+			public System.Double OutputHz;
+			public System.Double OutputVoltage;
+			public System.String PowerFeed;
+			public System.Int32 PowerW;
+			public System.Int32 RealPowerW;
+			public System.String Status;
+			public System.Object[] StorageController;
+			public System.Object[] TagList;
+			public System.String UPSAlarm;
+			public System.Boolean UPSOverloaded;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public BBU () {}
+		}
+
 		// XIO Brick
 		public class Brick {
 			public System.Object[] BrickId;
@@ -74,6 +145,80 @@ Add-Type -TypeDefinition @"
 		// ClusterPerformance (inherits from class PerformanceTotal)
 		public class ClusterPerformance : PerformanceTotal {}
 
+		// ConsistencyGroup (inherits from InfoBase)
+		public class ConsistencyGroup : InfoBase {
+			public System.String Certainty;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String ConsistencyGrpId;
+			public System.String ConsistencyGrpShortId;
+			public System.String CreatedByApp;
+			public System.Int32 NumVol;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.Object[] VolList;
+
+			// Implicit constructor
+			public ConsistencyGroup () {}
+		}
+
+		// XIO DAE (Disk Array Enclosure) (inherits from class HardwareBase)
+		public class DAE : HardwareBase {
+			public System.Object[] BrickId;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String DAEId;
+			public System.Int32 NumDAEController;
+			public System.Int32 NumDAEPSU;
+			public System.String ReplacementReason;
+			public System.Object[] TagList;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public DAE () {}
+		}
+
+		// XIO DAE (Disk Array Enclosure) PSU (inherits from class HardwareBase)
+		public class DAEPsu : HardwareBase {
+			public System.Object[] BrickId;
+			public System.Object[] DAE;
+			public System.String DAEPSUId;
+			public System.Boolean Enabled;
+			public System.String FWVersionError;
+			public System.String Identification;
+			public System.String Input;
+			public System.String Location;
+			public System.String PowerFailure;
+			public System.String PowerFeed;
+			public System.String ReplacementReason;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public DAEPsu () {}
+		}
+
+		// XIO DAE Controller (inherits from class HardwareBase)
+		public class DAEController : HardwareBase {
+			public System.Object[] BrickId;
+			public System.String ConnectivityState;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String DAEId;
+			public System.String DAEControllerId;
+			public System.Boolean Enabled;
+			public System.String FailureReason;
+			public System.String FWVersionError;
+			public System.String HealthLevel;
+			public System.String Identification;
+			public System.String Location;
+			public System.String ReplacementReason;
+			public System.Object[] SAS;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public DAEController () {}
+		}
+
 		public class DataProtectionGroup {
 			public System.Int32 AvailableRebuild;
 			public System.Int32 BrickIndex;
@@ -109,6 +254,32 @@ Add-Type -TypeDefinition @"
 		// DataProtectionGroupPerformance (inherits from class PerformanceBase)
 		public class DataProtectionGroupPerformance : PerformanceBase {}
 
+
+		// XIO Email Notifier
+		public class EmailNotifier {
+			public System.String CompanyName;
+			public System.String ContactDetails;
+			public System.Boolean Enabled;
+			public System.Int32 FrequencySec;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.String MailRelayAddress;
+			public System.String MailUsername;
+			public System.String Name;
+			public System.String ProxyAddress;
+			public System.String ProxyPort;
+			public System.String ProxyUser;
+			public System.String[] Recipient;
+			public System.String Severity;
+			public System.String TransportProtocol;
+			public System.String ComputerName;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public EmailNotifier () {}
+		}
+
 		// XIO Events
 		public class Event {
 			public System.String Category;
@@ -124,6 +295,21 @@ Add-Type -TypeDefinition @"
 
 			// Implicit constructor
 			public Event () {}
+		}
+
+		// general HardwareBase class (inherits from class InfoBase)
+		public class HardwareBase : InfoBase {
+			public System.String FWVersion;
+			public System.String HWRevision;
+			public System.String IdLED;
+			public System.String LifecycleState;
+			public System.String Model;
+			public System.String PartNumber;
+			public System.String SerialNumber;
+			public System.String StatusLED;
+
+			// Implicit constructor
+			public HardwareBase() {}
 		}
 
 		// Initiator Group Folder
@@ -146,6 +332,44 @@ Add-Type -TypeDefinition @"
 
 			// Implicit constructor
 			public IgFolder () {}
+		}
+
+		// InfiniBand Switch (inherits from class HardwareBase)
+		public class InfinibandSwitch : HardwareBase {
+			public System.Boolean Enabled;
+			public System.Int32 Fan1RPM;
+			public System.Int32 Fan2RPM;
+			public System.Int32 Fan3RPM;
+			public System.Int32 Fan4RPM;
+			public System.String FanDrawerStatus;
+			public System.String FWVersionError;
+			public System.String IbSwitchId;
+			public System.String InterswitchIb1Port;
+			public System.String InterswitchIb2Port;
+			public System.Object[] Port;
+			public System.String ReplacementReason;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.Object[] TemperatureSensor;
+			public System.Object[] VoltageSensor;
+			public System.String WrongSCConnection;
+
+			// Implicit constructor
+			public InfinibandSwitch () {}
+		}
+
+		// general InfoBase class
+		public class InfoBase {
+			public System.String ComputerName;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.String Name;
+			public System.String Severity;
+			public System.String Uri;
+			public System.Object[] XmsId;
+
+			// Implicit constructor
+			public InfoBase() {}
 		}
 
 		// Initiator Group Folder Performance (inherits from class PerformanceTotal)
@@ -190,6 +414,50 @@ Add-Type -TypeDefinition @"
 		// InitiatorPerformance (inherits from class PerformanceTotal)
 		public class InitiatorPerformance : PerformanceTotal {}
 
+		// LDAP Config (inherits from class InfoBase)
+		public class LdapConfig : InfoBase {
+			public System.String BindDN;
+			public System.String CACertData;
+			public System.String CACertFile;
+			public System.Int32 CacheExpireH;
+			public System.String[] Role;
+			public System.String SearchBaseDN;
+			public System.String SearchFilter;
+			public System.String[] ServerUrl;
+			public System.String[] ServerUrlExample;
+			public System.Int32 TimeoutSec;
+			public System.String UserToDnRule;
+
+			// Implicit constructor
+			public LdapConfig () {}
+		}
+
+		// XIO LocalDisk in StorageControllers (inherits from class HardwareBase)
+		public class LocalDisk : HardwareBase {
+			public System.Object[] BrickId;
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.Boolean Enabled;
+			public System.String EncryptionStatus;
+			public System.String ExpectedType;
+			public System.String FailureReason;
+			public System.String FWVersionError;
+			public System.String LocalDiskId;
+			public System.Int32 NumBadSector;
+			public System.String Purpose;
+			public System.String ReplacementReason;
+			public System.Int32 SlotNum;
+			public System.String StorageControllerId;
+			public System.String StorageControllerName;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.String Type;
+			public System.String Wwn;
+
+			// Implicit constructor
+			public LocalDisk () {}
+		}
+
 		public class LunMap {
 			public System.String ComputerName;
 			public System.String InitiatorGroup;
@@ -224,14 +492,105 @@ Add-Type -TypeDefinition @"
 			public PerformanceBase() {}
 		}
 
+		// PerformanceCounter class
+		public class PerformanceCounter {
+			public System.String Name;
+			public System.Object[] Counters;
+			public System.DateTime DateTime;
+			public XioItemInfo.Enums.PerfCounter.EntityType EntityType;
+			public XioItemInfo.Enums.PerfCounter.Granularity Granularity;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.String ComputerName;
+			public System.String Uri;
+
+			// Implicit constructor
+			public PerformanceCounter() {}
+		}
+
 		// Performance class with Totals (inherits from class PerformanceBase)
 		public class PerformanceTotal : PerformanceBase {
 			public System.Int64 TotReadIOs;
 			public System.Int64 TotWriteIOs;
 		}
 
+		// Snapshot Scheduler
+		public class SnapshotScheduler {
+			public System.String Name;
+			public System.Boolean Enabled;
+			public System.String Guid;
+			public System.Int32 Index;
+			public System.DateTime? LastActivated;
+			public System.String LastActivationResult;
+			public System.Int32 NumSnapToKeep;
+			public System.TimeSpan Retain;
+			public System.String Schedule;
+			public System.Object SnappedObject;
+			public System.String SnapshotSchedulerId;
+			public System.String SnapType;
+			public System.String State;
+			public System.String Suffix;
+			public System.String Type;
+			public System.String ComputerName;
+			public System.String Uri;
+
+			// Implicit constructor
+			public SnapshotScheduler () {}
+		}
+
 		// Snapshot (inherits Volume class)
 		public class Snapshot : Volume {}
+
+		// SnapshotSet (inherits from InfoBase)
+		public class SnapshotSet : InfoBase {
+			public System.String ClusterId;
+			public System.String ClusterName;
+			public System.String ConsistencyGrpId;
+			public System.String ConsistencyGrpName;
+			public System.DateTime CreationTime;
+			public System.Int32 NumVol;
+			public System.String SnapshotSetId;
+			public System.String SnapshotSetShortId;
+			public System.Object[] SysId;
+			public System.Object[] TagList;
+			public System.Object[] VolList;
+
+			// Implicit constructor
+			public SnapshotSet () {}
+		}
+
+		// SNMP Notifier (inherits from class InfoBase)
+		public class SnmpNotifier : InfoBase {
+			public System.String AuthProtocol;
+			public System.String Community;
+			public System.Boolean Enabled;
+			public System.Int32 HeartbeatFreqSec;
+			public System.Int32 Port;
+			public System.String PrivacyProtocol;
+			public System.String[] Recipient;
+			public System.String SNMPVersion;
+			public System.String Username;
+
+			// Implicit constructor
+			public SnmpNotifier () {}
+		}
+
+		// Slot (inherits from class InfoBase)
+		public class Slot : InfoBase {
+			public System.Object[] BrickId;
+			public System.String ErrorReason;
+			public System.String FailureReason;
+			public System.String SsdModel;
+			public System.Int32 SlotNum;
+			public System.String SsdId;
+			public System.Double SsdSizeGB;
+			public System.String SsdUid;
+			public System.String State;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public Slot () {}
+		}
 
 		// SSD
 		public class Ssd {
@@ -319,6 +678,59 @@ Add-Type -TypeDefinition @"
 			public StorageController () {}
 		}
 
+		// XIO StorageController (inherites from class HardwareBase)
+		public class StorageControllerPsu : InfoBase {
+			public System.Object[] BrickId;
+			public System.Boolean Enabled;
+			public System.String FWVersionError;
+			public System.String HWRevision;
+			public System.String Input;
+			public System.String LifecycleState;
+			public System.String Location;
+			public System.String Model;
+			public System.String PartNumber;
+			public System.String PowerFailure;
+			public System.String PowerFeed;
+			public System.String ReplacementReason;
+			public System.String SerialNumber;
+			public System.String StatusLED;
+			public System.Object[] StorageController;
+			public System.String StorageControllerPSUId;
+			public System.Object[] SysId;
+
+			// Implicit constructor
+			public StorageControllerPsu () {}
+		}
+
+		// SyslogNotifier (inherits from class InfoBase)
+		public class SyslogNotifier : InfoBase {
+			public System.Boolean Enabled;
+			public System.String SyslogNotifierId;
+			public System.String[] Target;
+
+			// Implicit constructor
+			public SyslogNotifier () {}
+		}
+
+		// Tag (inherits from class InfoBase)
+		public class Tag : InfoBase {
+			public System.String Caption;
+			public System.Object[] ChildTagList;
+			public System.String ColorHex;
+			public System.DateTime CreationTime;
+			public System.Object[] DirectObjectList;
+			public System.Int32 NumChildTag;
+			public System.Int32 NumDirectObject;
+			public System.Int32 NumItem;
+			public System.Object[] ObjectList;
+			public System.String ObjectType;
+			public System.Object ParentTag;
+			public System.String TagId;
+
+			// Implicit constructor
+			public Tag () {}
+		}
+
 		// Target
 		public class Target {
 			public System.Object[] BrickId;
@@ -359,6 +771,17 @@ Add-Type -TypeDefinition @"
 
 		// TargetPerformance (inherits from class PerformanceTotal)
 		public class TargetPerformance : PerformanceTotal {}
+
+		// User Account (inherits from class InfoBase)
+		public class UserAccount : InfoBase {
+			public System.Int32 InactivityTimeoutMin;
+			public System.Boolean IsExternal;
+			public System.String Role;
+			public System.String UserAccountId;
+
+			// Implicit constructor
+			public UserAccount () {}
+		}
 
 		public class Volume {
 			public System.Int32 AlignmentOffset;
@@ -440,16 +863,58 @@ Add-Type -TypeDefinition @"
 			public XEnv () {}
 		}
 
+		// XMS itself (inherits from class InfoBase)
+		public class XMS : InfoBase {
+			public System.Int32 BuildNumber;
+			public System.Object[] Config;
+			public System.String DiskSpaceUtilizationLevel;
+			public System.String DiskSpaceSecUtilizationLevel;
+			public System.Version DBVersion;
+			public System.Object[] EventlogInfo;
+			public System.String IPVersion;
+			public System.String ISO8601DateTime;
+			public System.Double LogSizeTotalGB;
+			public System.Double MemoryTotalGB;
+			public System.Double MemoryUsageGB;
+			public System.String MemoryUtilizationLevel;
+			public System.Int32 NumCluster;
+			public System.Int32 NumInitiatorGroup;
+			public System.Int32 NumIscsiRoute;
+			public System.Double OverallEfficiency;
+			public System.Version RestApiVersion;
+			public System.String ServerName;
+			public System.String SWVersion;
+			public System.Int32 ThinProvSavingsPct;
+			public System.Version Version;
+			public System.Object[] PerformanceInfo;
+
+			// Implicit constructor
+			public XMS () {}
+		}
+
 		// connection to XMS appliance
 		public class XioConnection {
 			public System.String ComputerName;
 			public System.DateTime ConnectDatetime;
 			public System.Management.Automation.PSCredential Credential;
 			public System.Int32 Port;
+			public System.Version RestApiVersion;
 			public System.Boolean TrustAllCert;
+			public System.Version XmsDBVersion;
+			public System.String XmsSWVersion;
+			public System.Version XmsVersion;
 
 			// Implicit constructor
 			public XioConnection () {}
 		}
-	}
+	} // end namespace
+
+	// Enumerations
+	namespace XioItemInfo.Enums.PerfCounter {
+		public enum AggregationType {avg, min, max}
+		//public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
+		public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Target, TargetGroup, Volume, XEnv, Xms}
+		public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
+		public enum TimeFrame {real_time, last_hour, last_day, last_week, last_year}
+	} // end namespace
 "@

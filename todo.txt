@@ -1,16 +1,33 @@
 todo:
+-?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
+-?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
+-deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
+-add GUID property to non-v2 XIOInfoItem types
+-have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
+	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
+	-need to update all places that specify API types as singular to use real API type name
 -Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
 	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
--add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
-	Alerts, Object Performance, Alert Definitions, Schedulers, BBUs, Slots, Consistency Groups, Snapshot Sets, Consistency Group Volumes, SNMP Notifiers, DAEs, Storage Controller PSUs, DAE Controllers, SYR Notifiers, DAE PSUs, SYSLOG Notifiers, Email Notifiers, Tags, InfiniBand Switches, User Accounts, LDAP Configurations, XMS, Local Disks
--v4 properties to add:
+-?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
+-XIOS v4 properties/types to add/update/handle:
 	-IG-GUID and vol-GUID are available in XIOLunMaps -- add those as property to XIOLunMap object (InitiatorGrpID, VolumeID)
+	-on XMS object:
+		-provide DateTime property from the ISO8601 date/time string that has timezone abbreviation in it
+		-change uptime string to be a timespan (currently a string like, "144 days, 4:50:10.300000")
+		-change NTPServer to be array of addresses (if empty, is "{}" right now)
+	not doing yet:
+		-consistency-group-volumes, as their properties returned seem to just be consistency groups, not consistency group volumes (properties match identically, and there are none of the Performance types of properties in the object as there are in the advertised object per the API guide)
+			-and, from initial query of "https://xms.dom.com/api/json/types/consistency-group-volumes", the sub-property is "consistency-groups" (instead of the expected "consistency-group-volumes")
+			-possible mix-up in the API?
+		-SYR Notifiers -- no corresponding type found in API
+		-getting performance counter for Tag EntityType needs more work (API call needs obj-list defined, apparently, and is throwing errors even when having done so)
 -add about_XtremIO.Utils.help.txt
 	-with the general "here's the module, here are some ways to use it"
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -arrange properties in .NET obj definitions to be in desired order, instead of alphabetical?
+-add object definitions of sub-property objects
 -add Set-, Remove- cmdlets
 	Set:
 		-make sure that Set-XioItemInfo is solid, then work on:
@@ -23,7 +40,19 @@ todo:
 		-once done, un-export Set-XIOItemInfo?  Or, leave it exported?
 	Remove:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
+-update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
+-include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 -add pipelining abilities for things like:
+	Get-XIODAE | Get-XIODAEController
+	Get-XIODAEController | Get-XIODAE
+	Get-XIODAEPsu | Get-XIODAE
+	Get-XIOBBU | Get-XIOStorageController
+	Get-XIO<BBU,DAE,DAEController> | Get-XIOCluster (since they have ClusterId property)
+	Get-XIOStorageController | Get-XIOLocalDisk
+	Get-XIOLocalDisk | Get-XIOStorageController
+	Get-XIOSlot | Get-XIOSsd
+	Get-XIOSnapshotSet | Get-XIOVolume
+	Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
 	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name untile adding support for "by IGrpID" when working on XIOSv4 things)
 	Get-XIOVolume | Get-XIOLunMap (just by Volume name untile adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
@@ -152,12 +181,26 @@ todo:
 doing:
 
 
-
-
 done for version 0.next (after v0.8.3):
-
-
+-fixed bug where DataProtectionGroup object creation threw error, as object returned from API could possibly have non "true"/"false" values as of XIOS v4
 ## things below here are in changelog/readme
+v0.next
+-add XIOS REST API version and full XMS version (if available via XMS type -- available for XIOS v4+, but, leave blank for XIOS v3 and lower?) to XioConnection object
+	-to be used by other things that need to determine API version available, objects available, when to use Tag version VolumeFolder API path, etc.
+	-new properties on XioItemInfo.XioConnection objects:  RestApiVersion, XmsDBVersion, XmsSWVersion (string representation, like "4.0.1-41"), XmsVersion
+-have config array of object types that are only available as of APIv2, to be used for when, say, doing Get-XIOTag against older XMS connection:  will gracefully return that the object type is not available in given XMS's API
+-add support for new types in APIv2 (XIOS v4+): (see p17 of REST API ref)
+	done:
+	type names:  alert-definitions, alerts, bbus, consistency-groups, daes, dae-controllers, dae-psus, email-notifier, infiniband-switches, ldap-configs, local-disks, performance, schedulers, slots, snapshot-sets, snmp-notifier, storage-controller-psus, syslog-notifier, tags, user-accounts, xms
+	Types:  Alert Definitions, Alerts, BBUs, Consistency Groups, DAEs, DAE Controllers, DAE PSUs, Email Notifiers, InfiniBand Switches, LDAP Configurations, Local Disks, Object Performance, Schedulers, Slots, Snapshot Sets, SNMP Notifiers, Storage Controller PSUs, SYSLOG Notifiers, Tags, User Accounts, XMS
+	-added piece that will only try to get <v2 objects, as defined by a cfg item that is a hsh of v2 object> when XIOConnection RestAPI version is 2 or greater
+
+	not doing yet:
+	-consistency-group-volumes, as their properties returned seem to just be consistency groups, not consistency group volumes (properties match identically, and there are none of the Performance types of properties in the object as there are in the advertised object per the API guide)
+		-and, from initial query of "https://xms.dom.com/api/json/types/consistency-group-volumes", the sub-property is "consistency-groups" (instead of the expected "consistency-group-volumes")
+		-possible mix-up in the API?
+	-SYR Notifiers -- no corresponding type found in API
+	-getting performance counter for Tag EntityType needs more work (API call needs obj-list defined, apparently, and is throwing errors even when having done so)
 
 
 
@@ -237,3 +280,7 @@ foreach ($strItemtype in @("cluster", "initiator-group", "initiator", "lun-map",
 
 -clusters obj
 	-add "brick-list" property (available in 2.2.3 and 2.4, at least)
+
+
+testing:
+gc GetXIOItem.ps1 | sls "^\s+.Example" -Context 0,1 | select -ExpandProperty Context | select -ExpandProperty postcontext
