@@ -167,6 +167,7 @@ todo:
 -for Get-XIOSnapshot:  add URI Param option for "ancestor-vol-id"?  available via xmcli
 -for Get-XIOVolume:  add URI Param option for "sg-id" (snapshot group ID)?  available via xmcli
 -change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
+-?eventually for Open-XIOMgmtConsole:  only act on existing XMS connections (as the cmdlet will need the XMS software version in order to create the correct URL to the JNLP file); or, will this cmdlet change to open the web management console instead of the Java management console, once the Web UI takes over?
 -may need to remove XioStoredCred support at some point, now that Connect-XIOServer is available; if so, do via deprecation; _Find-CredentialToUse goes away at that point, too?
 -potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, so that can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
 	-add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to IgFolder objects
