@@ -17,8 +17,6 @@ todo:
 -have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 	-need to update all places that specify API types as singular to use real API type name
--Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
-	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
@@ -169,6 +167,7 @@ todo:
 -for Get-XIOSnapshot:  add URI Param option for "ancestor-vol-id"?  available via xmcli
 -for Get-XIOVolume:  add URI Param option for "sg-id" (snapshot group ID)?  available via xmcli
 -change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
+-?eventually for Open-XIOMgmtConsole:  only act on existing XMS connections (as the cmdlet will need the XMS software version in order to create the correct URL to the JNLP file); or, will this cmdlet change to open the web management console instead of the Java management console, once the Web UI takes over?
 -may need to remove XioStoredCred support at some point, now that Connect-XIOServer is available; if so, do via deprecation; _Find-CredentialToUse goes away at that point, too?
 -potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, so that can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
 	-add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to IgFolder objects
@@ -189,8 +188,11 @@ todo:
 
 doing:
 
-
 done for version 0.next (after v0.9.0):
+[bf_OpenXioMgmtConsole]
+-Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
+	-added Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP for XIOS v4 and newer
+	-for XIOS v4 and newer, opening the management console with this cmdlet expects there to be an XioConnection in place to the given XMS (as established by Connect-XIOServer), as the connection object holds version info that is necessary for formulating the proper URL for getting the JNLP's URL
 
 ## things below here are in changelog/readme
 
