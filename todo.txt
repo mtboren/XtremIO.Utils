@@ -17,8 +17,6 @@ todo:
 -have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 	-need to update all places that specify API types as singular to use real API type name
--Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
-	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
@@ -189,8 +187,11 @@ todo:
 
 doing:
 
-
 done for version 0.next (after v0.9.0):
+[bf_OpenXioMgmtConsole]
+-Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
+	-added Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP for XIOS v4 and newer
+	-for XIOS v4 and newer, opening the management console with this cmdlet expects there to be an XioConnection in place to the given XMS (as established by Connect-XIOServer), as the connection object holds version info that is necessary for formulating the proper URL for getting the JNLP's URL
 
 ## things below here are in changelog/readme
 
