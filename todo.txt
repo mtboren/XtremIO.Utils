@@ -3,8 +3,6 @@ todo:
 	-with the general "here's the module, here are some ways to use it"
 -replace usage of singular item type string (essentially used for output type name creation; make config hsh table of plural item type string -> XIOItemInfo output object type)
 	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
--replace use of WebClient with HttpRequest objects, add add'l verbose error info from InnnerException (if any)
-	-note speed diff (if any) for API request intensive cmdlets (Get-XIOLunMap, for example)
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
 -add "normal" properties to API v1 objects (properties that are now on API v2 objects, where possible, like GUID and ID and whatnot)
@@ -193,6 +191,10 @@ done for version 0.next (after v0.9.0):
 -Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
 	-added Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP for XIOS v4 and newer
 	-for XIOS v4 and newer, opening the management console with this cmdlet expects there to be an XioConnection in place to the given XMS (as established by Connect-XIOServer), as the connection object holds version info that is necessary for formulating the proper URL for getting the JNLP's URL
+[feat_BetterWebExcepReporting]
+-investigated replacing use of WebClient with HttpWebRequest objects for internal function that does the GET web communications
+	-noted speed diff for API request intensive cmdlets (Get-XIOLunMap, for example):  it was nearly twice as fast with the WebClient class versus the HttpWebRequest class; sticking with WebClient for now
+-added additional verbose error info from WebException in InnnerException of returned error from web call (if any) for when issue getting items from API (helpful for troubleshooting, especially when crafting one's own URIs)
 
 ## things below here are in changelog/readme
 

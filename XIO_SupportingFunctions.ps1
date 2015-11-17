@@ -58,9 +58,16 @@ function Get-XIOInfo {
 			$oWebClient.DownloadString($hshParamsForRequest["Uri"]) | ConvertFrom-Json
 		} ## end try
 		catch {
-			Write-Verbose -Verbose "Uh-oh -- something went awry trying to get data from that URI ('$($hshParamsForRequest['Uri'])'). A pair of guesses:  no such XMS appliance, or that item type is not valid in the API version on the XMS appliance that you are contacting, maybe?  Should handle this in future module release.  Throwing error for now."
+			Write-Verbose -Verbose "Uh-oh -- something went awry trying to get data from that URI ('$($hshParamsForRequest['Uri'])')"
+			Write-Verbose -Verbose "(exception status of '$($_.Exception.InnerException.Status)', message of '$($_.Exception.InnerException.Message)')"
+			## get the Response from the InnerException if available
+			Write-Verbose -Verbose $(if ($null -ne $_.Exception.InnerException.Response) {
+					"WebException response:`n{0}" -f ([System.IO.StreamReader]($_.Exception.InnerException.Response.GetResponseStream())).ReadToEnd()
+				} ## end if
+				else {"no additional exception response value to report"}
+			) ## end write-verbose
 			## throw the caught error (instead of breaking, which adversely affects subsequent calls; say, if in a try/catch statement in a Foreach-Object loop, "break" breaks all the way out of the foreach-object, vs. using Throw to just throw the error for this attempt, and then letting the calling item continue in the Foreach-Object
-			Throw
+			Throw $_
 			#Write-Error $_ -Category ConnectionError -RecommendedAction "Check creds, URL ('$($hshParamsForRequest["Uri"])') -- valid?"; break;
 		} ## end catch
 		## if CertValidationCallback was altered, set back to original value
