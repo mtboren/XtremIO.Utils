@@ -1,6 +1,4 @@
 todo:
--add about_XtremIO.Utils.help.txt
-	-with the general "here's the module, here are some ways to use it"
 -replace usage of singular item type string (essentially used for output type name creation; make config hsh table of plural item type string -> XIOItemInfo output object type)
 	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
@@ -195,6 +193,9 @@ done for version 0.next (after v0.9.0):
 -investigated replacing use of WebClient with HttpWebRequest objects for internal function that does the GET web communications
 	-noted speed diff for API request intensive cmdlets (Get-XIOLunMap, for example):  it was nearly twice as fast with the WebClient class versus the HttpWebRequest class; sticking with WebClient for now
 -added additional verbose error info from WebException in InnnerException of returned error from web call (if any) for when issue getting items from API (helpful for troubleshooting, especially when crafting one's own URIs)
+[feat_AboutHelpTxt]
+-add about_XtremIO.Utils.help.txt
+	-with the general "here's the module, here are some ways to use it"
 
 ## things below here are in changelog/readme
 
