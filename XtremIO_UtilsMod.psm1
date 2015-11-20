@@ -2,7 +2,7 @@
 . $PSScriptRoot\configItems.ps1
 
 ## dot-source the function-definition files, class-definition file
-"GetXIOItem.ps1", "NewXIOItem.ps1", "OtherXIOMgmt.ps1", "XtremIO.Utils.init.ps1" | Foreach-Object {
+"XtremIO.Utils.init.ps1", "GetXIOItem.ps1", "NewXIOItem.ps1", "OtherXIOMgmt.ps1" | Foreach-Object {
 	. $PSScriptRoot\$_
 } ## end foreach-object
 
