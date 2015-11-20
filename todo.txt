@@ -179,11 +179,28 @@ todo:
 -try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
 -once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
 	-not available as of XIOS v3.0.1
+to fix for PSv5:
+	possibly properties that are not optional per the obj definition, but that are null in the New-Object call?:
+		Get-XIOBBU
+		Get-XIODAE
+		Get-XIOInfinibandSwitch
+		Get-XIOInitiatorGroupFolder
+		Get-XIOInitiatorGroupFolderPerformance
+		Get-XIOLocalDisk
+		Get-XIOSnapshot
+		Get-XIOSnapshotSet
+		Get-XIOTag
+		Get-XIOVolume
+		Get-XIOVolumeFolder
+		Get-XIOVolumeFolderPerformance
+		Get-XIOVolumePerformance
+	Get-XIOPerformanceCounter -- seemingly off/bad/different URL
 
 
 
 
 doing:
+
 
 done for version 0.next (after v0.9.0):
 [bf_OpenXioMgmtConsole]
@@ -197,6 +214,10 @@ done for version 0.next (after v0.9.0):
 [feat_AboutHelpTxt]
 -add about_XtremIO.Utils.help.txt
 	-with the general "here's the module, here are some ways to use it"
+[bf_ErrorWithPSv5]
+-importing module in PowerShell v5 Production Preview results in multiple errors of:  Multiple ambiguous overloads found for ".ctor" and the argument count: "1".
+	-due to OutputType specifying a type that was not yet defined in the session, which was due to the adding of types occurring _after_ the dot-source of the given .ps1
+	-changed order of dot-sourcing of .ps1 files as module loads, moving the init ps1 to the front of the order, so that given types are defined by the time some code alludes to the types
 
 ## things below here are in changelog/readme
 
