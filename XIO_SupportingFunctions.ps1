@@ -899,7 +899,7 @@ function _New-Object_fromItemTypeAndContent {
 					Caption = $oContent.caption
 					Index = $oContent.index
 					## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-					InitiatorGrpIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
+					InitiatorGrpIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
 					FolderId = $oContent."folder-id"
 					NumIG = $oContent."num-of-direct-objs"
 					NumSubfolder = $oContent."num-of-subfolders"
@@ -1180,7 +1180,7 @@ function _New-Object_fromItemTypeAndContent {
 					NumLunMapping = $oContent."num-of-lun-mappings"
 					LunMappingList = $oContent."lun-mapping-list"
 					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-					InitiatorGrpIdList = $oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}
+					InitiatorGrpIdList = @($oContent."lun-mapping-list" | Foreach-Object {$_[0][0]})
 					## available in 2.4.0 and up
 					UsedLogicalTB = $(if (Get-Member -Input $oContent -Name "logical-space-in-use") {$oContent."logical-space-in-use" / 1GB} else {$null})
 					IOPS = [int64]$oContent.iops
@@ -1264,7 +1264,7 @@ function _New-Object_fromItemTypeAndContent {
 					NumChild = [int]$oContent."num-of-direct-objs"
 					NumSubfolder = [int]$oContent."num-of-subfolders"
 					## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-					VolIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
+					VolIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
 					Index = [int]$oContent.index
 					IOPS = [int64]$oContent.iops
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
