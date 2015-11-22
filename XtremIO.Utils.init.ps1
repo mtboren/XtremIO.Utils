@@ -1,6 +1,6 @@
 Add-Type -TypeDefinition @"
 	namespace XioItemInfo {
-		// Alert (inherites from class InfoBase)
+		// Alert (inherits from class InfoBase)
 		public class Alert : InfoBase {
 			public System.String AlertCode;
 			public System.String AlertType;
@@ -34,7 +34,7 @@ Add-Type -TypeDefinition @"
 			public AlertDefinition () {}
 		}
 
-		// XIO BBU (inherites from class HardwareBase)
+		// XIO BBU (inherits from class HardwareBase)
 		public class BBU : HardwareBase {
 			public System.Object[] Battery;
 			public System.Int32 BatteryChargePct;
@@ -62,7 +62,7 @@ Add-Type -TypeDefinition @"
 			public System.Int32 RealPowerW;
 			public System.String Status;
 			public System.Object[] StorageController;
-			public System.Object[] TagList;
+			public System.Object TagList;
 			public System.String UPSAlarm;
 			public System.Boolean UPSOverloaded;
 			public System.Object[] SysId;
@@ -155,7 +155,7 @@ Add-Type -TypeDefinition @"
 			public System.String CreatedByApp;
 			public System.Int32 NumVol;
 			public System.Object[] SysId;
-			public System.Object[] TagList;
+			public System.Object TagList;
 			public System.Object[] VolList;
 
 			// Implicit constructor
@@ -171,7 +171,7 @@ Add-Type -TypeDefinition @"
 			public System.Int32 NumDAEController;
 			public System.Int32 NumDAEPSU;
 			public System.String ReplacementReason;
-			public System.Object[] TagList;
+			public System.Object TagList;
 			public System.Object[] SysId;
 
 			// Implicit constructor
@@ -316,7 +316,7 @@ Add-Type -TypeDefinition @"
 		public class IgFolder {
 			public System.String Caption;
 			public System.String ComputerName;
-			public System.Object[] FolderId;
+			public System.Object FolderId;
 			public System.Int32 Index;
 			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
@@ -326,7 +326,7 @@ Add-Type -TypeDefinition @"
 			public System.String ParentFolder;
 			public System.String ParentFolderId;
 			public System.Object PerformanceInfo;
-			public System.Object[] SubfolderList;
+			public System.Object SubfolderList;
 			public System.String Uri;
 			public System.Object[] XmsId;
 
@@ -349,7 +349,7 @@ Add-Type -TypeDefinition @"
 			public System.Object[] Port;
 			public System.String ReplacementReason;
 			public System.Object[] SysId;
-			public System.Object[] TagList;
+			public System.Object TagList;
 			public System.Object[] TemperatureSensor;
 			public System.Object[] VoltageSensor;
 			public System.String WrongSCConnection;
@@ -450,7 +450,7 @@ Add-Type -TypeDefinition @"
 			public System.String StorageControllerId;
 			public System.String StorageControllerName;
 			public System.Object[] SysId;
-			public System.Object[] TagList;
+			public System.Object TagList;
 			public System.String Type;
 			public System.String Wwn;
 
@@ -552,7 +552,7 @@ Add-Type -TypeDefinition @"
 			public System.String SnapshotSetId;
 			public System.String SnapshotSetShortId;
 			public System.Object[] SysId;
-			public System.Object[] TagList;
+			public System.Object TagList;
 			public System.Object[] VolList;
 
 			// Implicit constructor
@@ -678,7 +678,7 @@ Add-Type -TypeDefinition @"
 			public StorageController () {}
 		}
 
-		// XIO StorageController (inherites from class HardwareBase)
+		// XIO StorageController (inherits from class HardwareBase)
 		public class StorageControllerPsu : InfoBase {
 			public System.Object[] BrickId;
 			public System.Boolean Enabled;
@@ -715,14 +715,14 @@ Add-Type -TypeDefinition @"
 		// Tag (inherits from class InfoBase)
 		public class Tag : InfoBase {
 			public System.String Caption;
-			public System.Object[] ChildTagList;
+			public System.Object ChildTagList;
 			public System.String ColorHex;
 			public System.DateTime CreationTime;
-			public System.Object[] DirectObjectList;
+			public System.Object DirectObjectList;
 			public System.Int32 NumChildTag;
 			public System.Int32 NumDirectObject;
 			public System.Int32 NumItem;
-			public System.Object[] ObjectList;
+			public System.Object ObjectList;
 			public System.String ObjectType;
 			public System.Object ParentTag;
 			public System.String TagId;
@@ -785,17 +785,17 @@ Add-Type -TypeDefinition @"
 
 		public class Volume {
 			public System.Int32 AlignmentOffset;
-			public System.Object[] AncestorVolId;
+			public System.Object AncestorVolId;
 			public System.String Compressible;
 			public System.String ComputerName;
 			public System.DateTime CreationTime;
-			public System.Object[] DestSnapList;
+			public System.Object DestSnapList;
 			public System.Int32 Index;
 			public System.String[] InitiatorGrpIdList;
 			public System.Int64 IOPS;
 			public System.Int32 LBSize;
 			public System.String LuName;
-			public System.Object[] LunMappingList;
+			public System.Object LunMappingList;
 			public System.String NaaName;
 			public System.String Name;
 			public System.Int32 NumDestSnap;
@@ -804,7 +804,7 @@ Add-Type -TypeDefinition @"
 			public System.String SmallIOAlertsCfg;
 			public System.String SmallIORatio;
 			public System.String SmallIORatioLevel;
-			public System.Object[] SnapGrpId;
+			public System.Object SnapGrpId;
 			public System.Object[] SysId;
 			public System.String UnalignedIOAlertsCfg;
 			public System.String UnalignedIORatio;

@@ -1597,7 +1597,7 @@ function Get-XIOPerformanceCounter {
 		## array of URI parameter "pieces" (like 'name=value') to use for filtering
 		$arrUriParamPiecesToAdd = @("limit=$Limit")
 		## for the params that have values (either because they were passed/bound, or have a default value in the param() section)
-		$arrCmdletParamNamesForNameValuePairs | Where-Object {Get-Variable -ValueOnly -ErrorAction:SilentlyContinue -Name $_} | Foreach-Object {
+		$arrCmdletParamNamesForNameValuePairs | Where-Object {$null -ne (Get-Variable -ValueOnly -ErrorAction:SilentlyContinue -Name $_)} | Foreach-Object {
 			$strThisParamName = $_
 			$arrUriParamPiecesToAdd += ("{0}={1}" -f $hshCmdletParamNameToXIOAPIParamNameMapping[$strThisParamName], (Convert-UrlEncoding (Get-Variable -Name $strThisParamName -ValueOnly)).ConvertedString)
 		} ## end foreach-object
