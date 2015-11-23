@@ -72,25 +72,24 @@ Add-Type -TypeDefinition @"
 		}
 
 		// XIO Brick
-		public class Brick {
+		public class Brick : InfoBase {
 			public System.Object[] BrickId;
 			public string BrickGuid;
 			public string ClusterName;
-			public string ComputerName;
-			public System.Int32 Index;
-			public string Name;
-			// Storage Controller info
-			public System.Object[] NodeList;
-			public System.Int32 NumNode;
+			// Storage Controller info -- deprecated
+			[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'StorageController' instead", false)]
+			public System.Object[] NodeList { get; set; }
+			// Num Storage Controller -- deprecated
+			[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumStorageController' instead", false)]
+			public System.Int32 NumNode { get; set; }
 			public System.Int32 NumSSD;
+			public System.Int32 NumStorageController;
 			// Data Protection Group info
 			public System.Object[] RGrpId;
 			// array of SSD Slot info items
 			public System.Object[] SsdSlotInfo;
+			public System.Object[] StorageController;
 			public string State;
-			// URI of given object
-			public string Uri;
-			public System.Object[] XmsId;
 
 			// Implicit constructor
 			public Brick () {}

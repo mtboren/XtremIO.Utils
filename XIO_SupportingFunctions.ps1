@@ -686,12 +686,18 @@ function _New-Object_fromItemTypeAndContent {
 					ClusterName = $oContent."sys-id".Item(1)
 					State = $oContent."brick-state"
 					NumSSD = $oContent."num-of-ssds"
+					## deprecated; replacing with NumStorageController
 					NumNode = $oContent."num-of-nodes"
+					NumStorageController = $oContent."num-of-nodes"
+					## deprecated; replacing with StorageController
 					NodeList = $oContent."node-list"
 					BrickGuid = $oContent."brick-guid"
+					Guid = $oContent."brick-id"[0]
 					BrickId = $oContent."brick-id"
 					RGrpId = $oContent."rg-id"
 					SsdSlotInfo = $oContent."ssd-slot-array"
+					Severity = $oContent."obj-severity"
+					StorageController =  _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray $oContent."node-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
