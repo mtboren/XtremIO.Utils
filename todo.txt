@@ -186,8 +186,11 @@ doing:
 	-deprecated:
 		On Brick:
 			-NumNode -> NumStorageController
-			-NodeList -> StorageController, list of objects with ID, Name, Index properties, instead of just lists of the properties
-	do:  Brick
+			-NodeList -> StorageController, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+		On Cluster:
+			-BrickList -> Brick, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+			-InfiniBandSwitchList -> InfiniBandSwitch, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+	done:  Brick, Cluster
 -deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 	-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 	-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/

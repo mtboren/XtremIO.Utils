@@ -511,7 +511,9 @@ function _New-ObjListFromProperty_byObjName {
 			SnapSet = "SnapshotSet"
 			Scheduler = "SnapshotScheduler"
 			Volume = "Vol"
+			Brick = "Brick"
 			ConsistencyGroup = "ConsistencyGrp"
+			DataProtectionGroup = "DataProtectionGrp"
 			InitiatorGroup = "InitiatorGrp"
 			Initiator = "Initiator"
 			Tag = "Tag"
@@ -694,6 +696,7 @@ function _New-Object_fromItemTypeAndContent {
 					BrickGuid = $oContent."brick-guid"
 					Guid = $oContent."brick-id"[0]
 					BrickId = $oContent."brick-id"
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
 					RGrpId = $oContent."rg-id"
 					SsdSlotInfo = $oContent."ssd-slot-array"
 					Severity = $oContent."obj-severity"
@@ -716,6 +719,7 @@ function _New-Object_fromItemTypeAndContent {
 					TotProvTB = $oContent."vol-size" / 1GB
 					OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
 					DedupeRatio = $dblDedupeRatio
+					ClusterId = $oContent."sys-id"[0]
 					## available in 3.0 and up
 					CompressionFactor = $(if ($null -ne $oContent."compression-factor") {$oContent."compression-factor"})
 					## available in 3.0 and up
@@ -724,6 +728,8 @@ function _New-Object_fromItemTypeAndContent {
 					DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
 					ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
 					BrickList = $oContent."brick-list"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray $oContent."brick-list"
+					InfinibandSwitch = _New-ObjListFromProperty_byObjName -Name "Switch" -ObjectArray $oContent."ib-switch-list"
 					Index = [int]$oContent.index
 					ConsistencyState = $oContent."consistency-state"
 					## available in 2.4.0 and up
@@ -731,6 +737,7 @@ function _New-Object_fromItemTypeAndContent {
 					## available in 2.4.0 and up
 					EncryptionSupported = $oContent."encryption-supported"
 					FcPortSpeed = $oContent."fc-port-speed"
+					Guid = $oContent.guid
 					InfiniBandSwitchList = $oContent."ib-switch-list"
 					IOPS = [int64]$oContent.iops
 					LicenseId = $oContent."license-id"
@@ -831,6 +838,7 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					Severity = $oContent."obj-severity"
 					## available in 3.0 and up
 					SharedMemEfficiencyLevel = $oContent."shared-memory-efficiency-level"
 					## available in 3.0 and up
@@ -843,6 +851,7 @@ function _New-Object_fromItemTypeAndContent {
 					SystemSN = $oContent."sys-psnt-serial-number"
 					SystemState = $oContent."sys-state"
 					SystemStopType = $oContent."sys-stop-type"
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"data-protection-groups" {
