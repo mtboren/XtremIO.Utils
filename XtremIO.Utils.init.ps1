@@ -224,16 +224,21 @@ namespace XioItemInfo {
 		public DAEController () {}
 	}
 
-	public class DataProtectionGroup {
+	public class DataProtectionGroup : InfoBase {
 		public Int32 AvailableRebuild;
+		public Object Brick;
+		// Brick info -- deprecated
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Int32 BrickIndex;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public String BrickName;
+		public Object Cluster;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Int32 ClusterIndex;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
-		public String ComputerName;
-		public Int32 Index;
+		public String DataProtectionGrpId;
 		public Int64 IOPS;
-		public String Name;
 		public Int32 NumNode;
 		public Int32 NumSSD;
 		public Object PerformanceInfo;
@@ -242,15 +247,14 @@ namespace XioItemInfo {
 		public Boolean RebuildInProg;
 		public String RebuildPreventionReason;
 		public Int32 RebuildProgress;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGrpId' instead", false)]
 		public Object[] RGrpId;
 		public Boolean SSDPrepInProg;
 		public Int32 SSDPrepProgress;
 		public String State;
 		public Double TotSSDTB;
-		public String Uri;
 		public Double UsedSSDTB;
 		public Double UsefulSSDTB;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public DataProtectionGroup() {}

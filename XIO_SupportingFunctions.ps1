@@ -512,6 +512,7 @@ function _New-ObjListFromProperty_byObjName {
 			Scheduler = "SnapshotScheduler"
 			Volume = "Vol"
 			Brick = "Brick"
+			Cluster = "Cluster"
 			ConsistencyGroup = "ConsistencyGrp"
 			DataProtectionGroup = "DataProtectionGrp"
 			InitiatorGroup = "InitiatorGrp"
@@ -857,6 +858,8 @@ function _New-Object_fromItemTypeAndContent {
 			"data-protection-groups" {
 				[ordered]@{
 					Name = $oContent.name
+					DataProtectionGrpId = $oContent."rg-id"[0]
+					Guid = $oContent.guid
 					Index = $oContent.index
 					State = $oContent."protection-state"
 					TotSSDTB = $oContent."ud-ssd-space" / 1GB
@@ -882,12 +885,15 @@ function _New-Object_fromItemTypeAndContent {
 					# RebuildInProgRaw = $oContent."rebuild-in-progress"
 					RebuildPreventionReason = $oContent."rebuild-prevention-reason"
 					RebuildProgress = [int]$oContent."rebuild-progress"
+					Severity = $oContent."obj-severity"
 					## the "raw" value returned from the API
 					# SSDPrepInProgRaw = $oContent."ssd-preparation-in-progress"
 					SSDPrepProgress = $oContent."ssd-preparation-progress"
 					AvailableRebuild = $oContent."available-rebuilds"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickName = $oContent."brick-id"[1]
 					BrickIndex = $oContent."brick-id"[2]
+					Cluster = _New-ObjListFromProperty_byObjName -Name "Cluster" (,$oContent."sys-id")
 					ClusterName = $oContent."sys-id"[1]
 					ClusterIndex = $oContent."sys-id"[2]
 					NumNode = $oContent."num-of-nodes"
