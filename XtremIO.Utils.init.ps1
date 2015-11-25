@@ -322,22 +322,17 @@ namespace XioItemInfo {
 	}
 
 	// Initiator Group Folder
-	public class IgFolder {
+	public class IgFolder : InfoBase {
 		public String Caption;
-		public String ComputerName;
-		public Object FolderId;
-		public Int32 Index;
+		public String FolderId;
 		public String[] InitiatorGrpIdList;
 		public Int64 IOPS;
-		public String Name;
 		public Int32 NumIG;
 		public Int32 NumSubfolder;
 		public String ParentFolder;
 		public String ParentFolderId;
 		public Object PerformanceInfo;
 		public Object SubfolderList;
-		public String Uri;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public IgFolder () {}

@@ -921,7 +921,8 @@ function _New-Object_fromItemTypeAndContent {
 					Index = $oContent.index
 					## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
 					InitiatorGrpIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
-					FolderId = $oContent."folder-id"
+					FolderId = $oContent."folder-id"[0]
+					Guid = $oContent.guid
 					NumIG = $oContent."num-of-direct-objs"
 					NumSubfolder = $oContent."num-of-subfolders"
 					ParentFolder = $oContent."parent-folder-id"[1]
@@ -966,6 +967,7 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					Severity = $oContent."obj-severity"
 					SubfolderList = $oContent."subfolder-list"
 					IOPS = [int64]$oContent.iops
 					XmsId = $oContent."xms-id"

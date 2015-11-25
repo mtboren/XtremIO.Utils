@@ -171,11 +171,13 @@ todo:
 -?add a Set-XIOUtilsConfiguration function to set things like the default port to use, and $true/$false for TrustAllCert
 -?add "if ($PsCmdlet.ShouldProcess())" portion to New-XIOVolume, around the New-XioItem call, so as to have better WhatIf output?
 -?add "small" and "unaligned" performance items, too? (available in xmcli)
+-address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  InitiatorGroupFolder objects have an IOPS property that may actually have no value, but that gets cast to and Int, and becomes "0" for the returned object
 -added URI property to Get-XIOItemInfo output objects; keep that?  Useful in pipeline times?
 -try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
 -once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
 	-not available as of XIOS v3.0.1
-
+-change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
+	-then, can more universally use that Guid in pipelining and whatnot
 
 
 
@@ -194,9 +196,14 @@ doing:
 			-BrickIndex, BrickName -> Brick, a collection of objects with ID, Name, Index properties, instead of just the properties
 			-ClusterIndex, ClusterName -> Cluster, objects with ID, Name, Index properties, instead of just the properties
 			-RGrpId -> DataProtectionGrpId, the ID of the DataProtectionGroup (instead of an array of id/name/index)
-			added Guid
+	-changed:
+		On DataProtectionGroup:
+			-added Guid
+		On IgFolder:
+			-FolderId is now the unique identifier of the folder, instead of the array of <id>,<name>,<index>; this is to align with the *Id properties of the rest of the objects in the module -- they are just the Id string value, not the array of all three properties. And, this <objType>Id property is essentially the Guid property of the object, but, older XIOS did not present the Guid property directly; so, <objType>Id and Guid values should be the same on objects from XIOS v4 and new; on objects from XIOS older than v3, the Guid property will be empty string
+			-added Guid
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder
 -deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 	-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 	-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
