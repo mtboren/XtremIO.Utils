@@ -637,8 +637,10 @@ function _New-Object_fromItemTypeAndContent {
 					IOPS = [int64]$oContent.iops
 					Index = $oContent.index
 					ConnectionState = $oContent."initiator-conn-state"
+					Guid = $oContent.guid
 					InitiatorGrpId = $oContent."ig-id"[0]
-					InitiatorId = $oContent."initiator-id"
+					InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$oContent."ig-id")
+					InitiatorId = $oContent."initiator-id"[0]
 					PortType = $oContent."port-type"
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
@@ -680,6 +682,8 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					Severity = $oContent."obj-severity"
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"bricks" {

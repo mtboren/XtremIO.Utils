@@ -265,25 +265,18 @@ namespace XioItemInfo {
 
 
 	// XIO Email Notifier
-	public class EmailNotifier {
+	public class EmailNotifier : InfoBase {
 		public String CompanyName;
 		public String ContactDetails;
 		public Boolean Enabled;
 		public Int32 FrequencySec;
-		public String Guid;
-		public Int32 Index;
 		public String MailRelayAddress;
 		public String MailUsername;
-		public String Name;
 		public String ProxyAddress;
 		public String ProxyPort;
 		public String ProxyUser;
 		public String[] Recipient;
-		public String Severity;
 		public String TransportProtocol;
-		public String ComputerName;
-		public String Uri;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public EmailNotifier () {}
@@ -379,18 +372,15 @@ namespace XioItemInfo {
 	// Initiator Group Folder Performance (inherits from class PerformanceTotal)
 	public class IgFolderPerformance : PerformanceTotal {}
 
-	public class Initiator {
-		public String ComputerName;
+	public class Initiator : InfoBase {
 		public String ConnectionState;
-		public Int32 Index;
 		public String InitiatorGrpId;
-		public Object[] InitiatorId;
+		public Object InitiatorGroup;
+		public String InitiatorId;
 		public Int64 IOPS;
-		public String Name;
 		public Object PerformanceInfo;
 		public String PortAddress;
 		public String PortType;
-		public String Uri;
 
 		// Implicit constructor
 		public Initiator () {}
