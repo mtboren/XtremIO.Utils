@@ -509,7 +509,7 @@ namespace XioItemInfo {
 		public Boolean Enabled;
 		public String Guid;
 		public Int32 Index;
-		public DateTime? LastActivated;
+		public System.Nullable<DateTime> LastActivated;
 		public String LastActivationResult;
 		public Int32 NumSnapToKeep;
 		public TimeSpan Retain;
@@ -582,45 +582,39 @@ namespace XioItemInfo {
 	}
 
 	// SSD
-	public class Ssd {
+	public class Ssd : HardwareBase {
 		public Object[] BrickId;
 		public Double CapacityGB;
-		public String ComputerName;
+		public Object DataProtectionGroup;
 		public String DiagHealthState;
+		public Boolean Enabled;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
 		public String EnabledState;
 		public String EncryptionStatus;
-		public String FWVersion;
 		public String FWVersionError;
 		public String HealthState;
-		public String HWRevision;
-		public String IdLED;
-		public Int32 Index;
 		public Int64 IOPS;
-		public String LifecycleState;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Model' instead", false)]
 		public String ModelName;
-		public String Name;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Severity' instead", false)]
 		public String ObjSeverity;
-		public String PartNumber;
 		public Int32 PctEnduranceLeft;
 		public String PctEnduranceLeftLvl;
 		public Object PerformanceInfo;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGroup' instead", false)]
 		public Object[] RGrpId;
-		public String SerialNumber;
 		public Int32 SlotNum;
 		public String SSDFailureReason;
-		public Object[] SsdId;
+		public String SsdId;
 		public String SSDLink1Health;
 		public String SSDLink2Health;
 		public String SSDPositionState;
 		public String SsdRGrpState;
 		public String SsdUid;
-		public String StatusLED;
 		public String SwapLED;
 		public Object[] SysId;
-		public String Uri;
 		public Double UsedGB;
 		public Double UsefulGB;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public Ssd () {}

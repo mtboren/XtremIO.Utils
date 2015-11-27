@@ -754,8 +754,7 @@
 							<TableColumnItem><PropertyName>CapacityGB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>UsedGB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>SlotNum</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ModelName</PropertyName></TableColumnItem>
-							<!--<TableColumnItem><PropertyName>SerialNumber</PropertyName></TableColumnItem>-->
+							<TableColumnItem><PropertyName>Model</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>PctEnduranceLeft</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>

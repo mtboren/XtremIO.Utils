@@ -7,8 +7,9 @@ todo:
 	-include license file
 -?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
 -?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
--add properties to LunMap objects (now available in XIOS v4):
-	-add:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
+-add properties to objects (now available in XIOS v4):
+	-to LunMap:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
+	-to SSD:  certainty, *io-error*, num-bad-sectors, tag-list
 -have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 	-need to update all places that specify API types as singular to use real API type name
@@ -201,6 +202,11 @@ doing:
 		On LunMap:
 			-MappingId -> LunMapId, the ID of the LunMap (instead of an array of id/name/index)
 			-MappingIndex -> Index, to have the standard property name used across other objects
+		On SSD:
+			-EnabledState -> Enabled, to have the standard property name used across other objects
+			-ModelName -> Model, to have the standard property name used across other objects
+			-ObjSeverity -> Severity, to have the standard property name used across other objects
+			-RGrpId -> DataProtectionGroup, objects with ID, Name, Index properties, instead of just the properties
 	-changed:
 		On DataProtectionGroup:
 			-added Guid
@@ -211,9 +217,12 @@ doing:
 			-InitiatorId is now the unique identifier of the intiator, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
 			-added Guid, InitiatorGroup properties
 		On LunMap:
-			-Added LunMapId, that is the unique identifier of the folder; will eventually be the favored identifying property, over the deprecated MappingId property
+			-added LunMapId, that is the unique identifier of the folder; will eventually be the favored identifying property, over the deprecated MappingId property
+		On SSD:
+			-added DataProtectionGroup property
+			-SsdId is now the unique identifier of the SSD, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, SSD
 -deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 	-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 	-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/

@@ -1009,6 +1009,7 @@ function _New-Object_fromItemTypeAndContent {
 					UsedGB = $oContent."ssd-space-in-use"/1MB
 					SlotNum = $oContent."slot-num"
 					ModelName = $oContent."model-name"
+					Model = $oContent."model-name"
 					SerialNumber = $oContent."serial-number"
 					FWVersion = $oContent."fw-version"
 					PartNumber = $oContent."part-number"
@@ -1029,8 +1030,11 @@ function _New-Object_fromItemTypeAndContent {
 					IOPS = [int64]$oContent."iops"
 					HealthState = $oContent."health-state"
 					ObjSeverity = $oContent."obj-severity"
+					Guid = $oContent.guid
+					Severity = $oContent."obj-severity"
 					Index = $oContent."index"
 					FWVersionError = $oContent."fw-version-error"
+					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
 					EncryptionStatus = $oContent."encryption-status"
@@ -1038,6 +1042,7 @@ function _New-Object_fromItemTypeAndContent {
 					StatusLED = $oContent."status-led"
 					SwapLED = $oContent."swap-led"
 					HWRevision = $oContent."hw-revision"
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
 					DiagHealthState = $oContent."diagnostic-health-state"
 					SSDLink1Health = $oContent."ssd-link1-health-state"
 					SSDLink2Health = $oContent."ssd-link2-health-state"
@@ -1045,7 +1050,7 @@ function _New-Object_fromItemTypeAndContent {
 					BrickId = $oContent."brick-id"
 					RGrpId = $oContent."rg-id"
 					SsdRGrpState = $oContent."ssd-rg-state"
-					SsdId = $oContent."ssd-id"
+					SsdId = $oContent."ssd-id"[0]
 					SsdUid = $oContent."ssd-uid"
 					SysId = $oContent."sys-id"
 					XmsId = $oContent."xms-id"
