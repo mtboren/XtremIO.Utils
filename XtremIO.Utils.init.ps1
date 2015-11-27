@@ -386,17 +386,12 @@ namespace XioItemInfo {
 		public Initiator () {}
 	}
 
-	public class InitiatorGroup {
-		public String ComputerName;
-		public Int32 Index;
+	public class InitiatorGroup : InfoBase {
 		public String InitiatorGrpId;
 		public Int64 IOPS;
-		public String Name;
 		public Int32 NumInitiator;
 		public Int32 NumVol;
 		public Object PerformanceInfo;
-		public String Uri;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public InitiatorGroup () {}
@@ -452,19 +447,19 @@ namespace XioItemInfo {
 		public LocalDisk () {}
 	}
 
-	public class LunMap {
-		public String ComputerName;
+	public class LunMap : InfoBase {
 		public String InitiatorGroup;
 		public Int32 InitiatorGrpIndex;
 		public Int32 LunId;
+		public String LunMapId;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapId' instead", false)]
 		public Object[] MappingId;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Index' instead", false)]
 		public Int32 MappingIndex;
 		public Int32 TargetGrpIndex;
 		public String TargetGrpName;
-		public String Uri;
 		public Int32 VolumeIndex;
 		public String VolumeName;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public LunMap () {}

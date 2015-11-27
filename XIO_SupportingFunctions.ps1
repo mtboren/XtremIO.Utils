@@ -582,6 +582,7 @@ function _New-Object_fromItemTypeAndContent {
 			"initiator-groups" {
 				[ordered]@{
 					Name = $oContent.Name
+					Guid = $oContent.guid
 					Index = $oContent.index
 					NumInitiator = $oContent."num-of-initiators"
 					NumVol = $oContent."num-of-vols"
@@ -627,6 +628,7 @@ function _New-Object_fromItemTypeAndContent {
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
 					InitiatorGrpId = $oContent."ig-id"[0]
+					Severity = $oContent."obj-severity"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -981,6 +983,9 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					VolumeName = $oContent."vol-name"
 					LunId = $oContent.lun
+					LunMapId = $oContent."mapping-id"[0]
+					Name = $oContent."mapping-id"[1]
+					Guid = $oContent.guid
 					## changed property name from "ig-name" after v0.6.0 release
 					InitiatorGroup = $oContent."ig-name"
 					InitiatorGrpIndex = $oContent."ig-index"
@@ -989,7 +994,9 @@ function _New-Object_fromItemTypeAndContent {
 					## changed from lm-id to mapping-id in v2.4
 					MappingId = $oContent."mapping-id"
 					## available in 2.4.0 and up
+					Index = $oContent."mapping-index"
 					MappingIndex = $oContent."mapping-index"
+					Severity = $oContent."obj-severity"
 					XmsId = $oContent."xms-id"
 					VolumeIndex = $oContent."vol-index"
 				} ## end ordered dictionary

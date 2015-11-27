@@ -7,6 +7,8 @@ todo:
 	-include license file
 -?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
 -?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
+-add properties to LunMap objects (now available in XIOS v4):
+	-add:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
 -have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 	-need to update all places that specify API types as singular to use real API type name
@@ -53,8 +55,8 @@ todo:
 	Get-XIOSlot | Get-XIOSsd
 	Get-XIOSnapshotSet | Get-XIOVolume
 	Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
-	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name untile adding support for "by IGrpID" when working on XIOSv4 things)
-	Get-XIOVolume | Get-XIOLunMap (just by Volume name untile adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name until adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIOVolume | Get-XIOLunMap (just by Volume name until adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
 		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 	## currently behaves unexpectedly when using something like:
@@ -196,6 +198,9 @@ doing:
 			-BrickIndex, BrickName -> Brick, a collection of objects with ID, Name, Index properties, instead of just the properties
 			-ClusterIndex, ClusterName -> Cluster, objects with ID, Name, Index properties, instead of just the properties
 			-RGrpId -> DataProtectionGrpId, the ID of the DataProtectionGroup (instead of an array of id/name/index)
+		On LunMap:
+			-MappingId -> LunMapId, the ID of the LunMap (instead of an array of id/name/index)
+			-MappingIndex -> Index, to have the standard property name used across other objects
 	-changed:
 		On DataProtectionGroup:
 			-added Guid
@@ -205,8 +210,10 @@ doing:
 		On Initiator:
 			-InitiatorId is now the unique identifier of the intiator, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
 			-added Guid, InitiatorGroup properties
+		On LunMap:
+			-Added LunMapId, that is the unique identifier of the folder; will eventually be the favored identifying property, over the deprecated MappingId property
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap
 -deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 	-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 	-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
