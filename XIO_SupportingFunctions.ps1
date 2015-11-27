@@ -518,6 +518,7 @@ function _New-ObjListFromProperty_byObjName {
 			InitiatorGroup = "InitiatorGrp"
 			Initiator = "Initiator"
 			Tag = "Tag"
+			TargetGroup = "TargetGrp"
 		} ## end hashtable
 		$strObjPrefixToUse = if ($hshObjNameToObjPrefixMap.ContainsKey($Name)) {$hshObjNameToObjPrefixMap[$Name]} else {"UnkItemType"}
 	} ## end begin
@@ -1156,11 +1157,14 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					Name = $oContent.name
 					PortAddress = $oContent."port-address"
+					PortMacAddress = ($oContent."port-mac-addr" -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
 					PortSpeed = $oContent."port-speed"
 					PortState = $oContent."port-state"
 					PortType = $oContent."port-type"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					DriverVersion = $oContent."driver-version"  ## renamed from "driver-version"
+					ErrorReason = $oContent."tar-error-reason"
 					FCIssue = New-Object -Type PSObject -Property ([ordered]@{
 						InvalidCrcCount = [int]$oContent."fc-invalid-crc-count"
 						LinkFailureCount = [int]$oContent."fc-link-failure-count"
@@ -1170,7 +1174,12 @@ function _New-Object_fromItemTypeAndContent {
 						PrimSeqProtErrCount = [int]$oContent."fc-prim-seq-prot-err-count"
 					}) ## end New-Object
 					FWVersion = $oContent."fw-version"  ## renamed from "fw-version"
+					Severity = $oContent."obj-severity"
+					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray (,$oContent."node-id")
+					TargetGroup = _New-ObjListFromProperty_byObjName -Name "TargetGroup" -ObjectArray (,$oContent."tg-id")
 					TargetGrpId = $oContent."tg-id"
+					TargetId = $oContent."tar-id"[0]
+					Guid = $oContent.guid
 					Index = $oContent.index
 					IOPS = [int64]$oContent.iops
 					JumboFrameEnabled = $oContent."jumbo-enabled"
@@ -1215,9 +1224,7 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
-					#UnalignedIOPS = [int64]$oContent."unaligned-iops"  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-					#AccSizeOfRdTB = $oContent."acc-size-of-rd" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-					#AccSizeOfWrTB = $oContent."acc-size-of-wr" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			## snapshots and volumes have the same properties

@@ -715,25 +715,29 @@ namespace XioItemInfo {
 		public Tag () {}
 	}
 
-	// Target
-	public class Target {
+	// Target (iSCSI/FC target)
+	public class Target : InfoBase {
+		public Object Brick;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
-		public String ComputerName;
 		public String DriverVersion;
+		public String ErrorReason;
 		public Object FCIssue;
 		public String FWVersion;
-		public Int32 Index;
 		public Int64 IOPS;
 		public Boolean JumboFrameEnabled;
 		public Int32 MTU;
-		public String Name;
 		public Object PerformanceInfo;
 		public String PortAddress;
+		public String PortMacAddress;
 		public String PortSpeed;
 		public String PortState;
 		public String PortType;
+		public Object StorageController;
+		public Object TargetGroup;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'TargetGroup' instead", false)]
 		public Object[] TargetGrpId;
-		public String Uri;
+		public String TargetId;
 
 		// Implicit constructor
 		public Target () {}

@@ -211,6 +211,9 @@ doing:
 		On StorageController:
 			-EnabledState -> Enabled, to have the standard property name and type used across other objects
 			-BiosFWVersion -> FWVersion, to have the standard property name used across other objects
+		On Target:
+			-BrickId -> Brick, an object with ID, Name, Index properties, instead of just the properties
+			-TargetGrpId -> TargetGroup, an object with ID, Name, Index properties, instead of just the properties
 	-changed:
 		On DataProtectionGroup:
 			-added Guid
@@ -227,10 +230,12 @@ doing:
 			-SsdId is now the unique identifier of the SSD, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
 		On StorageController:
 			-added DataProtectionGroup, IdLED, LifecycleState, PartNumber, StorageControllerId properties
+		On Target:
+			-added Brick, ErrorReason, PortMacAddress, StorageController, TargetGroup, TargetId properties
 
-	do:  snapshots, target-groups, targets, volume-folders, volumes, xenvs
+	do:  snapshots, target-groups, volume-folders, volumes, xenvs
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, SSD, StorageController
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, SSD, StorageController, Target
 		-also, deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
