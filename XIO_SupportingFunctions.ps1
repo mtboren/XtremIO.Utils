@@ -1065,10 +1065,13 @@ function _New-Object_fromItemTypeAndContent {
 					IBAddr2 = $oContent."ib-addr2"
 					IPMIAddr = $oContent."ipmi-addr"
 					BiosFWVersion = $oContent."bios-fw-version"
+					FWVersion = $oContent."bios-fw-version"
 					## hm, seems to be second item in the 'brick-id' property
 					BrickName = $oContent."brick-id".Item(1)
 					## hm, seems to be second item in the 'sys-id' property
 					Cluster = $oContent."sys-id".Item(1)
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
+					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
 					EncryptionMode = $oContent."encryption-mode"
@@ -1080,18 +1083,27 @@ function _New-Object_fromItemTypeAndContent {
 						HWRevision = $oContent."fc-hba-hw-revision"
 						Model = $oContent."fc-hba-model"
 					} ## end New-Object
+					Guid = $oContent.guid
 					HealthState = $oContent."node-health-state"
+					## no overall HWRevision property, but adding here so that can be a hardwarebase object
+					HWRevision = "n/a"
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
 					IPMIState = $oContent."ipmi-conn-state"
 					## available in 2.4.0 and up
 					JournalState = $oContent."journal-state"
+					LifecycleState = $oContent."fru-lifecycle-state"
 					## available in 2.4.0 and up
 					MgmtPortSpeed = $oContent."mgmt-port-speed"
 					## available in 2.4.0 and up
 					MgmtPortState = $oContent."mgmt-port-state"
+					## no overall model property, but adding here so that can be a hardwarebase object
+					Model = $null
 					NodeMgrConnState = $oContent."node-mgr-conn-state"
 					NumSSD = $oContent."num-of-ssds"
 					NumSSDDown = $oContent."ssd-dn"
 					NumTargetDown = $oContent."targets-dn"
+					PartNumber = $oContent."part-number"
 					PCI = New-Object -Type PSObject -Property ([ordered]@{
 						"10geHba" = New-Object -Type PSObject -Property @{
 							FWVersion = $oContent."pci-10ge-hba-fw-version"
@@ -1119,11 +1131,15 @@ function _New-Object_fromItemTypeAndContent {
 							PortState = $oContent."sas${_}-port-state"
 						}) ## end New-Object
 					}) ## end sub call
-					SerialNumber = $oContent."serial-number"
 					## available in 2.4.0 and up
 					SdrFWVersion = $oContent."sdr-fw-version"
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent."obj-severity"
+					StatusLED = $oContent."status-led"
+					StorageControllerId = $oContent."node-id"[0]
 					SWVersion = $oContent."sw-version"
 					OSVersion = $oContent."os-version"
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"target-groups" {

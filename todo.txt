@@ -10,6 +10,7 @@ todo:
 -add properties to objects (now available in XIOS v4):
 	-to LunMap:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
 	-to SSD:  certainty, *io-error*, num-bad-sectors, tag-list
+	-to StorageController:  more full InfinibandSwitch properties, DIMM health info, LocalDisk info; remove obsolete:  encryption* properties
 -have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 	-need to update all places that specify API types as singular to use real API type name
@@ -203,10 +204,13 @@ doing:
 			-MappingId -> LunMapId, the ID of the LunMap (instead of an array of id/name/index)
 			-MappingIndex -> Index, to have the standard property name used across other objects
 		On SSD:
-			-EnabledState -> Enabled, to have the standard property name used across other objects
+			-EnabledState -> Enabled, to have the standard property name and type used across other objects
 			-ModelName -> Model, to have the standard property name used across other objects
 			-ObjSeverity -> Severity, to have the standard property name used across other objects
 			-RGrpId -> DataProtectionGroup, objects with ID, Name, Index properties, instead of just the properties
+		On StorageController:
+			-EnabledState -> Enabled, to have the standard property name and type used across other objects
+			-BiosFWVersion -> FWVersion, to have the standard property name used across other objects
 	-changed:
 		On DataProtectionGroup:
 			-added Guid
@@ -221,12 +225,16 @@ doing:
 		On SSD:
 			-added DataProtectionGroup property
 			-SsdId is now the unique identifier of the SSD, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+		On StorageController:
+			-added DataProtectionGroup, IdLED, LifecycleState, PartNumber, StorageControllerId properties
+
+	do:  snapshots, target-groups, targets, volume-folders, volumes, xenvs
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, SSD
--deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
-	-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
-	-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
-	-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, SSD, StorageController
+		-also, deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
+			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
+			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
+			-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
 
 
 done for version 0.next (after v0.9.0):

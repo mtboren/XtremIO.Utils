@@ -623,11 +623,14 @@ namespace XioItemInfo {
 	// SsdPerformance (inherits from class PerformanceBase)
 	public class SsdPerformance : PerformanceBase {}
 
-	public class StorageController {
+	public class StorageController : HardwareBase {
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'FWVersion' instead", false)]
 		public String BiosFWVersion;
 		public String BrickName;
 		public String Cluster;
-		public String ComputerName;
+		public Object DataProtectionGroup;
+		public Boolean Enabled;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
 		public String EnabledState;
 		public String EncryptionMode;
 		public String EncryptionSwitchStatus;
@@ -641,7 +644,6 @@ namespace XioItemInfo {
 		public String MgmtPortSpeed;
 		public String MgmtPortState;
 		public String MgrAddr;
-		public String Name;
 		public String NodeMgrConnState;
 		public Int32 NumSSD;
 		public Int32 NumSSDDown;
@@ -652,16 +654,15 @@ namespace XioItemInfo {
 		public String RemoteJournalHealthState;
 		public Object[] SAS;
 		public String SdrFWVersion;
-		public String SerialNumber;
 		public String State;
+		public String StorageControllerId;
 		public String SWVersion;
-		public String Uri;
 
 		// Implicit constructor
 		public StorageController () {}
 	}
 
-	// XIO StorageController (inherits from class HardwareBase)
+	// XIO StorageControllerPsu
 	public class StorageControllerPsu : InfoBase {
 		public Object[] BrickId;
 		public Boolean Enabled;
