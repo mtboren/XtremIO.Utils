@@ -1243,6 +1243,7 @@ function _New-Object_fromItemTypeAndContent {
 					Folder = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray (,$oContent."folder-id")
 					LBSize = $oContent."lb-size"  ## renamed from "lb-size"
 					NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
+					NumLunMap = $oContent."num-of-lun-mappings"
 					NumLunMapping = $oContent."num-of-lun-mappings"
 					LunMapList = $oContent."lun-mapping-list" | Foreach-Object {
 						New-Object -Type PSObject -Property ([ordered]@{
