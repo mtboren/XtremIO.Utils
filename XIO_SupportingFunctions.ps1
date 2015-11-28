@@ -506,19 +506,20 @@ function _New-ObjListFromProperty_byObjName {
 	begin {
 		## mapping of "raw" object name from API to desired display name used for object ID prefix in subsequent helper function
 		$hshObjNameToObjPrefixMap = @{
-			Storagecontroller = "StorageController"
 			"Switch" = "IbSwitch"
-			SnapSet = "SnapshotSet"
-			Scheduler = "SnapshotScheduler"
-			Volume = "Vol"
 			Brick = "Brick"
 			Cluster = "Cluster"
 			ConsistencyGroup = "ConsistencyGrp"
 			DataProtectionGroup = "DataProtectionGrp"
-			InitiatorGroup = "InitiatorGrp"
+			Folder = "Folder"
 			Initiator = "Initiator"
+			InitiatorGroup = "InitiatorGrp"
+			Scheduler = "SnapshotScheduler"
+			SnapSet = "SnapshotSet"
+			Storagecontroller = "StorageController"
 			Tag = "Tag"
 			TargetGroup = "TargetGrp"
+			Volume = "Vol"
 		} ## end hashtable
 		$strObjPrefixToUse = if ($hshObjNameToObjPrefixMap.ContainsKey($Name)) {$hshObjNameToObjPrefixMap[$Name]} else {"UnkItemType"}
 	} ## end begin
@@ -1148,7 +1149,9 @@ function _New-Object_fromItemTypeAndContent {
 					Name = $oContent.name
 					Index = $oContent.index
 					ClusterName = $oContent."sys-id"[1]
-					TargetGrpId = $oContent."tg-id"
+					Guid = $oContent.guid
+					TargetGrpId = $oContent."tg-id"[0]
+					Severity = $oContent."obj-severity"
 					SysId = $oContent."sys-id"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1237,10 +1240,19 @@ function _New-Object_fromItemTypeAndContent {
 					AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
 					AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
 					DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
+					Folder = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray (,$oContent."folder-id")
 					LBSize = $oContent."lb-size"  ## renamed from "lb-size"
 					NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
 					NumLunMapping = $oContent."num-of-lun-mappings"
+					LunMapList = $oContent."lun-mapping-list" | Foreach-Object {
+						New-Object -Type PSObject -Property ([ordered]@{
+							InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$_[0])
+							TargetGroup = _New-ObjListFromProperty_byObjName -Name "TargetGroup" -ObjectArray (,$_[1])
+							LunId = $_[2]
+						}) ## end New-Object
+					} ## end foreach-object
 					LunMappingList = $oContent."lun-mapping-list"
+					Guid = $oContent.guid
 					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
 					InitiatorGrpIdList = @($oContent."lun-mapping-list" | Foreach-Object {$_[0][0]})
 					## available in 2.4.0 and up
@@ -1306,9 +1318,12 @@ function _New-Object_fromItemTypeAndContent {
 					UnalignedIOAlertsCfg = $oContent."unaligned-io-alerts"
 					VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
 					LuName = $oContent."lu-name"
+					Severity = $oContent."obj-severity"
 					SmallIORatio = $oContent."small-io-ratio"
 					SmallIORatioLevel = $oContent."small-io-ratio-level"
 					SnapGrpId = $oContent."snapgrp-id"
+					SnapshotType = $oContent."snapshot-type"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					UnalignedIORatio = $oContent."unaligned-io-ratio"
 					UnalignedIORatioLevel = $oContent."unaligned-io-ratio-level"
 					SysId = $oContent."sys-id"

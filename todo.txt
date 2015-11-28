@@ -214,6 +214,9 @@ doing:
 		On Target:
 			-BrickId -> Brick, an object with ID, Name, Index properties, instead of just the properties
 			-TargetGrpId -> TargetGroup, an object with ID, Name, Index properties, instead of just the properties
+		On Volume, Snapshot:
+			-LunMappingList -> LunMapList, which contains objects with InitiatorGroup, TargetGroup, and LunId info, instead of just lists of properties
+			-NumLunMapping -> NumLunMap, for naming consistency
 	-changed:
 		On DataProtectionGroup:
 			-added Guid
@@ -232,10 +235,14 @@ doing:
 			-added DataProtectionGroup, IdLED, LifecycleState, PartNumber, StorageControllerId properties
 		On Target:
 			-added Brick, ErrorReason, PortMacAddress, StorageController, TargetGroup, TargetId properties
+		On TargetGroup:
+			-TargetGrpId is now the unique identifier of the TargetGroup, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+		On Snapshot, Volume:
+			-added Folder, SnapshotType, TagList
 
-	do:  snapshots, target-groups, volume-folders, volumes, xenvs
+	do:  volume-folders, xenvs
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, SSD, StorageController, Target
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, Snapshot, SSD, StorageController, Target, TargetGroup, Volume
 		-also, deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/

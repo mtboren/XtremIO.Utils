@@ -743,15 +743,10 @@ namespace XioItemInfo {
 		public Target () {}
 	}
 
-	public class TargetGroup {
+	public class TargetGroup : InfoBase {
 		public String ClusterName;
-		public String ComputerName;
-		public Int32 Index;
-		public String Name;
 		public Object[] SysId;
-		public Object[] TargetGrpId;
-		public String Uri;
-		public Object[] XmsId;
+		public String TargetGrpId;
 
 		// Implicit constructor
 		public TargetGroup () {}
@@ -771,38 +766,40 @@ namespace XioItemInfo {
 		public UserAccount () {}
 	}
 
-	public class Volume {
+	public class Volume : InfoBase {
 		public Int32 AlignmentOffset;
 		public Object AncestorVolId;
 		public String Compressible;
-		public String ComputerName;
 		public DateTime CreationTime;
 		public Object DestSnapList;
-		public Int32 Index;
+		public Object Folder;
 		public String[] InitiatorGrpIdList;
 		public Int64 IOPS;
 		public Int32 LBSize;
 		public String LuName;
+		public Object LunMapList;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapList' instead", false)]
 		public Object LunMappingList;
 		public String NaaName;
-		public String Name;
 		public Int32 NumDestSnap;
+		public Int32 NumLunMap;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumLunMap' instead", false)]
 		public Int32 NumLunMapping;
 		public Object PerformanceInfo;
 		public String SmallIOAlertsCfg;
 		public String SmallIORatio;
 		public String SmallIORatioLevel;
 		public Object SnapGrpId;
+		public String SnapshotType;
 		public Object[] SysId;
+		public Object TagList;
 		public String UnalignedIOAlertsCfg;
 		public String UnalignedIORatio;
 		public String UnalignedIORatioLevel;
-		public String Uri;
 		public Double UsedLogicalTB;
 		public String VaaiTPAlertsCfg;
 		public String VolId;
 		public Double VolSizeTB;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public Volume () {}
