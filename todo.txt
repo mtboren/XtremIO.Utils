@@ -217,9 +217,16 @@ doing:
 		On Volume, Snapshot:
 			-LunMappingList -> LunMapList, which contains objects with InitiatorGroup, TargetGroup, and LunId info, instead of just lists of properties
 			-NumLunMapping -> NumLunMap, for naming consistency
+		On Xenv:
+			-BrickId -> Brick, an object with ID, Name, Index properties, instead of just the properties
+			-NumMdl -> NumModule, for more clear naming of property
 	-changed:
+		On Brick:
+			-added NumStorageController, StorageController properties
+		On Cluster:
+			-added Brick, InfiniBandSwitch properties
 		On DataProtectionGroup:
-			-added Guid
+			-added Brick, Cluster, DataProtectionGrpId, Guid,  properties
 		On IgFolder:
 			-FolderId is now the unique identifier of the folder, instead of the array of <id>,<name>,<index>; this is to align with the *Id properties of the rest of the objects in the module -- they are just the Id string value, not the array of all three properties. And, this <objType>Id property is essentially the Guid property of the object, but, older XIOS did not present the Guid property directly; so, <objType>Id and Guid values should be the same on objects from XIOS v4 and new; on objects from XIOS older than v3, the Guid property will be empty string
 			-SubfolderList now contains objects with subfolders' Id, Name, and Index info, instead of just lists of properties
@@ -230,22 +237,25 @@ doing:
 		On LunMap:
 			-added LunMapId, that is the unique identifier of the folder; will eventually be the favored identifying property, over the deprecated MappingId property
 		On SSD:
-			-added DataProtectionGroup property
 			-SsdId is now the unique identifier of the SSD, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+			-added DataProtectionGroup, Enabled, Model, Severity properties
 		On StorageController:
-			-added DataProtectionGroup, IdLED, LifecycleState, PartNumber, StorageControllerId properties
+			-added DataProtectionGroup, Enabled, FWVersion, IdLED, LifecycleState, PartNumber, StorageControllerId properties
 		On Target:
 			-added Brick, ErrorReason, PortMacAddress, StorageController, TargetGroup, TargetId properties
 		On TargetGroup:
 			-TargetGrpId is now the unique identifier of the TargetGroup, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
 		On Snapshot, Volume:
-			-added Folder, SnapshotType, TagList properties
+			-added Folder, LunMapList, NumLunMap, SnapshotType, TagList properties
 		On VolumeFolder:
 			-added Caption, ColorHex, CreationTime, ObjectType, SubfolderList properties
+		On Xenv:
+			-XenvId is now the unique identifier of the Xenv, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+			-added NumModule, StorageController properties
 
-	do:  xenvs
+	do:
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, Snapshot, SSD, StorageController, Target, TargetGroup, Volume, VolumeFolder
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, Snapshot, SSD, StorageController, Target, TargetGroup, Volume, VolumeFolder, Xenv
 		-also, deprecated EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/

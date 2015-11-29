@@ -835,17 +835,17 @@ namespace XioItemInfo {
 	// VolumePerformance (inherits from class PerformanceTotal)
 	public class VolumePerformance : PerformanceTotal {}
 
-	public class XEnv {
+	public class XEnv : InfoBase {
+		public Object Brick;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
-		public String ComputerName;
 		public Int32 CPUUsage;
-		public Int32 Index;
-		public String Name;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumModule' instead", false)]
 		public Int32 NumMdl;
-		public String Uri;
-		public Object[] XEnvId;
+		public Int32 NumModule;
+		public Object StorageController;
+		public String XEnvId;
 		public String XEnvState;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public XEnv () {}

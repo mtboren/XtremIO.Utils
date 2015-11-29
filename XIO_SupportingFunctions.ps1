@@ -1401,11 +1401,16 @@ function _New-Object_fromItemTypeAndContent {
 			"xenvs" {
 				[ordered]@{
 					Name = $oContent.name
+					Guid = $oContent.guid
 					Index = $oContent.index
 					CPUUsage = $oContent."cpu-usage"
 					NumMdl = $oContent."num-of-mdls"
+					NumModule = $oContent."num-of-mdls"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
-					XEnvId = $oContent."xenv-id"
+					Severity = $oContent."obj-severity"
+					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray (,$oContent."node-id")
+					XEnvId = $oContent."xenv-id"[0]
 					XEnvState = $oContent."xenv-state"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary

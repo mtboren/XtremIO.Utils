@@ -849,7 +849,7 @@
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Index</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>CPUUsage</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>NumMdl</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumModule</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>XEnvState</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
