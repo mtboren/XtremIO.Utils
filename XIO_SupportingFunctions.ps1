@@ -926,6 +926,8 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					Name = $oContent.name
 					Caption = $oContent.caption
+					ColorHex = $oContent.color
+					CreationTime = $(if ($null -ne $oContent."creation-time-long") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)})
 					Index = $oContent.index
 					## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
 					InitiatorGrpIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
@@ -933,6 +935,7 @@ function _New-Object_fromItemTypeAndContent {
 					Guid = $oContent.guid
 					NumIG = $oContent."num-of-direct-objs"
 					NumSubfolder = $oContent."num-of-subfolders"
+					ObjectType = $oContent."object-type"
 					ParentFolder = $oContent."parent-folder-id"[1]
 					ParentFolderId = $oContent."parent-folder-id"[0]
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
@@ -976,7 +979,7 @@ function _New-Object_fromItemTypeAndContent {
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
 					Severity = $oContent."obj-severity"
-					SubfolderList = $oContent."subfolder-list"
+					SubfolderList = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray $oContent."subfolder-list"
 					IOPS = [int64]$oContent.iops
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1333,14 +1336,20 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"volume-folders" {
 				[ordered]@{
+					Caption = $oContent.caption
+					ColorHex = $oContent.color
+					CreationTime = $(if ($null -ne $oContent."creation-time-long") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)})
 					Name = $oContent.name
 					ParentFolder = $oContent."parent-folder-id"[1]
 					NumVol = [int]$oContent."num-of-vols"
 					VolSizeTB = $oContent."vol-size" / 1GB
 					FolderId = $oContent."folder-id"[0]
+					Guid = $oContent.guid
 					ParentFolderId = $oContent."parent-folder-id"[0]
 					NumChild = [int]$oContent."num-of-direct-objs"
 					NumSubfolder = [int]$oContent."num-of-subfolders"
+					ObjectType = $oContent."object-type"
+					SubfolderList = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray $oContent."subfolder-list"
 					## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
 					VolIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
 					Index = [int]$oContent.index
@@ -1385,6 +1394,7 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					Severity = $oContent."obj-severity"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case

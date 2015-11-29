@@ -317,11 +317,14 @@ namespace XioItemInfo {
 	// Initiator Group Folder
 	public class IgFolder : InfoBase {
 		public String Caption;
+		public String ColorHex;
+		public System.Nullable<DateTime> CreationTime;
 		public String FolderId;
 		public String[] InitiatorGrpIdList;
 		public Int64 IOPS;
 		public Int32 NumIG;
 		public Int32 NumSubfolder;
+		public String ObjectType;
 		public String ParentFolder;
 		public String ParentFolderId;
 		public Object PerformanceInfo;
@@ -805,22 +808,22 @@ namespace XioItemInfo {
 		public Volume () {}
 	}
 
-	public class VolumeFolder {
-		public String ComputerName;
+	public class VolumeFolder : InfoBase {
+		public String Caption;
+		public String ColorHex;
+		public System.Nullable<DateTime> CreationTime;
 		public String FolderId;
-		public Int32 Index;
 		public Int64 IOPS;
-		public String Name;
 		public Int32 NumChild;
 		public Int32 NumSubfolder;
 		public Int32 NumVol;
+		public String ObjectType;
 		public String ParentFolder;
 		public String ParentFolderId;
 		public Object PerformanceInfo;
-		public String Uri;
+		public Object SubfolderList;
 		public String[] VolIdList;
 		public Double VolSizeTB;
-		public Object[] XmsId;
 
 		// Implicit constructor
 		public VolumeFolder () {}

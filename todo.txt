@@ -222,7 +222,8 @@ doing:
 			-added Guid
 		On IgFolder:
 			-FolderId is now the unique identifier of the folder, instead of the array of <id>,<name>,<index>; this is to align with the *Id properties of the rest of the objects in the module -- they are just the Id string value, not the array of all three properties. And, this <objType>Id property is essentially the Guid property of the object, but, older XIOS did not present the Guid property directly; so, <objType>Id and Guid values should be the same on objects from XIOS v4 and new; on objects from XIOS older than v3, the Guid property will be empty string
-			-added Guid
+			-SubfolderList now contains objects with subfolders' Id, Name, and Index info, instead of just lists of properties
+			-added Caption, ColorHex, CreationTime, Guid, ObjectType properties
 		On Initiator:
 			-InitiatorId is now the unique identifier of the intiator, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
 			-added Guid, InitiatorGroup properties
@@ -238,12 +239,14 @@ doing:
 		On TargetGroup:
 			-TargetGrpId is now the unique identifier of the TargetGroup, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
 		On Snapshot, Volume:
-			-added Folder, SnapshotType, TagList
+			-added Folder, SnapshotType, TagList properties
+		On VolumeFolder:
+			-added Caption, ColorHex, CreationTime, ObjectType, SubfolderList properties
 
-	do:  volume-folders, xenvs
+	do:  xenvs
 	doing:
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, Snapshot, SSD, StorageController, Target, TargetGroup, Volume
-		-also, deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, Snapshot, SSD, StorageController, Target, TargetGroup, Volume, VolumeFolder
+		-also, deprecated EnabledState property on SSDs and StorageControllers, add Enabled boolean property
 			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
 			-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
