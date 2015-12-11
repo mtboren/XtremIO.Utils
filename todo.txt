@@ -3,14 +3,14 @@ todo:
 	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
--add "normal" properties to API v1 objects (properties that are now on API v2 objects, where possible, like GUID and ID and whatnot)
 -reorg dir -- put module files into new subfolder, XtremIO.Utils
 	-include license file
 -?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
 -?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
--deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
-	-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
--add GUID property to non-v2 XIOInfoItem types
+-add properties to objects (now available in XIOS v4):
+	-to LunMap:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
+	-to SSD:  certainty, *io-error*, num-bad-sectors, tag-list
+	-to StorageController:  more full InfinibandSwitch properties, DIMM health info, LocalDisk info; remove obsolete:  encryption* properties
 -have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 	-need to update all places that specify API types as singular to use real API type name
@@ -57,8 +57,8 @@ todo:
 	Get-XIOSlot | Get-XIOSsd
 	Get-XIOSnapshotSet | Get-XIOVolume
 	Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
-	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name untile adding support for "by IGrpID" when working on XIOSv4 things)
-	Get-XIOVolume | Get-XIOLunMap (just by Volume name untile adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name until adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIOVolume | Get-XIOLunMap (just by Volume name until adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
 		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 	## currently behaves unexpectedly when using something like:
@@ -175,16 +175,19 @@ todo:
 -?add a Set-XIOUtilsConfiguration function to set things like the default port to use, and $true/$false for TrustAllCert
 -?add "if ($PsCmdlet.ShouldProcess())" portion to New-XIOVolume, around the New-XioItem call, so as to have better WhatIf output?
 -?add "small" and "unaligned" performance items, too? (available in xmcli)
+-address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  InitiatorGroupFolder objects have an IOPS property that may actually have no value, but that gets cast to an Int in the SupportingFunctions, and becomes "0" for the returned object
 -added URI property to Get-XIOItemInfo output objects; keep that?  Useful in pipeline times?
 -try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
 -once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
 	-not available as of XIOS v3.0.1
+-change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
+	-then, can more universally use that Guid in pipelining and whatnot
+
 
 
 
 
 doing:
-
 
 done for version 0.next (after v0.9.0):
 [bf_OpenXioMgmtConsole]
@@ -222,6 +225,77 @@ fix for use in PSv5 (throwing errors when invoking):
 		Get-XIOVolumePerformance
 	- difference in PSv5 in Where-Object result in function internals for creating the URL:
 		Get-XIOPerformanceCounter -- seemingly off/bad/different URL
+[feat_ImproveV1TypeDef]
+-add "normal" properties to API v1 objects (properties that are now on API v2 objects, where possible, like GUID and ID and whatnot)
+	-also, inherit from base classes where appropriate
+	-deprecated:
+		On Brick:
+			-NumNode -> NumStorageController
+			-NodeList -> StorageController, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+		On Cluster:
+			-BrickList -> Brick, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+			-InfiniBandSwitchList -> InfiniBandSwitch, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+		On DataProtectionGroup:
+			-BrickIndex, BrickName -> Brick, a collection of objects with ID, Name, Index properties, instead of just the properties
+			-ClusterIndex, ClusterName -> Cluster, objects with ID, Name, Index properties, instead of just the properties
+			-RGrpId -> DataProtectionGrpId, the ID of the DataProtectionGroup (instead of an array of id/name/index)
+		On LunMap:
+			-MappingId -> LunMapId, the ID of the LunMap (instead of an array of id/name/index)
+			-MappingIndex -> Index, to have the standard property name used across other objects
+		On SSD:
+			-EnabledState -> Enabled, to have the standard property name and type used across other objects
+			-ModelName -> Model, to have the standard property name used across other objects
+			-ObjSeverity -> Severity, to have the standard property name used across other objects
+			-RGrpId -> DataProtectionGroup, objects with ID, Name, Index properties, instead of just the properties
+		On StorageController:
+			-EnabledState -> Enabled, to have the standard property name and type used across other objects
+			-BiosFWVersion -> FWVersion, to have the standard property name used across other objects
+		On Target:
+			-BrickId -> Brick, an object with ID, Name, Index properties, instead of just the properties
+			-TargetGrpId -> TargetGroup, an object with ID, Name, Index properties, instead of just the properties
+		On Volume, Snapshot:
+			-LunMappingList -> LunMapList, which contains objects with InitiatorGroup, TargetGroup, and LunId info, instead of just lists of properties
+			-NumLunMapping -> NumLunMap, for naming consistency
+		On Xenv:
+			-BrickId -> Brick, an object with ID, Name, Index properties, instead of just the properties
+			-NumMdl -> NumModule, for more clear naming of property
+	-changed:
+		On Brick:
+			-added NumStorageController, StorageController properties
+		On Cluster:
+			-added Brick, InfiniBandSwitch properties
+		On DataProtectionGroup:
+			-added Brick, Cluster, DataProtectionGrpId, Guid,  properties
+		On IgFolder:
+			-FolderId is now the unique identifier of the folder, instead of the array of <id>,<name>,<index>; this is to align with the *Id properties of the rest of the objects in the module -- they are just the Id string value, not the array of all three properties. And, this <objType>Id property is essentially the Guid property of the object, but, older XIOS did not present the Guid property directly; so, <objType>Id and Guid values should be the same on objects from XIOS v4 and new; on objects from XIOS older than v3, the Guid property will be empty string
+			-SubfolderList now contains objects with subfolders' Id, Name, and Index info, instead of just lists of properties
+			-added Caption, ColorHex, CreationTime, Guid, ObjectType properties
+		On Initiator:
+			-InitiatorId is now the unique identifier of the intiator, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+			-added Guid, InitiatorGroup properties
+		On LunMap:
+			-added LunMapId, that is the unique identifier of the folder; will eventually be the favored identifying property, over the deprecated MappingId property
+		On SSD:
+			-SsdId is now the unique identifier of the SSD, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+			-added DataProtectionGroup, Enabled, Model, Severity properties
+		On StorageController:
+			-added DataProtectionGroup, Enabled, FWVersion, IdLED, LifecycleState, PartNumber, StorageControllerId properties
+		On Target:
+			-added Brick, ErrorReason, PortMacAddress, StorageController, TargetGroup, TargetId properties
+		On TargetGroup:
+			-TargetGrpId is now the unique identifier of the TargetGroup, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+		On Snapshot, Volume:
+			-added Folder, LunMapList, NumLunMap, SnapshotType, TagList properties
+		On VolumeFolder:
+			-added Caption, ColorHex, CreationTime, ObjectType, SubfolderList properties
+		On Xenv:
+			-XenvId is now the unique identifier of the Xenv, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+			-added NumModule, StorageController properties
+	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, Snapshot, SSD, StorageController, Target, TargetGroup, Volume, VolumeFolder, Xenv
+		-also, deprecated EnabledState property on SSDs and StorageControllers, add Enabled boolean property
+			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
+			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
+			-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
 
 ## things below here are in changelog/readme
 

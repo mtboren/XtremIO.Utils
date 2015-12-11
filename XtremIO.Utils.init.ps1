@@ -1,920 +1,908 @@
 Add-Type -TypeDefinition @"
-	namespace XioItemInfo {
-		// Alert (inherits from class InfoBase)
-		public class Alert : InfoBase {
-			public System.String AlertCode;
-			public System.String AlertType;
-			public System.String AssociatedObjId;
-			public System.String AssociatedObjIndex;
-			public System.String AssociatedObjName;
-			public System.String Class;
-			public System.String ClusterId;
-			public System.String ClusterName;
-			public System.DateTime CreationTime;
-			public System.String Description;
-			public System.String State;
-			public System.String Threshold;
-
-			// Implicit constructor
-			public Alert () {}
-		}
-
-		public class AlertDefinition : InfoBase {
-			public System.String AlertCode;
-			public System.String AlertType;
-			public System.String Class;
-			public System.String ClearanceMode;
-			public System.Boolean Enabled;
-			public System.Boolean SendToCallHome;
-			public System.String ThresholdType;
-			public System.Int32 ThresholdValue;
-			public System.Boolean UserModified;
-
-			// Implicit constructor
-			public AlertDefinition () {}
-		}
-
-		// XIO BBU (inherits from class HardwareBase)
-		public class BBU : HardwareBase {
-			public System.Object[] Battery;
-			public System.Int32 BatteryChargePct;
-			public System.String BBUId;
-			public System.Object[] BrickId;
-			public System.Boolean BypassActive;
-			public System.Boolean ConnectedToSC;
-			public System.String ClusterId;
-			public System.String ClusterName;
-			public System.Boolean Enabled;
-			public System.String FWVersionError;
-			public System.Int32 IndexInXbrick;
-			public System.String Input;
-			public System.Double InputHz;
-			public System.Int32 InputVoltage;
-			public System.Int32 LoadPct;
-			public System.String LoadPctLevel;
-			public System.String Outlet1Status;
-			public System.String Outlet2Status;
-			public System.Double OutputA;
-			public System.Double OutputHz;
-			public System.Double OutputVoltage;
-			public System.String PowerFeed;
-			public System.Int32 PowerW;
-			public System.Int32 RealPowerW;
-			public System.String Status;
-			public System.Object[] StorageController;
-			public System.Object TagList;
-			public System.String UPSAlarm;
-			public System.Boolean UPSOverloaded;
-			public System.Object[] SysId;
-
-			// Implicit constructor
-			public BBU () {}
-		}
-
-		// XIO Brick
-		public class Brick {
-			public System.Object[] BrickId;
-			public string BrickGuid;
-			public string ClusterName;
-			public string ComputerName;
-			public System.Int32 Index;
-			public string Name;
-			// Storage Controller info
-			public System.Object[] NodeList;
-			public System.Int32 NumNode;
-			public System.Int32 NumSSD;
-			// Data Protection Group info
-			public System.Object[] RGrpId;
-			// array of SSD Slot info items
-			public System.Object[] SsdSlotInfo;
-			public string State;
-			// URI of given object
-			public string Uri;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public Brick () {}
-		}
-
-		public class Cluster {
-			public System.Object[] BrickList;
-			public System.Decimal CompressionFactor;
-			public System.String CompressionMode;
-			public System.String ComputerName;
-			public System.String ConsistencyState;
-			public System.Decimal DataReduction;
-			public System.Decimal DedupeRatio;
-			public System.String EncryptionMode;
-			public System.Boolean EncryptionSupported;
-			public System.String FcPortSpeed;
-			public System.String FreespaceLevel;
-			public System.Double FreeSSDTB;
-			public System.Int32 Index;
-			public System.Object[] InfiniBandSwitchList;
-			public System.Int64 IOPS;
-			public System.String LicenseId;
-			public System.String NaaSysId;
-			public System.String Name;
-			public System.Int32 NumBrick;
-			public System.Int32 NumInfiniBandSwitch;
-			public System.Int32 NumSSD;
-			public System.Int32 NumVol;
-			public System.Int32 NumXenv;
-			public System.String OverallEfficiency;
-			public System.Object PerformanceInfo;
-			public System.String SharedMemEfficiencyLevel;
-			public System.String SharedMemInUseRatioLevel;
-			public System.String SizeAndCapacity;
-			public System.String SWVersion;
-			public System.DateTime SystemActivationDateTime;
-			public System.Int32 SystemActivationTimestamp;
-			public System.String SystemSN;
-			public System.String SystemState;
-			public System.String SystemStopType;
-			public System.Decimal ThinProvSavingsPct;
-			public System.Double TotProvTB;
-			public System.Double TotSSDTB;
-			public System.String Uri;
-			public System.Double UsedLogicalTB;
-			public System.Double UsedSSDTB;
-
-			// Implicit constructor
-			public Cluster() {}
-		}
-
-		// ClusterPerformance (inherits from class PerformanceTotal)
-		public class ClusterPerformance : PerformanceTotal {}
-
-		// ConsistencyGroup (inherits from InfoBase)
-		public class ConsistencyGroup : InfoBase {
-			public System.String Certainty;
-			public System.String ClusterId;
-			public System.String ClusterName;
-			public System.String ConsistencyGrpId;
-			public System.String ConsistencyGrpShortId;
-			public System.String CreatedByApp;
-			public System.Int32 NumVol;
-			public System.Object[] SysId;
-			public System.Object TagList;
-			public System.Object[] VolList;
-
-			// Implicit constructor
-			public ConsistencyGroup () {}
-		}
-
-		// XIO DAE (Disk Array Enclosure) (inherits from class HardwareBase)
-		public class DAE : HardwareBase {
-			public System.Object[] BrickId;
-			public System.String ClusterId;
-			public System.String ClusterName;
-			public System.String DAEId;
-			public System.Int32 NumDAEController;
-			public System.Int32 NumDAEPSU;
-			public System.String ReplacementReason;
-			public System.Object TagList;
-			public System.Object[] SysId;
-
-			// Implicit constructor
-			public DAE () {}
-		}
-
-		// XIO DAE (Disk Array Enclosure) PSU (inherits from class HardwareBase)
-		public class DAEPsu : HardwareBase {
-			public System.Object[] BrickId;
-			public System.Object[] DAE;
-			public System.String DAEPSUId;
-			public System.Boolean Enabled;
-			public System.String FWVersionError;
-			public System.String Identification;
-			public System.String Input;
-			public System.String Location;
-			public System.String PowerFailure;
-			public System.String PowerFeed;
-			public System.String ReplacementReason;
-			public System.Object[] SysId;
-
-			// Implicit constructor
-			public DAEPsu () {}
-		}
-
-		// XIO DAE Controller (inherits from class HardwareBase)
-		public class DAEController : HardwareBase {
-			public System.Object[] BrickId;
-			public System.String ConnectivityState;
-			public System.String ClusterId;
-			public System.String ClusterName;
-			public System.String DAEId;
-			public System.String DAEControllerId;
-			public System.Boolean Enabled;
-			public System.String FailureReason;
-			public System.String FWVersionError;
-			public System.String HealthLevel;
-			public System.String Identification;
-			public System.String Location;
-			public System.String ReplacementReason;
-			public System.Object[] SAS;
-			public System.Object[] SysId;
-
-			// Implicit constructor
-			public DAEController () {}
-		}
-
-		public class DataProtectionGroup {
-			public System.Int32 AvailableRebuild;
-			public System.Int32 BrickIndex;
-			public System.String BrickName;
-			public System.Int32 ClusterIndex;
-			public System.String ClusterName;
-			public System.String ComputerName;
-			public System.Int32 Index;
-			public System.Int64 IOPS;
-			public System.String Name;
-			public System.Int32 NumNode;
-			public System.Int32 NumSSD;
-			public System.Object PerformanceInfo;
-			public System.Boolean RebalanceInProg;
-			public System.Int32 RebalanceProgress;
-			public System.Boolean RebuildInProg;
-			public System.String RebuildPreventionReason;
-			public System.Int32 RebuildProgress;
-			public System.Object[] RGrpId;
-			public System.Boolean SSDPrepInProg;
-			public System.Int32 SSDPrepProgress;
-			public System.String State;
-			public System.Double TotSSDTB;
-			public System.String Uri;
-			public System.Double UsedSSDTB;
-			public System.Double UsefulSSDTB;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public DataProtectionGroup() {}
-		}
-
-		// DataProtectionGroupPerformance (inherits from class PerformanceBase)
-		public class DataProtectionGroupPerformance : PerformanceBase {}
-
-
-		// XIO Email Notifier
-		public class EmailNotifier {
-			public System.String CompanyName;
-			public System.String ContactDetails;
-			public System.Boolean Enabled;
-			public System.Int32 FrequencySec;
-			public System.String Guid;
-			public System.Int32 Index;
-			public System.String MailRelayAddress;
-			public System.String MailUsername;
-			public System.String Name;
-			public System.String ProxyAddress;
-			public System.String ProxyPort;
-			public System.String ProxyUser;
-			public System.String[] Recipient;
-			public System.String Severity;
-			public System.String TransportProtocol;
-			public System.String ComputerName;
-			public System.String Uri;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public EmailNotifier () {}
-		}
-
-		// XIO Events
-		public class Event {
-			public System.String Category;
-			public System.String ComputerName;
-			public System.DateTime DateTime;
-			public System.String Description;
-			public System.String EntityDetails;
-			public System.String EntityType;
-			public System.Int32 EventID;
-			public System.String RelAlertCode;
-			public System.String Severity;
-			public System.String Uri;
-
-			// Implicit constructor
-			public Event () {}
-		}
-
-		// general HardwareBase class (inherits from class InfoBase)
-		public class HardwareBase : InfoBase {
-			public System.String FWVersion;
-			public System.String HWRevision;
-			public System.String IdLED;
-			public System.String LifecycleState;
-			public System.String Model;
-			public System.String PartNumber;
-			public System.String SerialNumber;
-			public System.String StatusLED;
-
-			// Implicit constructor
-			public HardwareBase() {}
-		}
-
-		// Initiator Group Folder
-		public class IgFolder {
-			public System.String Caption;
-			public System.String ComputerName;
-			public System.Object FolderId;
-			public System.Int32 Index;
-			public System.String[] InitiatorGrpIdList;
-			public System.Int64 IOPS;
-			public System.String Name;
-			public System.Int32 NumIG;
-			public System.Int32 NumSubfolder;
-			public System.String ParentFolder;
-			public System.String ParentFolderId;
-			public System.Object PerformanceInfo;
-			public System.Object SubfolderList;
-			public System.String Uri;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public IgFolder () {}
-		}
-
-		// InfiniBand Switch (inherits from class HardwareBase)
-		public class InfinibandSwitch : HardwareBase {
-			public System.Boolean Enabled;
-			public System.Int32 Fan1RPM;
-			public System.Int32 Fan2RPM;
-			public System.Int32 Fan3RPM;
-			public System.Int32 Fan4RPM;
-			public System.String FanDrawerStatus;
-			public System.String FWVersionError;
-			public System.String IbSwitchId;
-			public System.String InterswitchIb1Port;
-			public System.String InterswitchIb2Port;
-			public System.Object[] Port;
-			public System.String ReplacementReason;
-			public System.Object[] SysId;
-			public System.Object TagList;
-			public System.Object[] TemperatureSensor;
-			public System.Object[] VoltageSensor;
-			public System.String WrongSCConnection;
-
-			// Implicit constructor
-			public InfinibandSwitch () {}
-		}
-
-		// general InfoBase class
-		public class InfoBase {
-			public System.String ComputerName;
-			public System.String Guid;
-			public System.Int32 Index;
-			public System.String Name;
-			public System.String Severity;
-			public System.String Uri;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public InfoBase() {}
-		}
-
-		// Initiator Group Folder Performance (inherits from class PerformanceTotal)
-		public class IgFolderPerformance : PerformanceTotal {}
-
-		public class Initiator {
-			public System.String ComputerName;
-			public System.String ConnectionState;
-			public System.Int32 Index;
-			public System.String InitiatorGrpId;
-			public System.Object[] InitiatorId;
-			public System.Int64 IOPS;
-			public System.String Name;
-			public System.Object PerformanceInfo;
-			public System.String PortAddress;
-			public System.String PortType;
-			public System.String Uri;
-
-			// Implicit constructor
-			public Initiator () {}
-		}
-
-		public class InitiatorGroup {
-			public System.String ComputerName;
-			public System.Int32 Index;
-			public System.String InitiatorGrpId;
-			public System.Int64 IOPS;
-			public System.String Name;
-			public System.Int32 NumInitiator;
-			public System.Int32 NumVol;
-			public System.Object PerformanceInfo;
-			public System.String Uri;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public InitiatorGroup () {}
-		}
-
-		// InitiatorGroupPerformance (inherits from class PerformanceTotal)
-		public class InitiatorGroupPerformance : PerformanceTotal {}
-
-		// InitiatorPerformance (inherits from class PerformanceTotal)
-		public class InitiatorPerformance : PerformanceTotal {}
-
-		// LDAP Config (inherits from class InfoBase)
-		public class LdapConfig : InfoBase {
-			public System.String BindDN;
-			public System.String CACertData;
-			public System.String CACertFile;
-			public System.Int32 CacheExpireH;
-			public System.String[] Role;
-			public System.String SearchBaseDN;
-			public System.String SearchFilter;
-			public System.String[] ServerUrl;
-			public System.String[] ServerUrlExample;
-			public System.Int32 TimeoutSec;
-			public System.String UserToDnRule;
-
-			// Implicit constructor
-			public LdapConfig () {}
-		}
-
-		// XIO LocalDisk in StorageControllers (inherits from class HardwareBase)
-		public class LocalDisk : HardwareBase {
-			public System.Object[] BrickId;
-			public System.String ClusterId;
-			public System.String ClusterName;
-			public System.Boolean Enabled;
-			public System.String EncryptionStatus;
-			public System.String ExpectedType;
-			public System.String FailureReason;
-			public System.String FWVersionError;
-			public System.String LocalDiskId;
-			public System.Int32 NumBadSector;
-			public System.String Purpose;
-			public System.String ReplacementReason;
-			public System.Int32 SlotNum;
-			public System.String StorageControllerId;
-			public System.String StorageControllerName;
-			public System.Object[] SysId;
-			public System.Object TagList;
-			public System.String Type;
-			public System.String Wwn;
-
-			// Implicit constructor
-			public LocalDisk () {}
-		}
-
-		public class LunMap {
-			public System.String ComputerName;
-			public System.String InitiatorGroup;
-			public System.Int32 InitiatorGrpIndex;
-			public System.Int32 LunId;
-			public System.Object[] MappingId;
-			public System.Int32 MappingIndex;
-			public System.Int32 TargetGrpIndex;
-			public System.String TargetGrpName;
-			public System.String Uri;
-			public System.Int32 VolumeIndex;
-			public System.String VolumeName;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public LunMap () {}
-		}
-
-		// general PerformanceBase class
-		public class PerformanceBase {
-			public System.Double BW_MBps;
-			public System.String ComputerName;
-			public System.Int32 Index;
-			public System.Int64 IOPS;
-			public System.String Name;
-			public System.Double ReadBW_MBps;
-			public System.Int32 ReadIOPS;
-			public System.Double WriteBW_MBps;
-			public System.Int32 WriteIOPS;
-
-			// Implicit constructor
-			public PerformanceBase() {}
-		}
-
-		// PerformanceCounter class
-		public class PerformanceCounter {
-			public System.String Name;
-			public System.Object[] Counters;
-			public System.DateTime DateTime;
-			public XioItemInfo.Enums.PerfCounter.EntityType EntityType;
-			public XioItemInfo.Enums.PerfCounter.Granularity Granularity;
-			public System.String Guid;
-			public System.Int32 Index;
-			public System.String ComputerName;
-			public System.String Uri;
-
-			// Implicit constructor
-			public PerformanceCounter() {}
-		}
-
-		// Performance class with Totals (inherits from class PerformanceBase)
-		public class PerformanceTotal : PerformanceBase {
-			public System.Int64 TotReadIOs;
-			public System.Int64 TotWriteIOs;
-		}
-
-		// Snapshot Scheduler
-		public class SnapshotScheduler {
-			public System.String Name;
-			public System.Boolean Enabled;
-			public System.String Guid;
-			public System.Int32 Index;
-			public System.DateTime? LastActivated;
-			public System.String LastActivationResult;
-			public System.Int32 NumSnapToKeep;
-			public System.TimeSpan Retain;
-			public System.String Schedule;
-			public System.Object SnappedObject;
-			public System.String SnapshotSchedulerId;
-			public System.String SnapType;
-			public System.String State;
-			public System.String Suffix;
-			public System.String Type;
-			public System.String ComputerName;
-			public System.String Uri;
-
-			// Implicit constructor
-			public SnapshotScheduler () {}
-		}
-
-		// Snapshot (inherits Volume class)
-		public class Snapshot : Volume {}
-
-		// SnapshotSet (inherits from InfoBase)
-		public class SnapshotSet : InfoBase {
-			public System.String ClusterId;
-			public System.String ClusterName;
-			public System.String ConsistencyGrpId;
-			public System.String ConsistencyGrpName;
-			public System.DateTime CreationTime;
-			public System.Int32 NumVol;
-			public System.String SnapshotSetId;
-			public System.String SnapshotSetShortId;
-			public System.Object[] SysId;
-			public System.Object TagList;
-			public System.Object[] VolList;
-
-			// Implicit constructor
-			public SnapshotSet () {}
-		}
-
-		// SNMP Notifier (inherits from class InfoBase)
-		public class SnmpNotifier : InfoBase {
-			public System.String AuthProtocol;
-			public System.String Community;
-			public System.Boolean Enabled;
-			public System.Int32 HeartbeatFreqSec;
-			public System.Int32 Port;
-			public System.String PrivacyProtocol;
-			public System.String[] Recipient;
-			public System.String SNMPVersion;
-			public System.String Username;
-
-			// Implicit constructor
-			public SnmpNotifier () {}
-		}
-
-		// Slot (inherits from class InfoBase)
-		public class Slot : InfoBase {
-			public System.Object[] BrickId;
-			public System.String ErrorReason;
-			public System.String FailureReason;
-			public System.String SsdModel;
-			public System.Int32 SlotNum;
-			public System.String SsdId;
-			public System.Double SsdSizeGB;
-			public System.String SsdUid;
-			public System.String State;
-			public System.Object[] SysId;
-
-			// Implicit constructor
-			public Slot () {}
-		}
-
-		// SSD
-		public class Ssd {
-			public System.Object[] BrickId;
-			public System.Double CapacityGB;
-			public System.String ComputerName;
-			public System.String DiagHealthState;
-			public System.String EnabledState;
-			public System.String EncryptionStatus;
-			public System.String FWVersion;
-			public System.String FWVersionError;
-			public System.String HealthState;
-			public System.String HWRevision;
-			public System.String IdLED;
-			public System.Int32 Index;
-			public System.Int64 IOPS;
-			public System.String LifecycleState;
-			public System.String ModelName;
-			public System.String Name;
-			public System.String ObjSeverity;
-			public System.String PartNumber;
-			public System.Int32 PctEnduranceLeft;
-			public System.String PctEnduranceLeftLvl;
-			public System.Object PerformanceInfo;
-			public System.Object[] RGrpId;
-			public System.String SerialNumber;
-			public System.Int32 SlotNum;
-			public System.String SSDFailureReason;
-			public System.Object[] SsdId;
-			public System.String SSDLink1Health;
-			public System.String SSDLink2Health;
-			public System.String SSDPositionState;
-			public System.String SsdRGrpState;
-			public System.String SsdUid;
-			public System.String StatusLED;
-			public System.String SwapLED;
-			public System.Object[] SysId;
-			public System.String Uri;
-			public System.Double UsedGB;
-			public System.Double UsefulGB;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public Ssd () {}
-		}
-
-		// SsdPerformance (inherits from class PerformanceBase)
-		public class SsdPerformance : PerformanceBase {}
-
-		public class StorageController {
-			public System.String BiosFWVersion;
-			public System.String BrickName;
-			public System.String Cluster;
-			public System.String ComputerName;
-			public System.String EnabledState;
-			public System.String EncryptionMode;
-			public System.String EncryptionSwitchStatus;
-			public System.Object FcHba;
-			public System.String HealthState;
-			public System.String IBAddr1;
-			public System.String IBAddr2;
-			public System.String IPMIAddr;
-			public System.String IPMIState;
-			public System.String JournalState;
-			public System.String MgmtPortSpeed;
-			public System.String MgmtPortState;
-			public System.String MgrAddr;
-			public System.String Name;
-			public System.String NodeMgrConnState;
-			public System.Int32 NumSSD;
-			public System.Int32 NumSSDDown;
-			public System.Int32 NumTargetDown;
-			public System.String OSVersion;
-			public System.Object PCI;
-			public System.String PoweredState;
-			public System.String RemoteJournalHealthState;
-			public System.Object[] SAS;
-			public System.String SdrFWVersion;
-			public System.String SerialNumber;
-			public System.String State;
-			public System.String SWVersion;
-			public System.String Uri;
-
-			// Implicit constructor
-			public StorageController () {}
-		}
-
-		// XIO StorageController (inherits from class HardwareBase)
-		public class StorageControllerPsu : InfoBase {
-			public System.Object[] BrickId;
-			public System.Boolean Enabled;
-			public System.String FWVersionError;
-			public System.String HWRevision;
-			public System.String Input;
-			public System.String LifecycleState;
-			public System.String Location;
-			public System.String Model;
-			public System.String PartNumber;
-			public System.String PowerFailure;
-			public System.String PowerFeed;
-			public System.String ReplacementReason;
-			public System.String SerialNumber;
-			public System.String StatusLED;
-			public System.Object[] StorageController;
-			public System.String StorageControllerPSUId;
-			public System.Object[] SysId;
-
-			// Implicit constructor
-			public StorageControllerPsu () {}
-		}
-
-		// SyslogNotifier (inherits from class InfoBase)
-		public class SyslogNotifier : InfoBase {
-			public System.Boolean Enabled;
-			public System.String SyslogNotifierId;
-			public System.String[] Target;
-
-			// Implicit constructor
-			public SyslogNotifier () {}
-		}
-
-		// Tag (inherits from class InfoBase)
-		public class Tag : InfoBase {
-			public System.String Caption;
-			public System.Object ChildTagList;
-			public System.String ColorHex;
-			public System.DateTime CreationTime;
-			public System.Object DirectObjectList;
-			public System.Int32 NumChildTag;
-			public System.Int32 NumDirectObject;
-			public System.Int32 NumItem;
-			public System.Object ObjectList;
-			public System.String ObjectType;
-			public System.Object ParentTag;
-			public System.String TagId;
-
-			// Implicit constructor
-			public Tag () {}
-		}
-
-		// Target
-		public class Target {
-			public System.Object[] BrickId;
-			public System.String ComputerName;
-			public System.String DriverVersion;
-			public System.Object FCIssue;
-			public System.String FWVersion;
-			public System.Int32 Index;
-			public System.Int64 IOPS;
-			public System.Boolean JumboFrameEnabled;
-			public System.Int32 MTU;
-			public System.String Name;
-			public System.Object PerformanceInfo;
-			public System.String PortAddress;
-			public System.String PortSpeed;
-			public System.String PortState;
-			public System.String PortType;
-			public System.Object[] TargetGrpId;
-			public System.String Uri;
-
-			// Implicit constructor
-			public Target () {}
-		}
-
-		public class TargetGroup {
-			public System.String ClusterName;
-			public System.String ComputerName;
-			public System.Int32 Index;
-			public System.String Name;
-			public System.Object[] SysId;
-			public System.Object[] TargetGrpId;
-			public System.String Uri;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public TargetGroup () {}
-		}
-
-		// TargetPerformance (inherits from class PerformanceTotal)
-		public class TargetPerformance : PerformanceTotal {}
-
-		// User Account (inherits from class InfoBase)
-		public class UserAccount : InfoBase {
-			public System.Int32 InactivityTimeoutMin;
-			public System.Boolean IsExternal;
-			public System.String Role;
-			public System.String UserAccountId;
-
-			// Implicit constructor
-			public UserAccount () {}
-		}
-
-		public class Volume {
-			public System.Int32 AlignmentOffset;
-			public System.Object AncestorVolId;
-			public System.String Compressible;
-			public System.String ComputerName;
-			public System.DateTime CreationTime;
-			public System.Object DestSnapList;
-			public System.Int32 Index;
-			public System.String[] InitiatorGrpIdList;
-			public System.Int64 IOPS;
-			public System.Int32 LBSize;
-			public System.String LuName;
-			public System.Object LunMappingList;
-			public System.String NaaName;
-			public System.String Name;
-			public System.Int32 NumDestSnap;
-			public System.Int32 NumLunMapping;
-			public System.Object PerformanceInfo;
-			public System.String SmallIOAlertsCfg;
-			public System.String SmallIORatio;
-			public System.String SmallIORatioLevel;
-			public System.Object SnapGrpId;
-			public System.Object[] SysId;
-			public System.String UnalignedIOAlertsCfg;
-			public System.String UnalignedIORatio;
-			public System.String UnalignedIORatioLevel;
-			public System.String Uri;
-			public System.Double UsedLogicalTB;
-			public System.String VaaiTPAlertsCfg;
-			public System.String VolId;
-			public System.Double VolSizeTB;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public Volume () {}
-		}
-
-		public class VolumeFolder {
-			public System.String ComputerName;
-			public System.String FolderId;
-			public System.Int32 Index;
-			public System.Int64 IOPS;
-			public System.String Name;
-			public System.Int32 NumChild;
-			public System.Int32 NumSubfolder;
-			public System.Int32 NumVol;
-			public System.String ParentFolder;
-			public System.String ParentFolderId;
-			public System.Object PerformanceInfo;
-			public System.String Uri;
-			public System.String[] VolIdList;
-			public System.Double VolSizeTB;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public VolumeFolder () {}
-		}
-
-		// VolumeFolderPerformance (inherits from class PerformanceTotal)
-		public class VolumeFolderPerformance : PerformanceTotal {}
-
-		// VolumePerformance (inherits from class PerformanceTotal)
-		public class VolumePerformance : PerformanceTotal {}
-
-		public class XEnv {
-			public System.Object[] BrickId;
-			public System.String ComputerName;
-			public System.Int32 CPUUsage;
-			public System.Int32 Index;
-			public System.String Name;
-			public System.Int32 NumMdl;
-			public System.String Uri;
-			public System.Object[] XEnvId;
-			public System.String XEnvState;
-			public System.Object[] XmsId;
-
-			// Implicit constructor
-			public XEnv () {}
-		}
-
-		// XMS itself (inherits from class InfoBase)
-		public class XMS : InfoBase {
-			public System.Int32 BuildNumber;
-			public System.Object[] Config;
-			public System.String DiskSpaceUtilizationLevel;
-			public System.String DiskSpaceSecUtilizationLevel;
-			public System.Version DBVersion;
-			public System.Object[] EventlogInfo;
-			public System.String IPVersion;
-			public System.String ISO8601DateTime;
-			public System.Double LogSizeTotalGB;
-			public System.Double MemoryTotalGB;
-			public System.Double MemoryUsageGB;
-			public System.String MemoryUtilizationLevel;
-			public System.Int32 NumCluster;
-			public System.Int32 NumInitiatorGroup;
-			public System.Int32 NumIscsiRoute;
-			public System.Double OverallEfficiency;
-			public System.Version RestApiVersion;
-			public System.String ServerName;
-			public System.String SWVersion;
-			public System.Int32 ThinProvSavingsPct;
-			public System.Version Version;
-			public System.Object[] PerformanceInfo;
-
-			// Implicit constructor
-			public XMS () {}
-		}
-
-		// connection to XMS appliance
-		public class XioConnection {
-			public System.String ComputerName;
-			public System.DateTime ConnectDatetime;
-			public System.Management.Automation.PSCredential Credential;
-			public System.Int32 Port;
-			public System.Version RestApiVersion;
-			public System.Boolean TrustAllCert;
-			public System.Version XmsDBVersion;
-			public System.String XmsSWVersion;
-			public System.Version XmsVersion;
-
-			// Implicit constructor
-			public XioConnection () {}
-		}
-	} // end namespace
-
-	// Enumerations
-	namespace XioItemInfo.Enums.PerfCounter {
-		public enum AggregationType {avg, min, max}
-		//public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
-		public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Target, TargetGroup, Volume, XEnv, Xms}
-		public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
-		public enum TimeFrame {real_time, last_hour, last_day, last_week, last_year}
-	} // end namespace
+using System;
+namespace XioItemInfo {
+	// Alert (inherits from class InfoBase)
+	public class Alert : InfoBase {
+		public String AlertCode;
+		public String AlertType;
+		public String AssociatedObjId;
+		public String AssociatedObjIndex;
+		public String AssociatedObjName;
+		public String Class;
+		public String ClusterId;
+		public String ClusterName;
+		public DateTime CreationTime;
+		public String Description;
+		public String State;
+		public String Threshold;
+
+		// Implicit constructor
+		public Alert () {}
+	}
+
+	public class AlertDefinition : InfoBase {
+		public String AlertCode;
+		public String AlertType;
+		public String Class;
+		public String ClearanceMode;
+		public Boolean Enabled;
+		public Boolean SendToCallHome;
+		public String ThresholdType;
+		public Int32 ThresholdValue;
+		public Boolean UserModified;
+
+		// Implicit constructor
+		public AlertDefinition () {}
+	}
+
+	// XIO BBU (inherits from class HardwareBase)
+	public class BBU : HardwareBase {
+		public Object[] Battery;
+		public Int32 BatteryChargePct;
+		public String BBUId;
+		public Object[] BrickId;
+		public Boolean BypassActive;
+		public Boolean ConnectedToSC;
+		public String ClusterId;
+		public String ClusterName;
+		public Boolean Enabled;
+		public String FWVersionError;
+		public Int32 IndexInXbrick;
+		public String Input;
+		public Double InputHz;
+		public Int32 InputVoltage;
+		public Int32 LoadPct;
+		public String LoadPctLevel;
+		public String Outlet1Status;
+		public String Outlet2Status;
+		public Double OutputA;
+		public Double OutputHz;
+		public Double OutputVoltage;
+		public String PowerFeed;
+		public Int32 PowerW;
+		public Int32 RealPowerW;
+		public String Status;
+		public Object[] StorageController;
+		public Object TagList;
+		public String UPSAlarm;
+		public Boolean UPSOverloaded;
+		public Object[] SysId;
+
+		// Implicit constructor
+		public BBU () {}
+	}
+
+	// XIO Brick
+	public class Brick : InfoBase {
+		public Object[] BrickId;
+		public string BrickGuid;
+		public string ClusterName;
+		public Object[] DataProtectionGroup;
+		// Storage Controller info -- deprecated
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'StorageController' instead", false)]
+		public Object[] NodeList { get; set; }
+		// Num Storage Controller -- deprecated
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumStorageController' instead", false)]
+		public Int32 NumNode { get; set; }
+		public Int32 NumSSD;
+		public Int32 NumStorageController;
+		// Data Protection Group info -- deprecated
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGroup' instead", false)]
+		public Object[] RGrpId;
+		// array of SSD Slot info items
+		public Object[] SsdSlotInfo;
+		public Object[] StorageController;
+		public string State;
+
+		// Implicit constructor
+		public Brick () {}
+	}
+
+	public class Cluster : InfoBase {
+		public Object[] Brick;
+		// Brick list info -- deprecated
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
+		public Object[] BrickList;
+		public String ClusterId;
+		public Decimal CompressionFactor;
+		public String CompressionMode;
+		public String ConsistencyState;
+		public Decimal DataReduction;
+		public Decimal DedupeRatio;
+		public String EncryptionMode;
+		public Boolean EncryptionSupported;
+		public String FcPortSpeed;
+		public String FreespaceLevel;
+		public Double FreeSSDTB;
+		public Object[] InfinibandSwitch;
+		// InfinibandSwitch list info -- deprecated
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'InfinibandSwitch' instead", false)]
+		public Object[] InfiniBandSwitchList;
+		public Int64 IOPS;
+		public String LicenseId;
+		public String NaaSysId;
+		public Int32 NumBrick;
+		public Int32 NumInfiniBandSwitch;
+		public Int32 NumSSD;
+		public Int32 NumVol;
+		public Int32 NumXenv;
+		public String OverallEfficiency;
+		public Object PerformanceInfo;
+		public String SharedMemEfficiencyLevel;
+		public String SharedMemInUseRatioLevel;
+		public String SizeAndCapacity;
+		public String SWVersion;
+		public DateTime SystemActivationDateTime;
+		public Int32 SystemActivationTimestamp;
+		public String SystemSN;
+		public String SystemState;
+		public String SystemStopType;
+		public Decimal ThinProvSavingsPct;
+		public Double TotProvTB;
+		public Double TotSSDTB;
+		public Double UsedLogicalTB;
+		public Double UsedSSDTB;
+
+		// Implicit constructor
+		public Cluster() {}
+	}
+
+	// ClusterPerformance (inherits from class PerformanceTotal)
+	public class ClusterPerformance : PerformanceTotal {}
+
+	// ConsistencyGroup (inherits from InfoBase)
+	public class ConsistencyGroup : InfoBase {
+		public String Certainty;
+		public String ClusterId;
+		public String ClusterName;
+		public String ConsistencyGrpId;
+		public String ConsistencyGrpShortId;
+		public String CreatedByApp;
+		public Int32 NumVol;
+		public Object[] SysId;
+		public Object TagList;
+		public Object[] VolList;
+
+		// Implicit constructor
+		public ConsistencyGroup () {}
+	}
+
+	// XIO DAE (Disk Array Enclosure) (inherits from class HardwareBase)
+	public class DAE : HardwareBase {
+		public Object[] BrickId;
+		public String ClusterId;
+		public String ClusterName;
+		public String DAEId;
+		public Int32 NumDAEController;
+		public Int32 NumDAEPSU;
+		public String ReplacementReason;
+		public Object TagList;
+		public Object[] SysId;
+
+		// Implicit constructor
+		public DAE () {}
+	}
+
+	// XIO DAE (Disk Array Enclosure) PSU (inherits from class HardwareBase)
+	public class DAEPsu : HardwareBase {
+		public Object[] BrickId;
+		public Object[] DAE;
+		public String DAEPSUId;
+		public Boolean Enabled;
+		public String FWVersionError;
+		public String Identification;
+		public String Input;
+		public String Location;
+		public String PowerFailure;
+		public String PowerFeed;
+		public String ReplacementReason;
+		public Object[] SysId;
+
+		// Implicit constructor
+		public DAEPsu () {}
+	}
+
+	// XIO DAE Controller (inherits from class HardwareBase)
+	public class DAEController : HardwareBase {
+		public Object[] BrickId;
+		public String ConnectivityState;
+		public String ClusterId;
+		public String ClusterName;
+		public String DAEId;
+		public String DAEControllerId;
+		public Boolean Enabled;
+		public String FailureReason;
+		public String FWVersionError;
+		public String HealthLevel;
+		public String Identification;
+		public String Location;
+		public String ReplacementReason;
+		public Object[] SAS;
+		public Object[] SysId;
+
+		// Implicit constructor
+		public DAEController () {}
+	}
+
+	public class DataProtectionGroup : InfoBase {
+		public Int32 AvailableRebuild;
+		public Object Brick;
+		// Brick info -- deprecated
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
+		public Int32 BrickIndex;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
+		public String BrickName;
+		public Object Cluster;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
+		public Int32 ClusterIndex;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
+		public String ClusterName;
+		public String DataProtectionGrpId;
+		public Int64 IOPS;
+		public Int32 NumNode;
+		public Int32 NumSSD;
+		public Object PerformanceInfo;
+		public Boolean RebalanceInProg;
+		public Int32 RebalanceProgress;
+		public Boolean RebuildInProg;
+		public String RebuildPreventionReason;
+		public Int32 RebuildProgress;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGrpId' instead", false)]
+		public Object[] RGrpId;
+		public Boolean SSDPrepInProg;
+		public Int32 SSDPrepProgress;
+		public String State;
+		public Double TotSSDTB;
+		public Double UsedSSDTB;
+		public Double UsefulSSDTB;
+
+		// Implicit constructor
+		public DataProtectionGroup() {}
+	}
+
+	// DataProtectionGroupPerformance (inherits from class PerformanceBase)
+	public class DataProtectionGroupPerformance : PerformanceBase {}
+
+
+	// XIO Email Notifier
+	public class EmailNotifier : InfoBase {
+		public String CompanyName;
+		public String ContactDetails;
+		public Boolean Enabled;
+		public Int32 FrequencySec;
+		public String MailRelayAddress;
+		public String MailUsername;
+		public String ProxyAddress;
+		public String ProxyPort;
+		public String ProxyUser;
+		public String[] Recipient;
+		public String TransportProtocol;
+
+		// Implicit constructor
+		public EmailNotifier () {}
+	}
+
+	// XIO Events
+	public class Event {
+		public String Category;
+		public String ComputerName;
+		public DateTime DateTime;
+		public String Description;
+		public String EntityDetails;
+		public String EntityType;
+		public Int32 EventID;
+		public String RelAlertCode;
+		public String Severity;
+		public String Uri;
+
+		// Implicit constructor
+		public Event () {}
+	}
+
+	// general HardwareBase class (inherits from class InfoBase)
+	public class HardwareBase : InfoBase {
+		public String FWVersion;
+		public String HWRevision;
+		public String IdLED;
+		public String LifecycleState;
+		public String Model;
+		public String PartNumber;
+		public String SerialNumber;
+		public String StatusLED;
+
+		// Implicit constructor
+		public HardwareBase() {}
+	}
+
+	// Initiator Group Folder
+	public class IgFolder : InfoBase {
+		public String Caption;
+		public String ColorHex;
+		public System.Nullable<DateTime> CreationTime;
+		public String FolderId;
+		public String[] InitiatorGrpIdList;
+		public Int64 IOPS;
+		public Int32 NumIG;
+		public Int32 NumSubfolder;
+		public String ObjectType;
+		public String ParentFolder;
+		public String ParentFolderId;
+		public Object PerformanceInfo;
+		public Object SubfolderList;
+
+		// Implicit constructor
+		public IgFolder () {}
+	}
+
+	// InfiniBand Switch (inherits from class HardwareBase)
+	public class InfinibandSwitch : HardwareBase {
+		public Boolean Enabled;
+		public Int32 Fan1RPM;
+		public Int32 Fan2RPM;
+		public Int32 Fan3RPM;
+		public Int32 Fan4RPM;
+		public String FanDrawerStatus;
+		public String FWVersionError;
+		public String IbSwitchId;
+		public String InterswitchIb1Port;
+		public String InterswitchIb2Port;
+		public Object[] Port;
+		public String ReplacementReason;
+		public Object[] SysId;
+		public Object TagList;
+		public Object[] TemperatureSensor;
+		public Object[] VoltageSensor;
+		public String WrongSCConnection;
+
+		// Implicit constructor
+		public InfinibandSwitch () {}
+	}
+
+	// general InfoBase class
+	public class InfoBase {
+		public String ComputerName;
+		public String Guid;
+		public Int32 Index;
+		public String Name;
+		public String Severity;
+		public String Uri;
+		public Object[] XmsId;
+
+		// Implicit constructor
+		public InfoBase() {}
+	}
+
+	// Initiator Group Folder Performance (inherits from class PerformanceTotal)
+	public class IgFolderPerformance : PerformanceTotal {}
+
+	public class Initiator : InfoBase {
+		public String ConnectionState;
+		public String InitiatorGrpId;
+		public Object InitiatorGroup;
+		public String InitiatorId;
+		public Int64 IOPS;
+		public Object PerformanceInfo;
+		public String PortAddress;
+		public String PortType;
+
+		// Implicit constructor
+		public Initiator () {}
+	}
+
+	public class InitiatorGroup : InfoBase {
+		public String InitiatorGrpId;
+		public Int64 IOPS;
+		public Int32 NumInitiator;
+		public Int32 NumVol;
+		public Object PerformanceInfo;
+
+		// Implicit constructor
+		public InitiatorGroup () {}
+	}
+
+	// InitiatorGroupPerformance (inherits from class PerformanceTotal)
+	public class InitiatorGroupPerformance : PerformanceTotal {}
+
+	// InitiatorPerformance (inherits from class PerformanceTotal)
+	public class InitiatorPerformance : PerformanceTotal {}
+
+	// LDAP Config (inherits from class InfoBase)
+	public class LdapConfig : InfoBase {
+		public String BindDN;
+		public String CACertData;
+		public String CACertFile;
+		public Int32 CacheExpireH;
+		public String[] Role;
+		public String SearchBaseDN;
+		public String SearchFilter;
+		public String[] ServerUrl;
+		public String[] ServerUrlExample;
+		public Int32 TimeoutSec;
+		public String UserToDnRule;
+
+		// Implicit constructor
+		public LdapConfig () {}
+	}
+
+	// XIO LocalDisk in StorageControllers (inherits from class HardwareBase)
+	public class LocalDisk : HardwareBase {
+		public Object[] BrickId;
+		public String ClusterId;
+		public String ClusterName;
+		public Boolean Enabled;
+		public String EncryptionStatus;
+		public String ExpectedType;
+		public String FailureReason;
+		public String FWVersionError;
+		public String LocalDiskId;
+		public Int32 NumBadSector;
+		public String Purpose;
+		public String ReplacementReason;
+		public Int32 SlotNum;
+		public String StorageControllerId;
+		public String StorageControllerName;
+		public Object[] SysId;
+		public Object TagList;
+		public String Type;
+		public String Wwn;
+
+		// Implicit constructor
+		public LocalDisk () {}
+	}
+
+	public class LunMap : InfoBase {
+		public String InitiatorGroup;
+		public Int32 InitiatorGrpIndex;
+		public Int32 LunId;
+		public String LunMapId;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapId' instead", false)]
+		public Object[] MappingId;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Index' instead", false)]
+		public Int32 MappingIndex;
+		public Int32 TargetGrpIndex;
+		public String TargetGrpName;
+		public Int32 VolumeIndex;
+		public String VolumeName;
+
+		// Implicit constructor
+		public LunMap () {}
+	}
+
+	// general PerformanceBase class
+	public class PerformanceBase {
+		public Double BW_MBps;
+		public String ComputerName;
+		public Int32 Index;
+		public Int64 IOPS;
+		public String Name;
+		public Double ReadBW_MBps;
+		public Int32 ReadIOPS;
+		public Double WriteBW_MBps;
+		public Int32 WriteIOPS;
+
+		// Implicit constructor
+		public PerformanceBase() {}
+	}
+
+	// PerformanceCounter class
+	public class PerformanceCounter {
+		public String Name;
+		public Object[] Counters;
+		public DateTime DateTime;
+		public XioItemInfo.Enums.PerfCounter.EntityType EntityType;
+		public XioItemInfo.Enums.PerfCounter.Granularity Granularity;
+		public String Guid;
+		public Int32 Index;
+		public String ComputerName;
+		public String Uri;
+
+		// Implicit constructor
+		public PerformanceCounter() {}
+	}
+
+	// Performance class with Totals (inherits from class PerformanceBase)
+	public class PerformanceTotal : PerformanceBase {
+		public Int64 TotReadIOs;
+		public Int64 TotWriteIOs;
+	}
+
+	// Snapshot Scheduler
+	public class SnapshotScheduler {
+		public String Name;
+		public Boolean Enabled;
+		public String Guid;
+		public Int32 Index;
+		public System.Nullable<DateTime> LastActivated;
+		public String LastActivationResult;
+		public Int32 NumSnapToKeep;
+		public TimeSpan Retain;
+		public String Schedule;
+		public Object SnappedObject;
+		public String SnapshotSchedulerId;
+		public String SnapType;
+		public String State;
+		public String Suffix;
+		public String Type;
+		public String ComputerName;
+		public String Uri;
+
+		// Implicit constructor
+		public SnapshotScheduler () {}
+	}
+
+	// Snapshot (inherits Volume class)
+	public class Snapshot : Volume {}
+
+	// SnapshotSet (inherits from InfoBase)
+	public class SnapshotSet : InfoBase {
+		public String ClusterId;
+		public String ClusterName;
+		public String ConsistencyGrpId;
+		public String ConsistencyGrpName;
+		public DateTime CreationTime;
+		public Int32 NumVol;
+		public String SnapshotSetId;
+		public String SnapshotSetShortId;
+		public Object[] SysId;
+		public Object TagList;
+		public Object[] VolList;
+
+		// Implicit constructor
+		public SnapshotSet () {}
+	}
+
+	// SNMP Notifier (inherits from class InfoBase)
+	public class SnmpNotifier : InfoBase {
+		public String AuthProtocol;
+		public String Community;
+		public Boolean Enabled;
+		public Int32 HeartbeatFreqSec;
+		public Int32 Port;
+		public String PrivacyProtocol;
+		public String[] Recipient;
+		public String SNMPVersion;
+		public String Username;
+
+		// Implicit constructor
+		public SnmpNotifier () {}
+	}
+
+	// Slot (inherits from class InfoBase)
+	public class Slot : InfoBase {
+		public Object[] BrickId;
+		public String ErrorReason;
+		public String FailureReason;
+		public String SsdModel;
+		public Int32 SlotNum;
+		public String SsdId;
+		public Double SsdSizeGB;
+		public String SsdUid;
+		public String State;
+		public Object[] SysId;
+
+		// Implicit constructor
+		public Slot () {}
+	}
+
+	// SSD
+	public class Ssd : HardwareBase {
+		public Object[] BrickId;
+		public Double CapacityGB;
+		public Object DataProtectionGroup;
+		public String DiagHealthState;
+		public Boolean Enabled;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
+		public String EnabledState;
+		public String EncryptionStatus;
+		public String FWVersionError;
+		public String HealthState;
+		public Int64 IOPS;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Model' instead", false)]
+		public String ModelName;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Severity' instead", false)]
+		public String ObjSeverity;
+		public Int32 PctEnduranceLeft;
+		public String PctEnduranceLeftLvl;
+		public Object PerformanceInfo;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGroup' instead", false)]
+		public Object[] RGrpId;
+		public Int32 SlotNum;
+		public String SSDFailureReason;
+		public String SsdId;
+		public String SSDLink1Health;
+		public String SSDLink2Health;
+		public String SSDPositionState;
+		public String SsdRGrpState;
+		public String SsdUid;
+		public String SwapLED;
+		public Object[] SysId;
+		public Double UsedGB;
+		public Double UsefulGB;
+
+		// Implicit constructor
+		public Ssd () {}
+	}
+
+	// SsdPerformance (inherits from class PerformanceBase)
+	public class SsdPerformance : PerformanceBase {}
+
+	public class StorageController : HardwareBase {
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'FWVersion' instead", false)]
+		public String BiosFWVersion;
+		public String BrickName;
+		public String Cluster;
+		public Object DataProtectionGroup;
+		public Boolean Enabled;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
+		public String EnabledState;
+		public String EncryptionMode;
+		public String EncryptionSwitchStatus;
+		public Object FcHba;
+		public String HealthState;
+		public String IBAddr1;
+		public String IBAddr2;
+		public String IPMIAddr;
+		public String IPMIState;
+		public String JournalState;
+		public String MgmtPortSpeed;
+		public String MgmtPortState;
+		public String MgrAddr;
+		public String NodeMgrConnState;
+		public Int32 NumSSD;
+		public Int32 NumSSDDown;
+		public Int32 NumTargetDown;
+		public String OSVersion;
+		public Object PCI;
+		public String PoweredState;
+		public String RemoteJournalHealthState;
+		public Object[] SAS;
+		public String SdrFWVersion;
+		public String State;
+		public String StorageControllerId;
+		public String SWVersion;
+
+		// Implicit constructor
+		public StorageController () {}
+	}
+
+	// XIO StorageControllerPsu
+	public class StorageControllerPsu : InfoBase {
+		public Object[] BrickId;
+		public Boolean Enabled;
+		public String FWVersionError;
+		public String HWRevision;
+		public String Input;
+		public String LifecycleState;
+		public String Location;
+		public String Model;
+		public String PartNumber;
+		public String PowerFailure;
+		public String PowerFeed;
+		public String ReplacementReason;
+		public String SerialNumber;
+		public String StatusLED;
+		public Object[] StorageController;
+		public String StorageControllerPSUId;
+		public Object[] SysId;
+
+		// Implicit constructor
+		public StorageControllerPsu () {}
+	}
+
+	// SyslogNotifier (inherits from class InfoBase)
+	public class SyslogNotifier : InfoBase {
+		public Boolean Enabled;
+		public String SyslogNotifierId;
+		public String[] Target;
+
+		// Implicit constructor
+		public SyslogNotifier () {}
+	}
+
+	// Tag (inherits from class InfoBase)
+	public class Tag : InfoBase {
+		public String Caption;
+		public Object ChildTagList;
+		public String ColorHex;
+		public DateTime CreationTime;
+		public Object DirectObjectList;
+		public Int32 NumChildTag;
+		public Int32 NumDirectObject;
+		public Int32 NumItem;
+		public Object ObjectList;
+		public String ObjectType;
+		public Object ParentTag;
+		public String TagId;
+
+		// Implicit constructor
+		public Tag () {}
+	}
+
+	// Target (iSCSI/FC target)
+	public class Target : InfoBase {
+		public Object Brick;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
+		public Object[] BrickId;
+		public String DriverVersion;
+		public String ErrorReason;
+		public Object FCIssue;
+		public String FWVersion;
+		public Int64 IOPS;
+		public Boolean JumboFrameEnabled;
+		public Int32 MTU;
+		public Object PerformanceInfo;
+		public String PortAddress;
+		public String PortMacAddress;
+		public String PortSpeed;
+		public String PortState;
+		public String PortType;
+		public Object StorageController;
+		public Object TargetGroup;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'TargetGroup' instead", false)]
+		public Object[] TargetGrpId;
+		public String TargetId;
+
+		// Implicit constructor
+		public Target () {}
+	}
+
+	public class TargetGroup : InfoBase {
+		public String ClusterName;
+		public Object[] SysId;
+		public String TargetGrpId;
+
+		// Implicit constructor
+		public TargetGroup () {}
+	}
+
+	// TargetPerformance (inherits from class PerformanceTotal)
+	public class TargetPerformance : PerformanceTotal {}
+
+	// User Account (inherits from class InfoBase)
+	public class UserAccount : InfoBase {
+		public Int32 InactivityTimeoutMin;
+		public Boolean IsExternal;
+		public String Role;
+		public String UserAccountId;
+
+		// Implicit constructor
+		public UserAccount () {}
+	}
+
+	public class Volume : InfoBase {
+		public Int32 AlignmentOffset;
+		public Object AncestorVolId;
+		public String Compressible;
+		public DateTime CreationTime;
+		public Object DestSnapList;
+		public Object Folder;
+		public String[] InitiatorGrpIdList;
+		public Int64 IOPS;
+		public Int32 LBSize;
+		public String LuName;
+		public Object LunMapList;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapList' instead", false)]
+		public Object LunMappingList;
+		public String NaaName;
+		public Int32 NumDestSnap;
+		public Int32 NumLunMap;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumLunMap' instead", false)]
+		public Int32 NumLunMapping;
+		public Object PerformanceInfo;
+		public String SmallIOAlertsCfg;
+		public String SmallIORatio;
+		public String SmallIORatioLevel;
+		public Object SnapGrpId;
+		public String SnapshotType;
+		public Object[] SysId;
+		public Object TagList;
+		public String UnalignedIOAlertsCfg;
+		public String UnalignedIORatio;
+		public String UnalignedIORatioLevel;
+		public Double UsedLogicalTB;
+		public String VaaiTPAlertsCfg;
+		public String VolId;
+		public Double VolSizeTB;
+
+		// Implicit constructor
+		public Volume () {}
+	}
+
+	public class VolumeFolder : InfoBase {
+		public String Caption;
+		public String ColorHex;
+		public System.Nullable<DateTime> CreationTime;
+		public String FolderId;
+		public Int64 IOPS;
+		public Int32 NumChild;
+		public Int32 NumSubfolder;
+		public Int32 NumVol;
+		public String ObjectType;
+		public String ParentFolder;
+		public String ParentFolderId;
+		public Object PerformanceInfo;
+		public Object SubfolderList;
+		public String[] VolIdList;
+		public Double VolSizeTB;
+
+		// Implicit constructor
+		public VolumeFolder () {}
+	}
+
+	// VolumeFolderPerformance (inherits from class PerformanceTotal)
+	public class VolumeFolderPerformance : PerformanceTotal {}
+
+	// VolumePerformance (inherits from class PerformanceTotal)
+	public class VolumePerformance : PerformanceTotal {}
+
+	public class XEnv : InfoBase {
+		public Object Brick;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
+		public Object[] BrickId;
+		public Int32 CPUUsage;
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumModule' instead", false)]
+		public Int32 NumMdl;
+		public Int32 NumModule;
+		public Object StorageController;
+		public String XEnvId;
+		public String XEnvState;
+
+		// Implicit constructor
+		public XEnv () {}
+	}
+
+	// XMS itself (inherits from class InfoBase)
+	public class XMS : InfoBase {
+		public Int32 BuildNumber;
+		public Object[] Config;
+		public String DiskSpaceUtilizationLevel;
+		public String DiskSpaceSecUtilizationLevel;
+		public Version DBVersion;
+		public Object[] EventlogInfo;
+		public String IPVersion;
+		public String ISO8601DateTime;
+		public Double LogSizeTotalGB;
+		public Double MemoryTotalGB;
+		public Double MemoryUsageGB;
+		public String MemoryUtilizationLevel;
+		public Int32 NumCluster;
+		public Int32 NumInitiatorGroup;
+		public Int32 NumIscsiRoute;
+		public Double OverallEfficiency;
+		public Version RestApiVersion;
+		public String ServerName;
+		public String SWVersion;
+		public Int32 ThinProvSavingsPct;
+		public Version Version;
+		public Object[] PerformanceInfo;
+
+		// Implicit constructor
+		public XMS () {}
+	}
+
+	// connection to XMS appliance
+	public class XioConnection {
+		public String ComputerName;
+		public DateTime ConnectDatetime;
+		public System.Management.Automation.PSCredential Credential;
+		public Int32 Port;
+		public Version RestApiVersion;
+		public Boolean TrustAllCert;
+		public Version XmsDBVersion;
+		public String XmsSWVersion;
+		public Version XmsVersion;
+
+		// Implicit constructor
+		public XioConnection () {}
+	}
+} // end namespace
+
+// Enumerations
+namespace XioItemInfo.Enums.PerfCounter {
+	public enum AggregationType {avg, min, max}
+	//public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
+	public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Target, TargetGroup, Volume, XEnv, Xms}
+	public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
+	public enum TimeFrame {real_time, last_hour, last_day, last_week, last_year}
+} // end namespace
 "@
