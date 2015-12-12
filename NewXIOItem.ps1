@@ -455,13 +455,25 @@ function New-XIOVolumeFolder {
 	Create a new XtremIO snapshot
 	.Example
 	New-XIOSnapshot -Volume myVol0,myVol1 -SnapshotSuffix .snap.20151225-0800-5
-	Creates new writable snapshots of the two volumes of these names, placing them in a single, new SnapshotSet, and the snapshots will have the specified suffix
+	Create new writable snapshots of the two volumes of these names, placing them in a single, new SnapshotSet, and the snapshots will have the specified suffix
 	.Example
 	Get-XIOVolume -Name myVol[01] | New-XIOSnapshot -Type ReadOnly
-	Creates new ReadOnly snapshots of the two volumes of these names, placing them each in their own new SnapshotSet, and the snapshots will have the default suffix in their name
+	Create new ReadOnly snapshots of the two volumes of these names, placing them each in their own new SnapshotSet, and the snapshots will have the default suffix in their name
 	.Example
 	Get-XIOConsistencyGroup someGrp[01] | New-XIOSnapshot -Type ReadOnly
 	Get these two consistency groups and create snapshots of each group's volumes. Note:  this makes separate SnapshotSets for each consistency group's volumes' new snapshots (that is, this does not create a single SnapshotSet with the snapshots of all of the volumes from both consistency groups)
+	.Example
+	New-XIOSnapshot -SnapshotSet SnapshotSet.1449941173 -SnapshotSuffix .addlSnap.now -Type Regular
+	Create new writable snapshots for the volumes (snapshots) in the given SnapshotSet, and makes names new snapshots with given suffix
+	.Example
+	Get-XIOSnapshotSet | Where-Object {$_.CreationTime -gt (Get-Date).AddHours(-1)} | New-XIOSnapshot ReadOnly
+	Create new ReadOnly snapshots for the volumes (snapshots) in the SnapshotSets that were made in the last hour. For every source Snapshot, this makes a new SnapshotSet object for the source volumes' new snapshots.
+	.Example
+	New-XIOSnapshot -Tag /Volume/myCoolVolTag0
+	Create snapshots of the volumes tagged with the given Tag
+	.Example
+	Get-XIOTag /Volume/myCoolVolTag* | New-XIOSnapshot -Type ReadOnly
+	Get the matching Tags and create new snapshots for each tag's volumes/snapshots. Note:  this makes separate SnapshotSets for each Tag's volumes' new snapshots (that is, this does not create a single SnapshotSet with the snapshots of all of the volumes from all Tags)
 	.Outputs
 	XioItemInfo.Snapshot object for the newly created object if successful
 #>
@@ -475,9 +487,13 @@ function New-XIOSnapshot {
 		[XioItemInfo.Cluster]$Cluster,
 		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
 		[parameter(Mandatory=$true,ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
-		## XtremIO Consistency Group from which to create new snapshot. Accepts either ConsistencyGroup names or objects
+		## XtremIO Consistency Group whose volumes from which to create new snapshot. Accepts either ConsistencyGroup name or object
 		[parameter(Mandatory=$true, ParameterSetName="ByConsistencyGroup")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.ConsistencyGroup])})][PSObject]$ConsistencyGroup,
-		## Suffix to append to source item's name, making the resultant name to use for the new snapshot. Defaults to ".<numberOfSecondsSinceUnixEpoch>"
+		## XtremIO SnapshotSet whose snapshots from which to create new snapshot. Accepts either SnapshotSet name or object
+		[parameter(Mandatory=$true, ParameterSetName="BySnapshotSet")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.SnapshotSet])})][PSObject]$SnapshotSet,
+		## XtremIO Tag whose volumes/snapshots from which to create new snapshot. Accepts either Tag names or objects. These should be Tags for Volume object types, of course.
+		[parameter(Mandatory=$true, ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag,
+		## Suffix to append to name of source volume/snapshot, making the resultant name to use for the new snapshot. Defaults to ".<numberOfSecondsSinceUnixEpoch>"
 		[string]$SnapshotSuffix,
 		## Name to use for new SnapshotSet that will hold the new snapshot. Defaults to "SnapshotSet.<numberOfSecondsSinceUnixEpoch>"
 		[string]$NewSnapshotSetName,
@@ -528,13 +544,49 @@ function New-XIOSnapshot {
 				$strNameForCheckingForExistingItem = "$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"
 				break
 			} ## end case
+			## if this is ByConsistencyGroup, or ByRelatedObject where the object is a ConsistencyGroup
 			{($_ -eq "ByConsistencyGroup") -or (($_ -eq "ByRelatedObject") -and ($RelatedObject -is [XioItemInfo.ConsistencyGroup]))} {
 				$oParamOfInterest = if ($PsCmdlet.ParameterSetName -eq "ByConsistencyGroup") {$ConsistencyGroup} else {$RelatedObject}
-				$strSrcCGName = if (($oParamOfInterest | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.ConsistencyGroup") {$oParamOfInterest.Name} else {$oParamOfInterest}
+				if ($oParamOfInterest -is [XioItemInfo.ConsistencyGroup]) {
+					$strSrcCGName = $oParamOfInterest.Name
+					$arrSrcVolumeNames = @($oParamOfInterest.VolList.Name)
+				} else {
+					$strSrcCGName = $oParamOfInterest
+				} ## end else
 				$hshNewItemSpec["consistency-group-id"] = $strSrcCGName
-				$strNameForCheckingForExistingItem = "$strSrcCGName$SnapshotSuffix"
+				## set the name for checking; may need updated for when receiving ConsistencyGroup value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcCGName$SnapshotSuffix"}
 				break
-			}
+			} ## end case
+			## if this is BySnapshotSet, or ByRelatedObject where the object is a SnapshotSet
+			{($_ -eq "BySnapshotSet") -or (($_ -eq "ByRelatedObject") -and ($RelatedObject -is [XioItemInfo.SnapshotSet]))} {
+				$oParamOfInterest = if ($PsCmdlet.ParameterSetName -eq "BySnapshotSet") {$SnapshotSet} else {$RelatedObject}
+				if ($oParamOfInterest -is [XioItemInfo.SnapshotSet]) {
+					$strSrcSnapsetName = $oParamOfInterest.Name
+					$arrSrcVolumeNames = @($oParamOfInterest.VolList.Name)
+				} else {
+					$strSrcSnapsetName = $oParamOfInterest
+				} ## end else
+				$hshNewItemSpec["snapshot-set-id"] = $strSrcSnapsetName
+				## set the name for checking; may need updated for when receiving SnapshotSet value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcSnapsetName$SnapshotSuffix"}
+				break
+			} ## end case
+			## if this is ByTag, or ByRelatedObject where the object is a Tag
+			{($_ -eq "ByTag") -or (($_ -eq "ByRelatedObject") -and ($RelatedObject -is [XioItemInfo.Tag]))} {
+				$oParamOfInterest = if ($PsCmdlet.ParameterSetName -eq "ByTag") {$Tag} else {$RelatedObject}
+				if (($oParamOfInterest | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Tag") {
+					$arrSrcTagNames = @($oParamOfInterest.Name)
+					$arrSrcVolumeNames = @($oParamOfInterest.ObjectList.Name)
+				} else {
+					$arrSrcTagNames = @($oParamOfInterest)
+				} ## end else
+				## needs to be an array, so that the JSON will be correct for the API call, which expects an array values
+				$hshNewItemSpec["tag-list"] = $arrSrcTagNames
+				## set the name for checking; may need updated for when receiving Tag value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$($arrSrcTagNames | Select-Object -First 1)$SnapshotSuffix"}
+				break
+			} ## end case
 		} ## end switch
 
 		## the params to use in calling the helper function to actually create the new object
