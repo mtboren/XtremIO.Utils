@@ -58,17 +58,7 @@ function Get-XIOInfo {
 			$oWebClient.DownloadString($hshParamsForRequest["Uri"]) | ConvertFrom-Json
 		} ## end try
 		catch {
-			Write-Verbose -Verbose "Uh-oh -- something went awry trying to get data from that URI ('$($hshParamsForRequest['Uri'])')"
-			Write-Verbose -Verbose "(exception status of '$($_.Exception.InnerException.Status)', message of '$($_.Exception.InnerException.Message)')"
-			## get the Response from the InnerException if available
-			Write-Verbose -Verbose $(if ($null -ne $_.Exception.InnerException.Response) {
-					"WebException response:`n{0}" -f ([System.IO.StreamReader]($_.Exception.InnerException.Response.GetResponseStream())).ReadToEnd()
-				} ## end if
-				else {"no additional exception response value to report"}
-			) ## end write-verbose
-			## throw the caught error (instead of breaking, which adversely affects subsequent calls; say, if in a try/catch statement in a Foreach-Object loop, "break" breaks all the way out of the foreach-object, vs. using Throw to just throw the error for this attempt, and then letting the calling item continue in the Foreach-Object
-			Throw $_
-			#Write-Error $_ -Category ConnectionError -RecommendedAction "Check creds, URL ('$($hshParamsForRequest["Uri"])') -- valid?"; break;
+			_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsForRequest['Uri'] -ErrorRecord $_
 		} ## end catch
 		## if CertValidationCallback was altered, set back to original value
 		if ($true -eq $TrustAllCert_sw) {
@@ -95,11 +85,15 @@ function New-XioApiURI {
 		## Switch:  return array output of URI,Port, instead of just URI?
 		[switch]$ReturnURIAndPortInfo,
 		## Switch:  test comms to the given port?  Likely only used at Connect- time (after which, somewhat safe assumption that the given port is legit)
-		[switch]$TestPort
+		[switch]$TestPort,
+		## XtremIO REST API version to use -- which will determine a part of the URI
+		[System.Version]$RestApiVersion
 	) ##end param
 
 	## string to add to messages written by this function; function name in square brackets
 	$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+
+	$strRestApiSpecificUriPiece = if ($PSBoundParameters.ContainsKey("RestApiVersion") -and ($RestApiVersion -ge [System.Version]"2.0")) {"/v$($RestApiVersion.Major)"} else {$null}
 
 	$intPortToUse = $(
 		## if a port was specified, try to use it
@@ -110,7 +104,7 @@ function New-XioApiURI {
 		} ## end if
 		else {$intPortToTry}
 	) ## end subexpression
-	$strURIToUse = if ($intPortToUse -eq 443) {"https://${ComputerName_str}/api/json$RestCommand_str"}
+	$strURIToUse = if ($intPortToUse -eq 443) {"https://${ComputerName_str}/api/json$strRestApiSpecificUriPiece$RestCommand_str"}
 		else {"http://${ComputerName_str}:$intPortToUse$RestCommand_str"}
 	Write-Verbose "$strLogEntry_ToAdd URI to use: '$strURIToUse'"
 	if ($false -eq $ReturnURIAndPortInfo) {return $strURIToUse} else {return @($strURIToUse,$intPortToUse)}
@@ -206,6 +200,31 @@ function Disable-CertValidation {
 ##} ## end fn
 
 
+<#	.Description
+	Helper function to uniformly handle web exceptions, returning valuable info as to the exception response, if any
+#>
+function _Invoke-WebExceptionErrorCatchHandling {
+	param (
+		## the URI that was being used when exception was encountered
+		[parameter(Mandatory=$true)][string]$URI,
+		## the error record that was caught
+		[parameter(Mandatory=$true)][System.Management.Automation.ErrorRecord]$ErrorRecord
+	) ## end param
+	process {
+		Write-Verbose -Verbose "Uh-oh -- something went awry trying to get data from that URI ('$URI')"
+		if ($null -ne $ErrorRecord.Exception.InnerException.Response) {
+			Write-Verbose -Verbose "(exception status of '$($ErrorRecord.Exception.InnerException.Status)', message of '$($ErrorRecord.Exception.InnerException.Message)')"
+			## get the Response from the InnerException if available
+			Write-Verbose -Verbose ("WebException response:`n{0}" -f ([System.IO.StreamReader]($ErrorRecord.Exception.InnerException.Response.GetResponseStream())).ReadToEnd())
+		} ## end if
+		else {Write-Verbose -Verbose "no additional web exception response value to report"}
+		## throw the caught error (instead of breaking, which adversely affects subsequent calls; say, if in a try/catch statement in a Foreach-Object loop, "break" breaks all the way out of the foreach-object, vs. using Throw to just throw the error for this attempt, and then letting the calling item continue in the Foreach-Object
+		Throw $ErrorRecord
+		#Write-Error $ErrorRecord -Category ConnectionError -RecommendedAction "Check creds, URL ('$($hshParamsForRequest["Uri"])') -- valid?"; break;
+	} ## end process
+} ## end fn
+
+
 ## credentials-handling functions; cleaned up a bit, but based entirely on Hal Rottenberg's http://halr9000.com/article/tag/lib-authentication.ps1
 function hExport-PSCredential {
 	param ([parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$Credential, [parameter(Mandatory=$true)][string]$Path)
@@ -287,7 +306,7 @@ function Update-TitleBarForXioConnection {
 	$strNewWindowTitle = "{0}{1}{2}" -f $strWinTitleWithoutOldXmsConnInfo, $(if ((-not [System.String]::IsNullOrEmpty($strWinTitleWithoutOldXmsConnInfo)) -and ($intNumConnectedXmsServers -gt 0)) {"; "}), $(
 		if ($intNumConnectedXmsServers -gt 0) {
 			if ($intNumConnectedXmsServers -eq 1) {"Connected to XMS {0} as {1}" -f $Global:DefaultXmsServers[0].ComputerName, $Global:DefaultXmsServers[0].Credential.UserName}
-			else {"Connected to {0} XMS servers:  {1}." -f $intNumConnectedXmsServers, (($Global:DefaultXmsServers | %{$_.ComputerName}) -Join ", ")}
+			else {"Connected to {0} XMS servers:  {1}." -f $intNumConnectedXmsServers, (($Global:DefaultXmsServers | Foreach-Object {$_.ComputerName}) -Join ", ")}
 		} ## end if
 		#else {"Not Connected to XMS"}
 	) ## end -f call
@@ -345,7 +364,7 @@ function Get-ItemTypeFromURI {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Mandatory=$true)][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
 	) ## end param
-	$strItemType_plural = ([RegEx]("^(/api/json)?/types/(?<itemType>[^/]+)/")).Match(([System.Uri]($URI_str)).AbsolutePath).Groups.Item("itemType").Value
+	$strItemType_plural = ([RegEx]("^(/api/json)?(/v\d{1,2})?/types/(?<itemType>[^/]+)/")).Match(([System.Uri]($URI_str)).AbsolutePath).Groups.Item("itemType").Value
 	## get the plural item type from the URI (the part of the URI after "/types/")
 	return $strItemType_plural
 } ## end function
@@ -374,7 +393,7 @@ function Convert-UrlEncoding {
 
 	process {
 		if (-not ("System.Web.HttpUtility" -as [type])) {Add-Type -AssemblyName System.Web}
-		$StringToConvert_arr | %{
+		$StringToConvert_arr | Foreach-Object {
 			$strThisStringToConvert = $_
 			$strActionTaken,$strThisConvertedString = if ($Decode_sw -eq $true) {"decoded"; [System.Web.HttpUtility]::UrlDecode($strThisStringToConvert)}
 				else {"encoded"; [System.Web.HttpUtility]::UrlEncode($strThisStringToConvert)}
@@ -450,6 +469,16 @@ function _New-ScheduleDisplayString {
 			} ## end case
 			default {Write-Verbose "scheduler type '$ScheduleType' not expected"}
 		} ## end switch
+	} ## end process
+} ## end fn
+
+
+function _Get-NumSecondSinceUnixEpoch {
+<#	.Description
+	Helper function to get the number of whole seconds it has been since the UNIX Epoch until the "now" local datetime
+#>
+	process {
+		[int64](New-TimeSpan -Start (Get-Date "01 Jan 1970 00:00:00").ToLocalTime()).TotalSeconds
 	} ## end process
 } ## end fn
 
