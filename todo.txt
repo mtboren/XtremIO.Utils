@@ -182,12 +182,30 @@ todo:
 	-not available as of XIOS v3.0.1
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
-
-
+-add Filtering support for API queries (good for speeding up LunMap retrieval?); see pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide
+-add Update-Snapshot to correspond to "refresh" operation in mgmt GUI
+	-Create a Snapshot and reassign on a Volume, Consistency Group or Snapshot Set (see Table 4, on page 192).
+		Note: Refer to example use cases for taking Snapshots and reassigning on a Volume, Consistency Group or Snapshot Set, on page 14.
 
 
 
 doing:
+[feat_NewSnapshot]
+-add New-Snapshot cmdlet
+	-for XIOS v3.0
+		-from one volume
+		-from volumes
+		-from one volumefolder
+	done:
+	-for XIOS v4.0
+		-Create a Snapshot on a Volume, list of Volumes, Consistency Group, Snapshot Set or Tag List (see Table 3, on page 191)
+			params / paramsets:
+			-Cluster
+			-Source -- either consistencygroup, snapshotset, tag list, volume list
+			-SnapshotSuffix
+			-NewSnapshotSetName
+			-Type -- either regular or readonly
+
 
 done for version 0.next (after v0.9.0):
 [bf_OpenXioMgmtConsole]
