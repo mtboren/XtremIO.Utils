@@ -55,10 +55,11 @@ todo:
 	Get-XIOStorageController | Get-XIOLocalDisk
 	Get-XIOLocalDisk | Get-XIOStorageController
 	Get-XIOSlot | Get-XIOSsd
-	Get-XIOSnapshotSet | Get-XIOVolume
+	Get-XIOSnapshotSet | Get-XIO[Volume|Snapshot]
+	Get-XIO[Volume|Snapshot] | Get-XIOSnapshot
 	Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
 	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name until adding support for "by IGrpID" when working on XIOSv4 things)
-	Get-XIOVolume | Get-XIOLunMap (just by Volume name until adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIO[Volume|Snapshot] | Get-XIOLunMap (just by Volume name until adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
 		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
 	## currently behaves unexpectedly when using something like:
@@ -143,7 +144,6 @@ todo:
 		-Storage Controller object:
 			-hw-revision
 	-also, others listed on p198 of v3.0.1 REST API guide
--add New-XIOSnapshot at some point
 -item types for which to add support in module:
 	## old and new APIs
 	iscsi-portals
@@ -193,6 +193,7 @@ todo:
 		-from one volume
 		-from volumes
 		-from one volumefolder
+-add Filtering support in some way (?along with "properties to retrieve" support?), possible only once supporting API v2 (else, need to handle how to only "enable" it for XIOSv4+ XMSs)
 
 
 
