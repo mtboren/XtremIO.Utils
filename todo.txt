@@ -186,25 +186,18 @@ todo:
 -add Update-Snapshot to correspond to "refresh" operation in mgmt GUI
 	-Create a Snapshot and reassign on a Volume, Consistency Group or Snapshot Set (see Table 4, on page 192).
 		Note: Refer to example use cases for taking Snapshots and reassigning on a Volume, Consistency Group or Snapshot Set, on page 14.
+-check into pipelining of:  Get-XIOVolume matt*todel | Get-XIOSnapshot
+	-not getting snapshot if volume has no LunMap, as it is relying on InitGrp stuff, instead of child-vol kind of thing (is there such a thing?)
+-for New-Snapshot, add support for XIOSv3 (APIv1) snapshots; currently only supports new snapshots on XIOSv4 (APIv2)
+	-for XIOS v3.0, support creation:
+		-from one volume
+		-from volumes
+		-from one volumefolder
+
 
 
 
 doing:
-[feat_NewSnapshot]
--add New-Snapshot cmdlet
-	-for XIOS v3.0
-		-from one volume
-		-from volumes
-		-from one volumefolder
-	done:
-	-for XIOS v4.0
-		-Create a Snapshot on a Volume, list of Volumes, Consistency Group, Snapshot Set or Tag List (see Table 3, on page 191)
-			params / paramsets:
-			-Cluster
-			-Source -- either consistencygroup, snapshotset, tag list, volume list
-			-SnapshotSuffix
-			-NewSnapshotSetName
-			-Type -- either regular or readonly
 
 
 done for version 0.next (after v0.9.0):
@@ -314,6 +307,10 @@ fix for use in PSv5 (throwing errors when invoking):
 			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
 			-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
+[feat_NewSnapshot]
+-added New-Snapshot cmdlet with support for XIOS v4.0
+	-Create a Snapshot on Consistency Group, Snapshot Set, list of Volumes (one or more), or Tag List (one or more)
+	-Can specify SnapshotSuffix, NewSnapshotSetName, Type (either regular or readonly)
 
 ## things below here are in changelog/readme
 
