@@ -31,19 +31,18 @@ function Open-XIOMgmtConsole {
 			$strThisXmsName = $_
 			## if already connected to this XMS, see its version:  at XIOS v4.0, the JNLP files were named with the XMS software version in them (like "webstart-4.0.1-41.jnlp")
 			if ($($oThisXioConnection = $DefaultXmsServers | Where-Object {$_.ComputerName -like $strThisXmsName}; ($oThisXioConnection | Measure-Object).Count -eq 1)) {
-				if ($oThisXioConnection.XmsVersion -ge [System.Version]("4.0")) {
-					$bUseHttps,$strAddlJnlpFilenamePiece, $strXmsAddrToUse = $true, "-$($oThisXioConnection.XmsSWVersion)", $oThisXioConnection.ComputerName
-				} ## end if
+				$strXmsAddrToUse = $oThisXioConnection.ComputerName
+				$strAddlJnlpFilenamePiece = if ($oThisXioConnection.XmsVersion -ge [System.Version]("4.0")) {"-$($oThisXioConnection.XmsSWVersion)"} else {$null}
 			} ## end if
 			## else, make sure this name is legit (in DNS)
 			else {
-				Try {$oIpAddress = [System.Net.DNS]::GetHostAddresses($strThisXmsName); $bUseHttps,$strAddlJnlpFilenamePiece,$strXmsAddrToUse = $false, $null, $strThisXmsName}
+				Try {$oIpAddress = [System.Net.DNS]::GetHostAddresses($strThisXmsName); $strAddlJnlpFilenamePiece,$strXmsAddrToUse = $null, $strThisXmsName}
 				Catch [System.Net.Sockets.SocketException] {Write-Warning "'$strThisXmsName' not found in DNS. Valid name?"; break;}
 			} ## end else
 
 			## place to which to download this JNLP file
 			$strDownloadFilespec = Join-Path ${env:\temp} "${strXmsAddrToUse}.jnlp"
-			$strJnlpFileUri = "http{0}://$strXmsAddrToUse/xtremapp/webstart${strAddlJnlpFilenamePiece}.jnlp" -f $(if ($bUseHttps) {"s"})
+			$strJnlpFileUri = "https://$strXmsAddrToUse/xtremapp/webstart${strAddlJnlpFilenamePiece}.jnlp"
 			Write-Verbose "Using URL '$strJnlpFileUri'"
 			$oWebClient = New-Object System.Net.WebClient
 			## if specified to do so, set session's CertificatePolicy to trust all certs (for now; will revert to original CertificatePolicy)
