@@ -25,3 +25,9 @@ The module can also store an encrypted credential for use with `Connect-XIOServe
 - Upon storing once (via `New-XIOStoredCred`), one can use the `Connect-XIOServer` function from this module without passing further credentials -- the stored credentials will be auto-detected if they are present
 - One can remove this credential file at will via `Remove-XIOStoredCred`
 - And, the encrypted credential is encrypted using the Windows Data Protection API, which allows only the user the encrypted the item to decrypt the item (and, can only do so from the same computer on which the item was encrypted)
+
+##### Example run through of putting it together #####
+See this module's GitHub Pages page for exciting examples of using the cmdlets from this module, available at <https://mtboren.github.io/XtremIO.Utils/>.
+
+##### Changelog for the module #####
+In [changelog.md](changelog.md), there is an informative section for each version of the module, with listing of new features, improvements, bug fixes, and more.  Be sure to read it for all of the exciting news. 
