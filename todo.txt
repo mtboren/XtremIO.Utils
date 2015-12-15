@@ -57,11 +57,16 @@ todo:
 	Get-XIOSlot | Get-XIOSsd
 	Get-XIOSnapshotSet | Get-XIO[Volume|Snapshot]
 	Get-XIO[Volume|Snapshot] | Get-XIOSnapshot
+		-need to update Volume and Snapshot objects:
+			DestSnapList property to be list of Snapshot <id,name,index> objects instead of list of arrays of strings
+			AncestorVolId property to list of Volume <id,name,index> objects instead of list of arrays of strings
+	Get-XIOVolume | Get-XIOSnapshotSet
+	Get-XIOSnapshot | Get-XIOSnapshotSet
 	Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
 	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name until adding support for "by IGrpID" when working on XIOSv4 things)
 	Get-XIO[Volume|Snapshot] | Get-XIOLunMap (just by Volume name until adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
-		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
+		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId, or the LunMapList that has LunMap <id,name,index> objects instead of list of arrays of strings
 	## currently behaves unexpectedly when using something like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
 	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
@@ -73,29 +78,29 @@ todo:
 	/            29.306         769           27.256        759           56.562       1528       29298604621  77718384024
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 
 	instead of the expected
 	Name         WriteBW_MBps   WriteIOPS     ReadBW_MBps   ReadIOPS      BW_MBps      IOPS       TotWriteIOs  TotReadIOs
 	----         ------------   ---------     -----------   --------      -------      ----       -----------  ----------
 	/            21.153         851           17.813        825           38.966       1676       29298600763  77718380223
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
 	/            29.306         769           27.256        759           56.562       1528       29298604621  77718384024
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 #>
 -update pipelining behavior for things like:
 	Get-XioVolumeFolder /someFolderWithNoDirectVolumes | Get-XioVolume
@@ -183,6 +188,7 @@ todo:
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -add Filtering support for API queries (good for speeding up LunMap retrieval?); see pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide
+-add Get-XIOParentVolume / Get-XIOParentSnapshot?
 -add Update-Snapshot to correspond to "refresh" operation in mgmt GUI
 	-Create a Snapshot and reassign on a Volume, Consistency Group or Snapshot Set (see Table 4, on page 192).
 		Note: Refer to example use cases for taking Snapshots and reassigning on a Volume, Consistency Group or Snapshot Set, on page 14.
@@ -194,25 +200,33 @@ todo:
 		-from volumes
 		-from one volumefolder
 -add Filtering support in some way (?along with "properties to retrieve" support?), possible only once supporting API v2 (else, need to handle how to only "enable" it for XIOSv4+ XMSs)
+-future release:  remove deprecated properties that are noted by System.ObsoleteAttribute statements
+	-before then, compile the type definition, so that these properties actually write warning in PowerShell session to make it more clear to users that properties are deprecated? Else, relying on them to have thoroughly read the changelog
+
 
 
 
 
 doing:
 
-
 done for version 0.next (after v0.9.0):
+
+## things below here are in changelog/readme
+[feat_NewSnapshot]
+-added New-Snapshot cmdlet with support for XIOS v4.0
+	-Create a Snapshot on Consistency Group, Snapshot Set, list of Volumes (one or more), or Tag List (one or more)
+	-Can specify SnapshotSuffix, NewSnapshotSetName, Type (either regular or readonly)
 [bf_OpenXioMgmtConsole]
 -Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
-	-added Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP for XIOS v4 and newer
+	-use Get-XIOXMS and its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP for XIOS v4 and newer
 	-for XIOS v4 and newer, opening the management console with this cmdlet expects there to be an XioConnection in place to the given XMS (as established by Connect-XIOServer), as the connection object holds version info that is necessary for formulating the proper URL for getting the JNLP's URL
+[feat_AboutHelpTxt]
+-add about_XtremIO.Utils.help.txt
+	-with the general "here's the module, here are some ways to use it"
 [feat_BetterWebExcepReporting]
 -investigated replacing use of WebClient with HttpWebRequest objects for internal function that does the GET web communications
 	-noted speed diff for API request intensive cmdlets (Get-XIOLunMap, for example):  it was nearly twice as fast with the WebClient class versus the HttpWebRequest class; sticking with WebClient for now
 -added additional verbose error info from WebException in InnnerException of returned error from web call (if any) for when issue getting items from API (helpful for troubleshooting, especially when crafting one's own URIs)
-[feat_AboutHelpTxt]
--add about_XtremIO.Utils.help.txt
-	-with the general "here's the module, here are some ways to use it"
 [bf_ErrorWithPSv5]
 -importing module in PowerShell v5 Production Preview results in multiple errors of:  Multiple ambiguous overloads found for ".ctor" and the argument count: "1".
 	-due to OutputType specifying a type that was not yet defined in the session, which was due to the adding of types occurring _after_ the dot-source of the given .ps1
@@ -308,12 +322,6 @@ fix for use in PSv5 (throwing errors when invoking):
 			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
 			-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
-[feat_NewSnapshot]
--added New-Snapshot cmdlet with support for XIOS v4.0
-	-Create a Snapshot on Consistency Group, Snapshot Set, list of Volumes (one or more), or Tag List (one or more)
-	-Can specify SnapshotSuffix, NewSnapshotSetName, Type (either regular or readonly)
-
-## things below here are in changelog/readme
 
 
 
