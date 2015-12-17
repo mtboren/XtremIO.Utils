@@ -559,6 +559,58 @@ function _New-ObjListFromProperty_byObjName {
 	} ## end process
 } ## end fn
 
+
+<#	.Description
+	Helper function to take "raw" API object and create new XIO Item Info object for return to consumer
+#>
+function _New-ObjectFromApiObject {
+	param (
+		## Object returned from API call and that has all of the juicy properties from which to make an object to return to the user
+		[parameter(Mandatory=$true)][PSObject]$ApiObject,
+		## Item type as defined by the REST API (plural)
+		[parameter(Mandatory=$true)][String]$ItemType,
+		## The XMS Computer Name from which this object came, for populating that property on the return object
+		[parameter(Mandatory=$true)][String]$ComputerName,
+		## The base URI for this item's type, with which to generat a full item URI (base plus the item's index)
+		[String]$BaseItemTypeUri,
+		## Switch:  is this object from the API call that returns a "full" object view, instead of from other subsequent calls to the API (such as calls to v1 API)?
+		[Switch]$UsingFullApiObjectView
+	)
+	## FYI:  for all types except Events, $ApiObject is an array of items whose Content property is a PSCustomObject with all of the juicy properties of info
+	##   for type Events, $ApiObject is one object with an Events property, which is an array of PSCustomObject
+	$ApiObject | Foreach-Object {
+		$oThisResponseObj = $_
+		## the URI of this item (or of all of the events, if this item type is "events", due to the difference in the way event objects are returned from API)
+		$strUriThisItem = if ($PSBoundParameters.ContainsKey("BaseItemTypeUri")) {"$BaseItemTypeUri{0}" -f $oThisResponseObj.Index} else {($oThisResponseObj.Links | Where-Object {$_.Rel -eq "Self"}).Href}
+		## FYI:  name of the property of the response object that holds the details about the XIO item is "content" for nearly all types, but "events" for event type
+		## if the item type is events, access the "events" property of the response object; else, if "performance", use whole object, else, access the "Content" property
+		$(if ($ItemType -eq "events") {$oThisResponseObj.$ItemType} elseif (($ItemType -eq "performance") -or $UsingFullApiObjectView) {$oThisResponseObj} else {$oThisResponseObj."Content"}) | Foreach-Object {
+			$oThisResponseObjectContent = $_
+			## the TypeName to use for the new object
+			$strPSTypeNameForNewObj = Switch ($ItemType) {
+				"infiniband-switches" {"XioItemInfo.InfinibandSwitch"; break}
+				"performance" {"XioItemInfo.PerformanceCounter"; break}
+				"schedulers" {"XioItemInfo.SnapshotScheduler"; break}
+				"xms" {"XioItemInfo.XMS"; break}
+				default {"XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($_.TrimEnd('s').ToLower()).Replace('-',''))"}
+			} ## end switch
+			## make new object(s) with some juicy info (and a new property for the XMS "computer" name used here); usually just one object returned per call to _New-Object_from..., but if of item type "performance", could be multiple
+			_New-Object_fromItemTypeAndContent -argItemType $ItemType -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj | Foreach-Object {
+				$oObjToReturn = $_
+				## set ComputerName property
+				$oObjToReturn.ComputerName = $ComputerName
+				## set URI property that uniquely identifies this object
+				$oObjToReturn.Uri = $strUriThisItem
+				## if this is a PerformanceCounter item, add the EntityType property
+				if ("performance" -eq $ItemType_str) {$oObjToReturn.EntityType = $strPerformanceCounterEntityType}
+				## return the object
+				return $oObjToReturn
+			} ## end foreach-object
+		} ## end foreach-object
+	} ## end foreach-object
+} ## end function
+
+
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	All item types (including some that are only on XMS v2.2.3 rel 25):  "target-groups", "lun-maps", "storage-controllers", "bricks", "snapshots", "iscsi-portals", "xenvs", "iscsi-routes", "initiator-groups", "volumes", "clusters", "initiators", "ssds", "targets"
