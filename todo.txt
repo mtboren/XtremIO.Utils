@@ -208,13 +208,6 @@ todo:
 
 
 doing:
-[feat_ImproveSpeedOfGet]
--added piece to Get-XIOItemInfo that can, if API is v2 or higher and -UseApiFullFeature switch param is specified, use the "&full=1" parameter to get the full properties in response lists, instead of just the objects' URLs as is listed in the default view (and as is the only view in API v1)
-	-get objects with &full=1 if so desired
-	-create output objects from all full objects
-	-only leveraging in Get-XIOLunMap call right now
-	-will eventually roll out to more, and then exclusively use this for the day that v2 API is the lowest supported
-	-great speed increase (improved by over 15x)
 
 
 done for version 0.next (after v0.9.0):
@@ -330,6 +323,13 @@ fix for use in PSv5 (throwing errors when invoking):
 			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
 			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
 			-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
+[feat_ImproveSpeedOfGet]
+-added piece to Get-XIOItemInfo that can, if API is v2 or higher and -UseApiFullFeature switch param is specified, use the "&full=1" parameter to get the full properties in response lists, instead of just the objects' URLs as is listed in the default view (and as is the only view in API v1)
+	-get objects with &full=1 if so desired
+	-create output objects from all full objects
+	-only leveraging in Get-XIOLunMap call right now
+	-will eventually roll out to more, and then exclusively use this for the day that v2 API is the lowest supported
+	-great speed increase (improved by over 15x)
 
 
 
