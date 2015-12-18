@@ -290,8 +290,8 @@ function New-XIOLunMap {
 	} ## end begin
 
 	Process {
-		## if a mapping with these properties already exists, do not proceed
-		$arrExistingLUNMaps = Get-XIOLunMap -Volume $Volume -InitiatorGroup $InitiatorGroup -ComputerName $ComputerName_arr
+		## if a mapping with these properties already exists, do not proceed; retrieve just the given properties, so as to keep the response JSON as small as possible (for speed, plus to stay under the current 2MB hard max length for ConvertFrom-JSON cmdlet)
+		$arrExistingLUNMaps = Get-XIOLunMap -Property lun,vol-name,ig-name -Volume $Volume -InitiatorGroup $InitiatorGroup -ComputerName $ComputerName_arr
 		if ($null -ne $arrExistingLUNMaps) {Write-Warning "LUN mapping already exists for this volume/LUNID/initiator group combination:`n$(dWrite-ObjectToTableString -ObjectToStringify ($arrExistingLUNMaps | Select-Object VolumeName, LunId, InitiatorGroup, tg-name, ComputerName))`nNot continuing."}
 		## else, go ahead an try to make the new LUN mappings
 		else {

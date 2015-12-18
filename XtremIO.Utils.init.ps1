@@ -362,7 +362,7 @@ namespace XioItemInfo {
 	public class InfoBase {
 		public String ComputerName;
 		public String Guid;
-		public Int32 Index;
+		public System.Nullable<Int32> Index;
 		public String Name;
 		public String Severity;
 		public String Uri;
@@ -452,16 +452,16 @@ namespace XioItemInfo {
 
 	public class LunMap : InfoBase {
 		public String InitiatorGroup;
-		public Int32 InitiatorGrpIndex;
-		public Int32 LunId;
+		public System.Nullable<Int32> InitiatorGrpIndex;
+		public System.Nullable<Int32> LunId;
 		public String LunMapId;
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapId' instead", false)]
 		public Object[] MappingId;
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Index' instead", false)]
-		public Int32 MappingIndex;
-		public Int32 TargetGrpIndex;
+		public System.Nullable<Int32> MappingIndex;
+		public System.Nullable<Int32> TargetGrpIndex;
 		public String TargetGrpName;
-		public Int32 VolumeIndex;
+		public System.Nullable<Int32> VolumeIndex;
 		public String VolumeName;
 
 		// Implicit constructor
@@ -770,24 +770,24 @@ namespace XioItemInfo {
 	}
 
 	public class Volume : InfoBase {
-		public Int32 AlignmentOffset;
+		public System.Nullable<Int32> AlignmentOffset;
 		public Object AncestorVolId;
 		public String Compressible;
-		public DateTime CreationTime;
+		public System.Nullable<DateTime> CreationTime;
 		public Object DestSnapList;
 		public Object Folder;
 		public String[] InitiatorGrpIdList;
-		public Int64 IOPS;
-		public Int32 LBSize;
+		public System.Nullable<Int64> IOPS;
+		public System.Nullable<Int32> LBSize;
 		public String LuName;
 		public Object LunMapList;
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapList' instead", false)]
 		public Object LunMappingList;
 		public String NaaName;
-		public Int32 NumDestSnap;
-		public Int32 NumLunMap;
+		public System.Nullable<Int32> NumDestSnap;
+		public System.Nullable<Int32> NumLunMap;
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumLunMap' instead", false)]
-		public Int32 NumLunMapping;
+		public System.Nullable<Int32> NumLunMapping;
 		public Object PerformanceInfo;
 		public String SmallIOAlertsCfg;
 		public String SmallIORatio;
@@ -799,10 +799,10 @@ namespace XioItemInfo {
 		public String UnalignedIOAlertsCfg;
 		public String UnalignedIORatio;
 		public String UnalignedIORatioLevel;
-		public Double UsedLogicalTB;
+		public System.Nullable<Double> UsedLogicalTB;
 		public String VaaiTPAlertsCfg;
 		public String VolId;
-		public Double VolSizeTB;
+		public System.Nullable<Double> VolSizeTB;
 
 		// Implicit constructor
 		public Volume () {}

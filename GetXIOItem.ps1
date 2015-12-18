@@ -40,7 +40,9 @@ function Get-XIOItemInfo {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Switch: Use the API v2 feature of "full=1", which returns full object details, instead of just name and HREF for the given XIO object?
-		[Switch]$UseApiFullFeature
+		[Switch]$UseApiFullFeature,
+		## Select properties to retrieve/return for given object type, instead of retrieving all (default). This capability is available as of the XIOS REST API v2
+		[string[]]$Property
 	) ## end param
 
 	Begin {
@@ -128,8 +130,10 @@ function Get-XIOItemInfo {
 													} ## end switch
 
 						## if v2 or higher API is available and "full" object views can be gotten directly (without subesquent calls for every object), and the -UseApiFullFeature switch was specified
-						if ($UseApiFullFeature -and ($oThisXioConnection.RestApiVersion -ge [System.Version]"2.0")) {
+						if (($UseApiFullFeature -or $PSBoundParameters.ContainsKey("Property")) -and ($oThisXioConnection.RestApiVersion -ge [System.Version]"2.0")) {
 							$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] = "${strRestCmd_base}?full=1"
+							## if -Property was specified, add &prop=<propName0>&prop=<propName1>... to the REST command
+							if ($PSBoundParameters.ContainsKey("Property")) {$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += ("&{0}" -f (($Property | Where-Object {$null -ne $_} | Foreach-Object {"prop=$_"}) -join "&"))}
 							## get an object from the API that holds the full view of the given object types, and that has properties <objectsType> and "Links"
 							$oApiResponseToGettingFullObjViews = Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType
 							## get the array of full object views from the API response
@@ -557,6 +561,8 @@ function Get-XIOLunMap {
 		[parameter(ParameterSetName="ByComputerName")][string[]]$InitiatorGroup,
 		## LUN ID on which to filter returned LUN mapping info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName")][int[]]$HostLunId,
+		## Select properties to retrieve/return for given object type, instead of retrieving all (default). This capability is available as of the XIOS REST API v2
+		[string[]]$Property,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
