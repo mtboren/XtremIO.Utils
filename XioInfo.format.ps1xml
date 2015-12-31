@@ -863,7 +863,7 @@
 				<TableHeaders>
 					<TableColumnHeader><Width>8</Width></TableColumnHeader>
 					<TableColumnHeader><Width>36</Width></TableColumnHeader>
-					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>20</Width></TableColumnHeader>
 					<TableColumnHeader><Width>16</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 				</TableHeaders>

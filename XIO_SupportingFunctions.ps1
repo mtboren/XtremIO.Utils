@@ -2013,8 +2013,8 @@ function _New-Object_fromItemTypeAndContent {
 					Name = $oContent.name
 					Index = $oContent.index
 					XmsId = $oContent."xms-id"
-					## the software version's build number; like, "41" for SWVersion "4.0.1-41"
-					BuildNumber = [int]$oContent.build
+					## the software version's build; like, "41" for SWVersion "4.0.1-41", or "41_hotfix_1" for "4.0.1-41_hotfix_1"
+					Build = $oContent.build
 					Config = New-Object -Type PSObject -Property ([ordered]@{
 						AllowEmptyPassword = [boolean]$oContent."allow-empty-password"
 						DefaultUserInactivityTimeoutMin = [int]$oContent."default-user-inactivity-timeout"

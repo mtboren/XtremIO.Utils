@@ -211,6 +211,9 @@ todo:
 
 
 doing:
+[bf_GetXmsPropType]
+-fix issue where .BuildNumber property of XMS object is expecting value to be castable to Int32, but the actual values may just be strings (like 41_hotfix_1)
+	-changed property name from BuildNumber to Build and type to String from Int32
 [feat_SpecifyProperties]
 -add ability to specify particular properties for retrieval/return, so as to allow for quicker, more focused queries
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object

@@ -853,7 +853,7 @@ namespace XioItemInfo {
 
 	// XMS itself (inherits from class InfoBase)
 	public class XMS : InfoBase {
-		public Int32 BuildNumber;
+		public String Build;
 		public Object[] Config;
 		public String DiskSpaceUtilizationLevel;
 		public String DiskSpaceSecUtilizationLevel;
