@@ -133,7 +133,17 @@ function Get-XIOItemInfo {
 						if (($UseApiFullFeature -or $PSBoundParameters.ContainsKey("Property")) -and ($oThisXioConnection.RestApiVersion -ge [System.Version]"2.0")) {
 							$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] = "${strRestCmd_base}?full=1"
 							## if -Property was specified, add &prop=<propName0>&prop=<propName1>... to the REST command
-							if ($PSBoundParameters.ContainsKey("Property")) {$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += ("&{0}" -f (($Property | Where-Object {$null -ne $_} | Foreach-Object {"prop=$_"}) -join "&"))}
+							if ($PSBoundParameters.ContainsKey("Property")) {
+								$arrNamesOfPropertiesToGet = `
+									## if there is a "mapping" config hashtable that holds PSObjectPropertyName -> APIObjectPropertyName info, get the API property names
+									if ($hshCfg["TypePropMapping"].ContainsKey($strItemType_plural)) {
+										## if "friendly" property names were passed, get the corresponding XIO API property names to use in the request
+										$Property | Where-Object {$null -ne $_} | Foreach-Object {if ($hshCfg["TypePropMapping"][$strItemType_plural].ContainsKey($_)) {$hshCfg["TypePropMapping"][$strItemType_plural][$_]} else {$_}}
+									} ## end if
+									## else, just use the property names as passed in
+									else {$Property | Where-Object {$null -ne $_}}
+								$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += ("&{0}" -f (($arrNamesOfPropertiesToGet | Foreach-Object {"prop=$_"}) -join "&"))
+							} ## end if
 							## get an object from the API that holds the full view of the given object types, and that has properties <objectsType> and "Links"
 							$oApiResponseToGettingFullObjViews = Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType
 							## get the array of full object views from the API response
@@ -544,6 +554,9 @@ function Get-XIOInitiatorGroupFolder {
 	Get-XIOLunMap -HostLunId 21,22
 	Get the "LUN map" objects defined with LUN IDs 21 or 22
 	.Example
+	Get-XIOLunMap -Property VolumeName,LunId
+	Get the "LUN map" objects, but retrieve only their VolumeName and LunId properties, so as to optimize the data retrieval (retrieve just the data desired). Note:  this is only effective when dealing with an XMS of at least v2.0 of the REST API -- the older API does not support this functionality.  The -Property parameter value is ignored if the REST API is not of at least v2.0
+	.Example
 	Get-XIOLunMap -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -576,7 +589,7 @@ function Get-XIOLunMap {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "lun-map"
 		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{UseApiFullFeature = $true}
+		$hshParamsForGetXioItemInfo = @{}
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
 	} ## end begin

@@ -202,6 +202,9 @@ todo:
 -add Filtering support in some way (?along with "properties to retrieve" support?), possible only once supporting API v2 (else, need to handle how to only "enable" it for XIOSv4+ XMSs)
 -future release:  remove deprecated properties that are noted by System.ObsoleteAttribute statements
 	-before then, compile the type definition, so that these properties actually write warning in PowerShell session to make it more clear to users that properties are deprecated? Else, relying on them to have thoroughly read the changelog
+-expand availability of -Property parameter on other Get-* cmdlets as it makes sense (already done on Get-XIOLunMap)
+	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
+	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
 
 
 
@@ -212,7 +215,9 @@ doing:
 -add ability to specify particular properties for retrieval/return, so as to allow for quicker, more focused queries
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object
 		-done for Volume/Snapshot, LunMap
-	-currently expects property names as used by the XIOS REST API, not the "nice" XIOItemInfo.* objects' property names; will address this in future as time permits, but this current feature add is targeted at internal module use first
+	-in general, this currently expects property names as used by the XIOS REST API, not the "nice" XIOItemInfo.* objects' property names; will address this in future as time permits, but this feature add is initially targeted at internal module use first; exception to this:  have added logic to "translate" from "nice" property names to REST API object property names for LunMap objects
+-only have Get-XIOItemInfo use UseApiFullFeature if -Property is passed;  this is so as not to force the UseApiFullFeature until legitimate "big" JSON handling is in place
+-updated Get-XIOLunMap with -Property parameter for retrieving only selected properties
 
 done for version 0.next (after v0.9.0):
 
