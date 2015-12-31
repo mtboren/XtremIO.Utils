@@ -55,7 +55,7 @@ function Get-XIOInfo {
 			## issues with Invoke-RestMethod:  even after disabling cert validation, issue sending properly formed request; at the same time, using the WebClient object succeeds; furthermore, after a successful call to DownloadString() with the WebClient object, the Invoke-RestMethod succeeds.  What the world?  Something to investigate further
 			#   so, working around that for now by using the WebClient class; Invoke-RestMethod will be far more handy, esp. when it's time for modification of XtremIO objects
 			$oWebClient = New-Object System.Net.WebClient; $oWebClient.Headers.Add("Authorization", $hshParamsForRequest["Headers"]["Authorization"])
-			$oWebClient.DownloadString($hshParamsForRequest["Uri"]) | ConvertFrom-Json
+			$oWebClient.DownloadString($hshParamsForRequest["Uri"]) | Foreach-Object {Write-Verbose "$strLogEntry_ToAdd API reply JSON length (KB): $([Math]::Round($_.Length/1KB, 3))"; $_} | ConvertFrom-Json
 		} ## end try
 		catch {
 			_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsForRequest['Uri'] -ErrorRecord $_
@@ -1069,8 +1069,8 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					VolumeName = $oContent."vol-name"
 					LunId = $oContent.lun
-					LunMapId = $oContent."mapping-id"[0]
-					Name = $oContent."mapping-id"[1]
+					LunMapId = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[0]})
+					Name = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[1]})
 					Guid = $oContent.guid
 					## changed property name from "ig-name" after v0.6.0 release
 					InitiatorGroup = $oContent."ig-name"
@@ -1080,7 +1080,7 @@ function _New-Object_fromItemTypeAndContent {
 					## changed from lm-id to mapping-id in v2.4
 					MappingId = $oContent."mapping-id"
 					## available in 2.4.0 and up
-					Index = $oContent."mapping-index"
+					Index = $oContent.index
 					MappingIndex = $oContent."mapping-index"
 					Severity = $oContent."obj-severity"
 					XmsId = $oContent."xms-id"
@@ -1319,8 +1319,8 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					Name = $oContent.name
 					NaaName = $oContent."naa-name"
-					VolSizeTB = $oContent."vol-size" / 1GB
-					VolId = $oContent."vol-id"[0]  ## renamed from "vol-id"
+					VolSizeTB = $(if ($null -ne $oContent."vol-size") {$oContent."vol-size" / 1GB})
+					VolId = $(if ($null -ne $oContent."vol-id") {$oContent."vol-id"[0]})  ## renamed from "vol-id"
 					AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
 					AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
 					DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
@@ -1329,7 +1329,7 @@ function _New-Object_fromItemTypeAndContent {
 					NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
 					NumLunMap = $oContent."num-of-lun-mappings"
 					NumLunMapping = $oContent."num-of-lun-mappings"
-					LunMapList = $oContent."lun-mapping-list" | Foreach-Object {
+					LunMapList = $oContent."lun-mapping-list" | Where-Object {$null -ne $_} | Foreach-Object {
 						New-Object -Type PSObject -Property ([ordered]@{
 							InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$_[0])
 							TargetGroup = _New-ObjListFromProperty_byObjName -Name "TargetGroup" -ObjectArray (,$_[1])
@@ -1339,14 +1339,14 @@ function _New-Object_fromItemTypeAndContent {
 					LunMappingList = $oContent."lun-mapping-list"
 					Guid = $oContent.guid
 					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-					InitiatorGrpIdList = @($oContent."lun-mapping-list" | Foreach-Object {$_[0][0]})
+					InitiatorGrpIdList = $(if ($null -ne $oContent."lun-mapping-list") {@($oContent."lun-mapping-list" | Foreach-Object {$_[0][0]})})
 					## available in 2.4.0 and up
-					UsedLogicalTB = $(if (Get-Member -Input $oContent -Name "logical-space-in-use") {$oContent."logical-space-in-use" / 1GB} else {$null})
-					IOPS = [int64]$oContent.iops
+					UsedLogicalTB = $(if ($null -ne $oContent."logical-space-in-use") {$oContent."logical-space-in-use" / 1GB})
+					IOPS = $oContent.iops
 					Index = $oContent.index
 					## available in 3.0 and up
 					Compressible = $oContent.compressible
-					CreationTime = [System.DateTime]$oContent."creation-time"
+					CreationTime = $(if ($null -ne $oContent."creation-time") {[System.DateTime]$oContent."creation-time"})
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							## latency in microseconds (µs)
