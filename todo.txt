@@ -3,8 +3,6 @@ todo:
 	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
--reorg dir -- put module files into new subfolder, XtremIO.Utils
-	-include license file
 -?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
 -?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
 -add properties to objects (now available in XIOS v4):
@@ -202,148 +200,22 @@ todo:
 -add Filtering support in some way (?along with "properties to retrieve" support?), possible only once supporting API v2 (else, need to handle how to only "enable" it for XIOSv4+ XMSs)
 -future release:  remove deprecated properties that are noted by System.ObsoleteAttribute statements
 	-before then, compile the type definition, so that these properties actually write warning in PowerShell session to make it more clear to users that properties are deprecated? Else, relying on them to have thoroughly read the changelog
+-?add ability for Get-XIOItemInfo to detenct, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -expand availability of -Property parameter on other Get-* cmdlets as it makes sense (already done on Get-XIOLunMap)
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
-
+-reorg dir -- put module files into new subfolder, XtremIO.Utils
+	-include license file
+	-include testing subdir in overall folder root
 
 
 
 
 doing:
-[bf_GetXmsPropType]
--fix issue where .BuildNumber property of XMS object is expecting value to be castable to Int32, but the actual values may just be strings (like 41_hotfix_1)
-	-changed property name from BuildNumber to Build and type to String from Int32
-[feat_SpecifyProperties]
--add ability to specify particular properties for retrieval/return, so as to allow for quicker, more focused queries
-	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object
-		-done for Volume/Snapshot, LunMap
-	-in general, this currently expects property names as used by the XIOS REST API, not the "nice" XIOItemInfo.* objects' property names; will address this in future as time permits, but this feature add is initially targeted at internal module use first; exception to this:  have added logic to "translate" from "nice" property names to REST API object property names for LunMap objects
--only have Get-XIOItemInfo use UseApiFullFeature if -Property is passed;  this is so as not to force the UseApiFullFeature until legitimate "big" JSON handling is in place
--updated Get-XIOLunMap with -Property parameter for retrieving only selected properties
 
-done for version 0.next (after v0.9.0):
+done for version 0.next (after v0.9.5):
 
 ## things below here are in changelog/readme
-[feat_NewSnapshot]
--added New-Snapshot cmdlet with support for XIOS v4.0
-	-Create a Snapshot on Consistency Group, Snapshot Set, list of Volumes (one or more), or Tag List (one or more)
-	-Can specify SnapshotSuffix, NewSnapshotSetName, Type (either regular or readonly)
-[bf_OpenXioMgmtConsole]
--Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
-	-use Get-XIOXMS and its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP for XIOS v4 and newer
-	-for XIOS v4 and newer, opening the management console with this cmdlet expects there to be an XioConnection in place to the given XMS (as established by Connect-XIOServer), as the connection object holds version info that is necessary for formulating the proper URL for getting the JNLP's URL
-[feat_AboutHelpTxt]
--add about_XtremIO.Utils.help.txt
-	-with the general "here's the module, here are some ways to use it"
-[feat_BetterWebExcepReporting]
--investigated replacing use of WebClient with HttpWebRequest objects for internal function that does the GET web communications
-	-noted speed diff for API request intensive cmdlets (Get-XIOLunMap, for example):  it was nearly twice as fast with the WebClient class versus the HttpWebRequest class; sticking with WebClient for now
--added additional verbose error info from WebException in InnnerException of returned error from web call (if any) for when issue getting items from API (helpful for troubleshooting, especially when crafting one's own URIs)
-[bf_ErrorWithPSv5]
--importing module in PowerShell v5 Production Preview results in multiple errors of:  Multiple ambiguous overloads found for ".ctor" and the argument count: "1".
-	-due to OutputType specifying a type that was not yet defined in the session, which was due to the adding of types occurring _after_ the dot-source of the given .ps1
-	-changed order of dot-sourcing of .ps1 files as module loads, moving the init ps1 to the front of the order, so that given types are defined by the time some code alludes to the types
-[bf_MoreErrorInPSv5]
-fix for use in PSv5 (throwing errors when invoking):
-	properties that were not optional per the object type definition, but that might be null in the New-Object call:
-	- TagList property was System.Object[]; made System.Object (nullable by default)
-		Get-XIOBBU
-		Get-XIODAE
-		Get-XIOInfinibandSwitch
-		Get-XIOLocalDisk
-		Get-XIOSnapshotSet
-	- same System.Object[] -> System.Object property type declartion in class definition for other properties:
-		Get-XIOInitiatorGroupFolder
-		Get-XIOInitiatorGroupFolderPerformance
-		Get-XIOSnapshot
-		Get-XIOTag
-		Get-XIOVolume
-		Get-XIOVolumeFolder
-		Get-XIOVolumeFolderPerformance
-		Get-XIOVolumePerformance
-	- difference in PSv5 in Where-Object result in function internals for creating the URL:
-		Get-XIOPerformanceCounter -- seemingly off/bad/different URL
-[feat_ImproveV1TypeDef]
--add "normal" properties to API v1 objects (properties that are now on API v2 objects, where possible, like GUID and ID and whatnot)
-	-also, inherit from base classes where appropriate
-	-deprecated:
-		On Brick:
-			-NumNode -> NumStorageController
-			-NodeList -> StorageController, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
-		On Cluster:
-			-BrickList -> Brick, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
-			-InfiniBandSwitchList -> InfiniBandSwitch, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
-		On DataProtectionGroup:
-			-BrickIndex, BrickName -> Brick, a collection of objects with ID, Name, Index properties, instead of just the properties
-			-ClusterIndex, ClusterName -> Cluster, objects with ID, Name, Index properties, instead of just the properties
-			-RGrpId -> DataProtectionGrpId, the ID of the DataProtectionGroup (instead of an array of id/name/index)
-		On LunMap:
-			-MappingId -> LunMapId, the ID of the LunMap (instead of an array of id/name/index)
-			-MappingIndex -> Index, to have the standard property name used across other objects
-		On SSD:
-			-EnabledState -> Enabled, to have the standard property name and type used across other objects
-			-ModelName -> Model, to have the standard property name used across other objects
-			-ObjSeverity -> Severity, to have the standard property name used across other objects
-			-RGrpId -> DataProtectionGroup, objects with ID, Name, Index properties, instead of just the properties
-		On StorageController:
-			-EnabledState -> Enabled, to have the standard property name and type used across other objects
-			-BiosFWVersion -> FWVersion, to have the standard property name used across other objects
-		On Target:
-			-BrickId -> Brick, an object with ID, Name, Index properties, instead of just the properties
-			-TargetGrpId -> TargetGroup, an object with ID, Name, Index properties, instead of just the properties
-		On Volume, Snapshot:
-			-LunMappingList -> LunMapList, which contains objects with InitiatorGroup, TargetGroup, and LunId info, instead of just lists of properties
-			-NumLunMapping -> NumLunMap, for naming consistency
-		On Xenv:
-			-BrickId -> Brick, an object with ID, Name, Index properties, instead of just the properties
-			-NumMdl -> NumModule, for more clear naming of property
-	-changed:
-		On Brick:
-			-added NumStorageController, StorageController properties
-		On Cluster:
-			-added Brick, InfiniBandSwitch properties
-		On DataProtectionGroup:
-			-added Brick, Cluster, DataProtectionGrpId, Guid,  properties
-		On IgFolder:
-			-FolderId is now the unique identifier of the folder, instead of the array of <id>,<name>,<index>; this is to align with the *Id properties of the rest of the objects in the module -- they are just the Id string value, not the array of all three properties. And, this <objType>Id property is essentially the Guid property of the object, but, older XIOS did not present the Guid property directly; so, <objType>Id and Guid values should be the same on objects from XIOS v4 and new; on objects from XIOS older than v3, the Guid property will be empty string
-			-SubfolderList now contains objects with subfolders' Id, Name, and Index info, instead of just lists of properties
-			-added Caption, ColorHex, CreationTime, Guid, ObjectType properties
-		On Initiator:
-			-InitiatorId is now the unique identifier of the intiator, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
-			-added Guid, InitiatorGroup properties
-		On LunMap:
-			-added LunMapId, that is the unique identifier of the folder; will eventually be the favored identifying property, over the deprecated MappingId property
-		On SSD:
-			-SsdId is now the unique identifier of the SSD, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
-			-added DataProtectionGroup, Enabled, Model, Severity properties
-		On StorageController:
-			-added DataProtectionGroup, Enabled, FWVersion, IdLED, LifecycleState, PartNumber, StorageControllerId properties
-		On Target:
-			-added Brick, ErrorReason, PortMacAddress, StorageController, TargetGroup, TargetId properties
-		On TargetGroup:
-			-TargetGrpId is now the unique identifier of the TargetGroup, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
-		On Snapshot, Volume:
-			-added Folder, LunMapList, NumLunMap, SnapshotType, TagList properties
-		On VolumeFolder:
-			-added Caption, ColorHex, CreationTime, ObjectType, SubfolderList properties
-		On Xenv:
-			-XenvId is now the unique identifier of the Xenv, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
-			-added NumModule, StorageController properties
-	done:  Brick, Cluster, DataProtectionGroup, IgFolder, Initiator, InitiatorGroup, LunMap, Snapshot, SSD, StorageController, Target, TargetGroup, Volume, VolumeFolder, Xenv
-		-also, deprecated EnabledState property on SSDs and StorageControllers, add Enabled boolean property
-			-see https://msdn.microsoft.com/en-us/library/system.obsoleteattribute%28v=vs.110%29.aspx
-			-System.ObsoleteAttribute might only work in binary module, not in advanced function based module, at least at one point, per https://rkeithhill.wordpress.com/2012/04/29/powershell-v3-obsoleteattribute/
-			-so, included System.ObsoleteAttribute statements in type definitions, but need to make this loud and clear elsewhere
-[feat_ImproveSpeedOfGet]
--added piece to Get-XIOItemInfo that can, if API is v2 or higher and -UseApiFullFeature switch param is specified, use the "&full=1" parameter to get the full properties in response lists, instead of just the objects' URLs as is listed in the default view (and as is the only view in API v1)
-	-get objects with &full=1 if so desired
-	-create output objects from all full objects
-	-only leveraging in Get-XIOLunMap call right now
-	-will eventually roll out to more, and then exclusively use this for the day that v2 API is the lowest supported
-	-great speed increase (improved by over 15x)
-
-
 
 
 

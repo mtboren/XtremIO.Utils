@@ -2,9 +2,13 @@
 
 ### Changelog ###
 ### v0.9.x
-Dec 2015
+Jan 2016
 
-This version is a collection of bug fixes, feature additions, and standardization.  Fixed are several bugs relating to using the module in PowerShell v5, and changes in behavior due to changes in the XMS (particularly, the launching of the Java management console).  See below for the full list.
+This version is a collection of improvements, bug fixes, feature additions, and standardization.  Fixed are several bugs relating to using the module in PowerShell v5, and changes in behavior due to changes in the XMS (particularly, the launching of the Java management console).
+
+A couple of improvements around speed/efficiency take advantage of capabilities provided by v2.0 of the XtremIO REST API (which came to be in XIOS v4).  Firstly, we can now retrieve all objects of a given type in one web call, instead of one web call per object.  Also, we can specify just the properties to return, instead of always receiving all properties of the given objects.  While this can help greatly with the speed and efficiency of the cmdlets, it introduces a new potential for issue:  the size of the JSON response might be larger than 2MB, the maximum size currently supported by the PowerShell cmdlet from Microsoft used in this module for JSON handling (`ConvertFrom-Json`).  The use of the `-Property` parameter can help keep the response size under the current 2MB max.  If Microsoft does not make change this cmdlet in the near future, we will need to explore other means for JSON handling. 
+
+See below for the full list of changes.
 
 - \[new] added `New-XIOSnapshot` cmdlet for creating snapshots from the types `Volume`, `Tag`, `ConsistencyGroup`, and `SnapshotSet`, including from-pipeline support. Note:  this cmdlet currently supports new snapshots via the v2 API (in XIOS v4). Further support for snapshots in v1 of the API may be coming, depending on need
 - \[improvement] added support for leveraging v2 API feature that allows for getting "full" view of objects upon initial request, instead of getting just the list of HREFs the the "default" view gives. Allows for far more efficient queries.  Supported by `Get-XIOItemInfo`, implemented in `Get-XIOLunMap` for now.  `Get-XIOLunMap` showed an up to 15x speed improvement in the testing environment
@@ -73,6 +77,7 @@ This version is a collection of bug fixes, feature additions, and standardizatio
 		- On `Xenv`:
 			- **CHANGED** `XenvId`: it is now the unique identifier of the `Xenv`, instead of the array of <id>,<name>,<index>; this is like the change to the `FolderId` property of `IgFolder` objects above
 			- added `NumModule`, `StorageController` properties
+- \[improvement] Added ability to specify particular properties for retrieval/return, so as to allow for quicker, more focused queries.  Implemented on `Get-XIOItemInfo` and `Get-XIOLunMap` cmdlets first.  Can specify the "nice" property names as defined for objects created by the PowerShell module, or the "raw" property names as defined in the XIO REST API.
 - \[improvement] for when web call returns an error, added additional verbose error info from WebException in InnnerException of returned error (if any) for when issue getting items from API.  This is helpful for troubleshooting, especially when you are crafting own URIs
 - \[bugfix] `Open-XIOMgmtConsole` now works as it should on XMS of XIOS version 4 and newer -- the path to the .jnlp file is now dependent upon the XMS version. Also uses HTTPS to get launch file. This now expects the current PowerShell session has an `XioConnection` to the target XMS server (via which the XMS version info is retrieved)
 - \[bugfix] Module now works in PowerShell v5. Importing the module in PowerShell v5 previously resulted in multiple errors of:  `Multiple ambiguous overloads found for ".ctor" and the argument count: "1"`. This was due to the `OutputType` statement for cmdlet definitions specifying a type that was not yet defined in the session, which was due to the adding of types occurring _after_ the dot-source of the given function-defining .ps1 file
@@ -94,6 +99,9 @@ This version is a collection of bug fixes, feature additions, and standardizatio
 		- `Get-XIOVolumePerformance`
 	- difference in PowerShell v5 in `Where-Object` result in function internals for creating the URL. Fixed for:
 		- `Get-XIOPerformanceCounter`
+- \[bugfix] Fixed issue where `BuildNumber` property of XMS object did not handle all possible values.  Usually the value received from the API call is an Int32, but can be string. **CHANGED:**  This property was renamed to `Build` and is now a `String` instead of an `Int32`
+
+
 
 
 ### v0.9.0

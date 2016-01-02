@@ -13,6 +13,9 @@
 	Get-XIOItemInfo -ItemType cluster -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Example
+	Get-XIOItemInfo -ItemType lun-map -Property VolumeName,LunID
+	Get LunMap objects, but just retrieve the two specified properties instead of the default of retrieving all properties
+	.Example
 	Get-XIOItemInfo -Uri https://xms.dom.com/api/json/types -ReturnFullResponse | Select-Object -ExpandProperty children
 	Return PSCustomObject that contains the full data from the REST API response (this particular example returns the HREFs for all of the base types supported by the given XMS's API -- helpful for spelunking for when new API versions come out and this XtremIO PowerShell module is not yet updated to cover new types that may have come to be)
 	.Outputs
