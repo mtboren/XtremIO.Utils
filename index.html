@@ -183,6 +183,19 @@
 </code></pre>
 
 <h2>
+<a id="use--property-parameter-to-retrieve-only-given-property-values-good-for-efficiency" class="anchor" href="#use--property-parameter-to-retrieve-only-given-property-values-good-for-efficiency" aria-hidden="true"><span class="octicon octicon-link"></span></a>Use -Property parameter to retrieve only given property values (good for efficiency)</h2>
+
+<pre><code>    PS C:\&gt; Get-XIOLunMap -Property VolumeName,LunId
+    VolumeName                            LunId   InitiatorGroup                       TargetGrpName
+    ----------                            -----   --------------                       -------------
+    testvol02                             101
+    testvol02                             101
+    testvol03                             102
+    testvol03                             102
+    ...
+</code></pre>
+
+<h2>
 <a id="get-events" class="anchor" href="#get-events" aria-hidden="true"><span class="octicon octicon-link"></span></a>Get Events</h2>
 
 <pre><code>    PS C:\&gt; Get-XIOEvent -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
