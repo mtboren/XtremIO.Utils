@@ -55,13 +55,10 @@ function Get-XIOInfo {
 			## issues with Invoke-RestMethod:  even after disabling cert validation, issue sending properly formed request; at the same time, using the WebClient object succeeds; furthermore, after a successful call to DownloadString() with the WebClient object, the Invoke-RestMethod succeeds.  What the world?  Something to investigate further
 			#   so, working around that for now by using the WebClient class; Invoke-RestMethod will be far more handy, esp. when it's time for modification of XtremIO objects
 			$oWebClient = New-Object System.Net.WebClient; $oWebClient.Headers.Add("Authorization", $hshParamsForRequest["Headers"]["Authorization"])
-			$oWebClient.DownloadString($hshParamsForRequest["Uri"]) | ConvertFrom-Json
+			$oWebClient.DownloadString($hshParamsForRequest["Uri"]) | Foreach-Object {Write-Verbose "$strLogEntry_ToAdd API reply JSON length (KB): $([Math]::Round($_.Length/1KB, 3))"; $_} | ConvertFrom-Json
 		} ## end try
 		catch {
-			Write-Verbose -Verbose "Uh-oh -- something went awry trying to get data from that URI ('$($hshParamsForRequest['Uri'])'). A pair of guesses:  no such XMS appliance, or that item type is not valid in the API version on the XMS appliance that you are contacting, maybe?  Should handle this in future module release.  Throwing error for now."
-			## throw the caught error (instead of breaking, which adversely affects subsequent calls; say, if in a try/catch statement in a Foreach-Object loop, "break" breaks all the way out of the foreach-object, vs. using Throw to just throw the error for this attempt, and then letting the calling item continue in the Foreach-Object
-			Throw
-			#Write-Error $_ -Category ConnectionError -RecommendedAction "Check creds, URL ('$($hshParamsForRequest["Uri"])') -- valid?"; break;
+			_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsForRequest['Uri'] -ErrorRecord $_
 		} ## end catch
 		## if CertValidationCallback was altered, set back to original value
 		if ($true -eq $TrustAllCert_sw) {
@@ -88,11 +85,15 @@ function New-XioApiURI {
 		## Switch:  return array output of URI,Port, instead of just URI?
 		[switch]$ReturnURIAndPortInfo,
 		## Switch:  test comms to the given port?  Likely only used at Connect- time (after which, somewhat safe assumption that the given port is legit)
-		[switch]$TestPort
+		[switch]$TestPort,
+		## XtremIO REST API version to use -- which will determine a part of the URI
+		[System.Version]$RestApiVersion
 	) ##end param
 
 	## string to add to messages written by this function; function name in square brackets
 	$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+
+	$strRestApiSpecificUriPiece = if ($PSBoundParameters.ContainsKey("RestApiVersion") -and ($RestApiVersion -ge [System.Version]"2.0")) {"/v$($RestApiVersion.Major)"} else {$null}
 
 	$intPortToUse = $(
 		## if a port was specified, try to use it
@@ -103,7 +104,7 @@ function New-XioApiURI {
 		} ## end if
 		else {$intPortToTry}
 	) ## end subexpression
-	$strURIToUse = if ($intPortToUse -eq 443) {"https://${ComputerName_str}/api/json$RestCommand_str"}
+	$strURIToUse = if ($intPortToUse -eq 443) {"https://${ComputerName_str}/api/json$strRestApiSpecificUriPiece$RestCommand_str"}
 		else {"http://${ComputerName_str}:$intPortToUse$RestCommand_str"}
 	Write-Verbose "$strLogEntry_ToAdd URI to use: '$strURIToUse'"
 	if ($false -eq $ReturnURIAndPortInfo) {return $strURIToUse} else {return @($strURIToUse,$intPortToUse)}
@@ -199,6 +200,31 @@ function Disable-CertValidation {
 ##} ## end fn
 
 
+<#	.Description
+	Helper function to uniformly handle web exceptions, returning valuable info as to the exception response, if any
+#>
+function _Invoke-WebExceptionErrorCatchHandling {
+	param (
+		## the URI that was being used when exception was encountered
+		[parameter(Mandatory=$true)][string]$URI,
+		## the error record that was caught
+		[parameter(Mandatory=$true)][System.Management.Automation.ErrorRecord]$ErrorRecord
+	) ## end param
+	process {
+		Write-Verbose -Verbose "Uh-oh -- something went awry trying to get data from that URI ('$URI')"
+		if ($null -ne $ErrorRecord.Exception.InnerException.Response) {
+			Write-Verbose -Verbose "(exception status of '$($ErrorRecord.Exception.InnerException.Status)', message of '$($ErrorRecord.Exception.InnerException.Message)')"
+			## get the Response from the InnerException if available
+			Write-Verbose -Verbose ("WebException response:`n{0}" -f ([System.IO.StreamReader]($ErrorRecord.Exception.InnerException.Response.GetResponseStream())).ReadToEnd())
+		} ## end if
+		else {Write-Verbose -Verbose "no additional web exception response value to report"}
+		## throw the caught error (instead of breaking, which adversely affects subsequent calls; say, if in a try/catch statement in a Foreach-Object loop, "break" breaks all the way out of the foreach-object, vs. using Throw to just throw the error for this attempt, and then letting the calling item continue in the Foreach-Object
+		Throw $ErrorRecord
+		#Write-Error $ErrorRecord -Category ConnectionError -RecommendedAction "Check creds, URL ('$($hshParamsForRequest["Uri"])') -- valid?"; break;
+	} ## end process
+} ## end fn
+
+
 ## credentials-handling functions; cleaned up a bit, but based entirely on Hal Rottenberg's http://halr9000.com/article/tag/lib-authentication.ps1
 function hExport-PSCredential {
 	param ([parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$Credential, [parameter(Mandatory=$true)][string]$Path)
@@ -280,7 +306,7 @@ function Update-TitleBarForXioConnection {
 	$strNewWindowTitle = "{0}{1}{2}" -f $strWinTitleWithoutOldXmsConnInfo, $(if ((-not [System.String]::IsNullOrEmpty($strWinTitleWithoutOldXmsConnInfo)) -and ($intNumConnectedXmsServers -gt 0)) {"; "}), $(
 		if ($intNumConnectedXmsServers -gt 0) {
 			if ($intNumConnectedXmsServers -eq 1) {"Connected to XMS {0} as {1}" -f $Global:DefaultXmsServers[0].ComputerName, $Global:DefaultXmsServers[0].Credential.UserName}
-			else {"Connected to {0} XMS servers:  {1}." -f $intNumConnectedXmsServers, (($Global:DefaultXmsServers | %{$_.ComputerName}) -Join ", ")}
+			else {"Connected to {0} XMS servers:  {1}." -f $intNumConnectedXmsServers, (($Global:DefaultXmsServers | Foreach-Object {$_.ComputerName}) -Join ", ")}
 		} ## end if
 		#else {"Not Connected to XMS"}
 	) ## end -f call
@@ -338,7 +364,7 @@ function Get-ItemTypeFromURI {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Mandatory=$true)][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
 	) ## end param
-	$strItemType_plural = ([RegEx]("^(/api/json)?/types/(?<itemType>[^/]+)/")).Match(([System.Uri]($URI_str)).AbsolutePath).Groups.Item("itemType").Value
+	$strItemType_plural = ([RegEx]("^(/api/json)?(/v\d{1,2})?/types/(?<itemType>[^/]+)/")).Match(([System.Uri]($URI_str)).AbsolutePath).Groups.Item("itemType").Value
 	## get the plural item type from the URI (the part of the URI after "/types/")
 	return $strItemType_plural
 } ## end function
@@ -367,7 +393,7 @@ function Convert-UrlEncoding {
 
 	process {
 		if (-not ("System.Web.HttpUtility" -as [type])) {Add-Type -AssemblyName System.Web}
-		$StringToConvert_arr | %{
+		$StringToConvert_arr | Foreach-Object {
 			$strThisStringToConvert = $_
 			$strActionTaken,$strThisConvertedString = if ($Decode_sw -eq $true) {"decoded"; [System.Web.HttpUtility]::UrlDecode($strThisStringToConvert)}
 				else {"encoded"; [System.Web.HttpUtility]::UrlEncode($strThisStringToConvert)}
@@ -447,6 +473,16 @@ function _New-ScheduleDisplayString {
 } ## end fn
 
 
+function _Get-NumSecondSinceUnixEpoch {
+<#	.Description
+	Helper function to get the number of whole seconds it has been since the UNIX Epoch until the "now" local datetime
+#>
+	process {
+		[int64](New-TimeSpan -Start (Get-Date "01 Jan 1970 00:00:00").ToLocalTime()).TotalSeconds
+	} ## end process
+} ## end fn
+
+
 function _Get-LocalDatetimeFromUTCUnixEpoch {
 <#	.Description
 	Helper function to get the current, local datetime from a UNIX Epoch time
@@ -499,15 +535,20 @@ function _New-ObjListFromProperty_byObjName {
 	begin {
 		## mapping of "raw" object name from API to desired display name used for object ID prefix in subsequent helper function
 		$hshObjNameToObjPrefixMap = @{
-			Storagecontroller = "StorageController"
 			"Switch" = "IbSwitch"
-			SnapSet = "SnapshotSet"
-			Scheduler = "SnapshotScheduler"
-			Volume = "Vol"
+			Brick = "Brick"
+			Cluster = "Cluster"
 			ConsistencyGroup = "ConsistencyGrp"
-			InitiatorGroup = "InitiatorGrp"
+			DataProtectionGroup = "DataProtectionGrp"
+			Folder = "Folder"
 			Initiator = "Initiator"
+			InitiatorGroup = "InitiatorGrp"
+			Scheduler = "SnapshotScheduler"
+			SnapSet = "SnapshotSet"
+			Storagecontroller = "StorageController"
 			Tag = "Tag"
+			TargetGroup = "TargetGrp"
+			Volume = "Vol"
 		} ## end hashtable
 		$strObjPrefixToUse = if ($hshObjNameToObjPrefixMap.ContainsKey($Name)) {$hshObjNameToObjPrefixMap[$Name]} else {"UnkItemType"}
 	} ## end begin
@@ -517,6 +558,58 @@ function _New-ObjListFromProperty_byObjName {
 		if ($Name -ne "none") {_New-ObjListFromProperty -IdPropertyPrefix $strObjPrefixToUse -ObjectArray $ObjectArray}
 	} ## end process
 } ## end fn
+
+
+<#	.Description
+	Helper function to take "raw" API object and create new XIO Item Info object for return to consumer
+#>
+function _New-ObjectFromApiObject {
+	param (
+		## Object returned from API call and that has all of the juicy properties from which to make an object to return to the user
+		[parameter(Mandatory=$true)][PSObject]$ApiObject,
+		## Item type as defined by the REST API (plural)
+		[parameter(Mandatory=$true)][String]$ItemType,
+		## The XMS Computer Name from which this object came, for populating that property on the return object
+		[parameter(Mandatory=$true)][String]$ComputerName,
+		## The base URI for this item's type, with which to generat a full item URI (base plus the item's index)
+		[String]$BaseItemTypeUri,
+		## Switch:  is this object from the API call that returns a "full" object view, instead of from other subsequent calls to the API (such as calls to v1 API)?
+		[Switch]$UsingFullApiObjectView
+	)
+	## FYI:  for all types except Events, $ApiObject is an array of items whose Content property is a PSCustomObject with all of the juicy properties of info
+	##   for type Events, $ApiObject is one object with an Events property, which is an array of PSCustomObject
+	$ApiObject | Foreach-Object {
+		$oThisResponseObj = $_
+		## the URI of this item (or of all of the events, if this item type is "events", due to the difference in the way event objects are returned from API)
+		$strUriThisItem = if ($PSBoundParameters.ContainsKey("BaseItemTypeUri")) {"$BaseItemTypeUri{0}" -f $oThisResponseObj.Index} else {($oThisResponseObj.Links | Where-Object {$_.Rel -eq "Self"}).Href}
+		## FYI:  name of the property of the response object that holds the details about the XIO item is "content" for nearly all types, but "events" for event type
+		## if the item type is events, access the "events" property of the response object; else, if "performance", use whole object, else, access the "Content" property
+		$(if ($ItemType -eq "events") {$oThisResponseObj.$ItemType} elseif (($ItemType -eq "performance") -or $UsingFullApiObjectView) {$oThisResponseObj} else {$oThisResponseObj."Content"}) | Foreach-Object {
+			$oThisResponseObjectContent = $_
+			## the TypeName to use for the new object
+			$strPSTypeNameForNewObj = Switch ($ItemType) {
+				"infiniband-switches" {"XioItemInfo.InfinibandSwitch"; break}
+				"performance" {"XioItemInfo.PerformanceCounter"; break}
+				"schedulers" {"XioItemInfo.SnapshotScheduler"; break}
+				"xms" {"XioItemInfo.XMS"; break}
+				default {"XioItemInfo.$((Get-Culture).TextInfo.ToTitleCase($_.TrimEnd('s').ToLower()).Replace('-',''))"}
+			} ## end switch
+			## make new object(s) with some juicy info (and a new property for the XMS "computer" name used here); usually just one object returned per call to _New-Object_from..., but if of item type "performance", could be multiple
+			_New-Object_fromItemTypeAndContent -argItemType $ItemType -oContent $oThisResponseObjectContent -PSTypeNameForNewObj $strPSTypeNameForNewObj | Foreach-Object {
+				$oObjToReturn = $_
+				## set ComputerName property
+				$oObjToReturn.ComputerName = $ComputerName
+				## set URI property that uniquely identifies this object
+				$oObjToReturn.Uri = $strUriThisItem
+				## if this is a PerformanceCounter item, add the EntityType property
+				if ("performance" -eq $ItemType_str) {$oObjToReturn.EntityType = $strPerformanceCounterEntityType}
+				## return the object
+				return $oObjToReturn
+			} ## end foreach-object
+		} ## end foreach-object
+	} ## end foreach-object
+} ## end function
+
 
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
@@ -572,6 +665,7 @@ function _New-Object_fromItemTypeAndContent {
 			"initiator-groups" {
 				[ordered]@{
 					Name = $oContent.Name
+					Guid = $oContent.guid
 					Index = $oContent.index
 					NumInitiator = $oContent."num-of-initiators"
 					NumVol = $oContent."num-of-vols"
@@ -617,6 +711,7 @@ function _New-Object_fromItemTypeAndContent {
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
 					InitiatorGrpId = $oContent."ig-id"[0]
+					Severity = $oContent."obj-severity"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -627,8 +722,10 @@ function _New-Object_fromItemTypeAndContent {
 					IOPS = [int64]$oContent.iops
 					Index = $oContent.index
 					ConnectionState = $oContent."initiator-conn-state"
+					Guid = $oContent.guid
 					InitiatorGrpId = $oContent."ig-id"[0]
-					InitiatorId = $oContent."initiator-id"
+					InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$oContent."ig-id")
+					InitiatorId = $oContent."initiator-id"[0]
 					PortType = $oContent."port-type"
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
@@ -670,6 +767,8 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					Severity = $oContent."obj-severity"
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"bricks" {
@@ -679,12 +778,19 @@ function _New-Object_fromItemTypeAndContent {
 					ClusterName = $oContent."sys-id".Item(1)
 					State = $oContent."brick-state"
 					NumSSD = $oContent."num-of-ssds"
+					## deprecated; replacing with NumStorageController
 					NumNode = $oContent."num-of-nodes"
+					NumStorageController = $oContent."num-of-nodes"
+					## deprecated; replacing with StorageController
 					NodeList = $oContent."node-list"
 					BrickGuid = $oContent."brick-guid"
+					Guid = $oContent."brick-id"[0]
 					BrickId = $oContent."brick-id"
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
 					RGrpId = $oContent."rg-id"
 					SsdSlotInfo = $oContent."ssd-slot-array"
+					Severity = $oContent."obj-severity"
+					StorageController =  _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray $oContent."node-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -703,6 +809,7 @@ function _New-Object_fromItemTypeAndContent {
 					TotProvTB = $oContent."vol-size" / 1GB
 					OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
 					DedupeRatio = $dblDedupeRatio
+					ClusterId = $oContent."sys-id"[0]
 					## available in 3.0 and up
 					CompressionFactor = $(if ($null -ne $oContent."compression-factor") {$oContent."compression-factor"})
 					## available in 3.0 and up
@@ -711,6 +818,8 @@ function _New-Object_fromItemTypeAndContent {
 					DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
 					ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
 					BrickList = $oContent."brick-list"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray $oContent."brick-list"
+					InfinibandSwitch = _New-ObjListFromProperty_byObjName -Name "Switch" -ObjectArray $oContent."ib-switch-list"
 					Index = [int]$oContent.index
 					ConsistencyState = $oContent."consistency-state"
 					## available in 2.4.0 and up
@@ -718,6 +827,7 @@ function _New-Object_fromItemTypeAndContent {
 					## available in 2.4.0 and up
 					EncryptionSupported = $oContent."encryption-supported"
 					FcPortSpeed = $oContent."fc-port-speed"
+					Guid = $oContent.guid
 					InfiniBandSwitchList = $oContent."ib-switch-list"
 					IOPS = [int64]$oContent.iops
 					LicenseId = $oContent."license-id"
@@ -818,6 +928,7 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					Severity = $oContent."obj-severity"
 					## available in 3.0 and up
 					SharedMemEfficiencyLevel = $oContent."shared-memory-efficiency-level"
 					## available in 3.0 and up
@@ -830,11 +941,14 @@ function _New-Object_fromItemTypeAndContent {
 					SystemSN = $oContent."sys-psnt-serial-number"
 					SystemState = $oContent."sys-state"
 					SystemStopType = $oContent."sys-stop-type"
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"data-protection-groups" {
 				[ordered]@{
 					Name = $oContent.name
+					DataProtectionGrpId = $oContent."rg-id"[0]
+					Guid = $oContent.guid
 					Index = $oContent.index
 					State = $oContent."protection-state"
 					TotSSDTB = $oContent."ud-ssd-space" / 1GB
@@ -860,12 +974,15 @@ function _New-Object_fromItemTypeAndContent {
 					# RebuildInProgRaw = $oContent."rebuild-in-progress"
 					RebuildPreventionReason = $oContent."rebuild-prevention-reason"
 					RebuildProgress = [int]$oContent."rebuild-progress"
+					Severity = $oContent."obj-severity"
 					## the "raw" value returned from the API
 					# SSDPrepInProgRaw = $oContent."ssd-preparation-in-progress"
 					SSDPrepProgress = $oContent."ssd-preparation-progress"
 					AvailableRebuild = $oContent."available-rebuilds"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickName = $oContent."brick-id"[1]
 					BrickIndex = $oContent."brick-id"[2]
+					Cluster = _New-ObjListFromProperty_byObjName -Name "Cluster" (,$oContent."sys-id")
 					ClusterName = $oContent."sys-id"[1]
 					ClusterIndex = $oContent."sys-id"[2]
 					NumNode = $oContent."num-of-nodes"
@@ -890,12 +1007,16 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					Name = $oContent.name
 					Caption = $oContent.caption
+					ColorHex = $oContent.color
+					CreationTime = $(if ($null -ne $oContent."creation-time-long") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)})
 					Index = $oContent.index
 					## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-					InitiatorGrpIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
-					FolderId = $oContent."folder-id"
+					InitiatorGrpIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
+					FolderId = $oContent."folder-id"[0]
+					Guid = $oContent.guid
 					NumIG = $oContent."num-of-direct-objs"
 					NumSubfolder = $oContent."num-of-subfolders"
+					ObjectType = $oContent."object-type"
 					ParentFolder = $oContent."parent-folder-id"[1]
 					ParentFolderId = $oContent."parent-folder-id"[0]
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
@@ -938,7 +1059,8 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
-					SubfolderList = $oContent."subfolder-list"
+					Severity = $oContent."obj-severity"
+					SubfolderList = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray $oContent."subfolder-list"
 					IOPS = [int64]$oContent.iops
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -947,6 +1069,9 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					VolumeName = $oContent."vol-name"
 					LunId = $oContent.lun
+					LunMapId = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[0]})
+					Name = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[1]})
+					Guid = $oContent.guid
 					## changed property name from "ig-name" after v0.6.0 release
 					InitiatorGroup = $oContent."ig-name"
 					InitiatorGrpIndex = $oContent."ig-index"
@@ -955,7 +1080,9 @@ function _New-Object_fromItemTypeAndContent {
 					## changed from lm-id to mapping-id in v2.4
 					MappingId = $oContent."mapping-id"
 					## available in 2.4.0 and up
+					Index = $oContent.index
 					MappingIndex = $oContent."mapping-index"
+					Severity = $oContent."obj-severity"
 					XmsId = $oContent."xms-id"
 					VolumeIndex = $oContent."vol-index"
 				} ## end ordered dictionary
@@ -968,6 +1095,7 @@ function _New-Object_fromItemTypeAndContent {
 					UsedGB = $oContent."ssd-space-in-use"/1MB
 					SlotNum = $oContent."slot-num"
 					ModelName = $oContent."model-name"
+					Model = $oContent."model-name"
 					SerialNumber = $oContent."serial-number"
 					FWVersion = $oContent."fw-version"
 					PartNumber = $oContent."part-number"
@@ -988,8 +1116,11 @@ function _New-Object_fromItemTypeAndContent {
 					IOPS = [int64]$oContent."iops"
 					HealthState = $oContent."health-state"
 					ObjSeverity = $oContent."obj-severity"
+					Guid = $oContent.guid
+					Severity = $oContent."obj-severity"
 					Index = $oContent."index"
 					FWVersionError = $oContent."fw-version-error"
+					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
 					EncryptionStatus = $oContent."encryption-status"
@@ -997,6 +1128,7 @@ function _New-Object_fromItemTypeAndContent {
 					StatusLED = $oContent."status-led"
 					SwapLED = $oContent."swap-led"
 					HWRevision = $oContent."hw-revision"
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
 					DiagHealthState = $oContent."diagnostic-health-state"
 					SSDLink1Health = $oContent."ssd-link1-health-state"
 					SSDLink2Health = $oContent."ssd-link2-health-state"
@@ -1004,7 +1136,7 @@ function _New-Object_fromItemTypeAndContent {
 					BrickId = $oContent."brick-id"
 					RGrpId = $oContent."rg-id"
 					SsdRGrpState = $oContent."ssd-rg-state"
-					SsdId = $oContent."ssd-id"
+					SsdId = $oContent."ssd-id"[0]
 					SsdUid = $oContent."ssd-uid"
 					SysId = $oContent."sys-id"
 					XmsId = $oContent."xms-id"
@@ -1019,10 +1151,13 @@ function _New-Object_fromItemTypeAndContent {
 					IBAddr2 = $oContent."ib-addr2"
 					IPMIAddr = $oContent."ipmi-addr"
 					BiosFWVersion = $oContent."bios-fw-version"
+					FWVersion = $oContent."bios-fw-version"
 					## hm, seems to be second item in the 'brick-id' property
 					BrickName = $oContent."brick-id".Item(1)
 					## hm, seems to be second item in the 'sys-id' property
 					Cluster = $oContent."sys-id".Item(1)
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
+					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
 					EncryptionMode = $oContent."encryption-mode"
@@ -1034,18 +1169,27 @@ function _New-Object_fromItemTypeAndContent {
 						HWRevision = $oContent."fc-hba-hw-revision"
 						Model = $oContent."fc-hba-model"
 					} ## end New-Object
+					Guid = $oContent.guid
 					HealthState = $oContent."node-health-state"
+					## no overall HWRevision property, but adding here so that can be a hardwarebase object
+					HWRevision = "n/a"
+					IdLED = $oContent."identify-led"
+					Index = $oContent.index
 					IPMIState = $oContent."ipmi-conn-state"
 					## available in 2.4.0 and up
 					JournalState = $oContent."journal-state"
+					LifecycleState = $oContent."fru-lifecycle-state"
 					## available in 2.4.0 and up
 					MgmtPortSpeed = $oContent."mgmt-port-speed"
 					## available in 2.4.0 and up
 					MgmtPortState = $oContent."mgmt-port-state"
+					## no overall model property, but adding here so that can be a hardwarebase object
+					Model = $null
 					NodeMgrConnState = $oContent."node-mgr-conn-state"
 					NumSSD = $oContent."num-of-ssds"
 					NumSSDDown = $oContent."ssd-dn"
 					NumTargetDown = $oContent."targets-dn"
+					PartNumber = $oContent."part-number"
 					PCI = New-Object -Type PSObject -Property ([ordered]@{
 						"10geHba" = New-Object -Type PSObject -Property @{
 							FWVersion = $oContent."pci-10ge-hba-fw-version"
@@ -1073,11 +1217,15 @@ function _New-Object_fromItemTypeAndContent {
 							PortState = $oContent."sas${_}-port-state"
 						}) ## end New-Object
 					}) ## end sub call
-					SerialNumber = $oContent."serial-number"
 					## available in 2.4.0 and up
 					SdrFWVersion = $oContent."sdr-fw-version"
+					SerialNumber = $oContent."serial-number"
+					Severity = $oContent."obj-severity"
+					StatusLED = $oContent."status-led"
+					StorageControllerId = $oContent."node-id"[0]
 					SWVersion = $oContent."sw-version"
 					OSVersion = $oContent."os-version"
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"target-groups" {
@@ -1085,7 +1233,9 @@ function _New-Object_fromItemTypeAndContent {
 					Name = $oContent.name
 					Index = $oContent.index
 					ClusterName = $oContent."sys-id"[1]
-					TargetGrpId = $oContent."tg-id"
+					Guid = $oContent.guid
+					TargetGrpId = $oContent."tg-id"[0]
+					Severity = $oContent."obj-severity"
 					SysId = $oContent."sys-id"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1094,11 +1244,14 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					Name = $oContent.name
 					PortAddress = $oContent."port-address"
+					PortMacAddress = ($oContent."port-mac-addr" -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
 					PortSpeed = $oContent."port-speed"
 					PortState = $oContent."port-state"
 					PortType = $oContent."port-type"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					DriverVersion = $oContent."driver-version"  ## renamed from "driver-version"
+					ErrorReason = $oContent."tar-error-reason"
 					FCIssue = New-Object -Type PSObject -Property ([ordered]@{
 						InvalidCrcCount = [int]$oContent."fc-invalid-crc-count"
 						LinkFailureCount = [int]$oContent."fc-link-failure-count"
@@ -1108,7 +1261,12 @@ function _New-Object_fromItemTypeAndContent {
 						PrimSeqProtErrCount = [int]$oContent."fc-prim-seq-prot-err-count"
 					}) ## end New-Object
 					FWVersion = $oContent."fw-version"  ## renamed from "fw-version"
+					Severity = $oContent."obj-severity"
+					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray (,$oContent."node-id")
+					TargetGroup = _New-ObjListFromProperty_byObjName -Name "TargetGroup" -ObjectArray (,$oContent."tg-id")
 					TargetGrpId = $oContent."tg-id"
+					TargetId = $oContent."tar-id"[0]
+					Guid = $oContent.guid
 					Index = $oContent.index
 					IOPS = [int64]$oContent.iops
 					JumboFrameEnabled = $oContent."jumbo-enabled"
@@ -1153,9 +1311,7 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
-					#UnalignedIOPS = [int64]$oContent."unaligned-iops"  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-					#AccSizeOfRdTB = $oContent."acc-size-of-rd" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
-					#AccSizeOfWrTB = $oContent."acc-size-of-wr" / 1GB  ## changed in module v0.5.7 (moved into PerformanceInfo section)
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			## snapshots and volumes have the same properties
@@ -1163,24 +1319,34 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					Name = $oContent.name
 					NaaName = $oContent."naa-name"
-					VolSizeTB = $oContent."vol-size" / 1GB
-					VolId = $oContent."vol-id"[0]  ## renamed from "vol-id"
+					VolSizeTB = $(if ($null -ne $oContent."vol-size") {$oContent."vol-size" / 1GB})
+					VolId = $(if ($null -ne $oContent."vol-id") {$oContent."vol-id"[0]})  ## renamed from "vol-id"
 					AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
 					AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
 					DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
+					Folder = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray (,$oContent."folder-id")
 					LBSize = $oContent."lb-size"  ## renamed from "lb-size"
 					NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
+					NumLunMap = $oContent."num-of-lun-mappings"
 					NumLunMapping = $oContent."num-of-lun-mappings"
+					LunMapList = $oContent."lun-mapping-list" | Where-Object {$null -ne $_} | Foreach-Object {
+						New-Object -Type PSObject -Property ([ordered]@{
+							InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$_[0])
+							TargetGroup = _New-ObjListFromProperty_byObjName -Name "TargetGroup" -ObjectArray (,$_[1])
+							LunId = $_[2]
+						}) ## end New-Object
+					} ## end foreach-object
 					LunMappingList = $oContent."lun-mapping-list"
+					Guid = $oContent.guid
 					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-					InitiatorGrpIdList = $oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}
+					InitiatorGrpIdList = $(if ($null -ne $oContent."lun-mapping-list") {@($oContent."lun-mapping-list" | Foreach-Object {$_[0][0]})})
 					## available in 2.4.0 and up
-					UsedLogicalTB = $(if (Get-Member -Input $oContent -Name "logical-space-in-use") {$oContent."logical-space-in-use" / 1GB} else {$null})
-					IOPS = [int64]$oContent.iops
+					UsedLogicalTB = $(if ($null -ne $oContent."logical-space-in-use") {$oContent."logical-space-in-use" / 1GB})
+					IOPS = $oContent.iops
 					Index = $oContent.index
 					## available in 3.0 and up
 					Compressible = $oContent.compressible
-					CreationTime = [System.DateTime]$oContent."creation-time"
+					CreationTime = $(if ($null -ne $oContent."creation-time") {[System.DateTime]$oContent."creation-time"})
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							## latency in microseconds (µs)
@@ -1237,9 +1403,12 @@ function _New-Object_fromItemTypeAndContent {
 					UnalignedIOAlertsCfg = $oContent."unaligned-io-alerts"
 					VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
 					LuName = $oContent."lu-name"
+					Severity = $oContent."obj-severity"
 					SmallIORatio = $oContent."small-io-ratio"
 					SmallIORatioLevel = $oContent."small-io-ratio-level"
 					SnapGrpId = $oContent."snapgrp-id"
+					SnapshotType = $oContent."snapshot-type"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					UnalignedIORatio = $oContent."unaligned-io-ratio"
 					UnalignedIORatioLevel = $oContent."unaligned-io-ratio-level"
 					SysId = $oContent."sys-id"
@@ -1248,16 +1417,22 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"volume-folders" {
 				[ordered]@{
+					Caption = $oContent.caption
+					ColorHex = $oContent.color
+					CreationTime = $(if ($null -ne $oContent."creation-time-long") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)})
 					Name = $oContent.name
 					ParentFolder = $oContent."parent-folder-id"[1]
 					NumVol = [int]$oContent."num-of-vols"
 					VolSizeTB = $oContent."vol-size" / 1GB
 					FolderId = $oContent."folder-id"[0]
+					Guid = $oContent.guid
 					ParentFolderId = $oContent."parent-folder-id"[0]
 					NumChild = [int]$oContent."num-of-direct-objs"
 					NumSubfolder = [int]$oContent."num-of-subfolders"
+					ObjectType = $oContent."object-type"
+					SubfolderList = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray $oContent."subfolder-list"
 					## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-					VolIdList = $oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}
+					VolIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
 					Index = [int]$oContent.index
 					IOPS = [int64]$oContent.iops
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
@@ -1300,17 +1475,23 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					Severity = $oContent."obj-severity"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"xenvs" {
 				[ordered]@{
 					Name = $oContent.name
+					Guid = $oContent.guid
 					Index = $oContent.index
 					CPUUsage = $oContent."cpu-usage"
 					NumMdl = $oContent."num-of-mdls"
+					NumModule = $oContent."num-of-mdls"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
-					XEnvId = $oContent."xenv-id"
+					Severity = $oContent."obj-severity"
+					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray (,$oContent."node-id")
+					XEnvId = $oContent."xenv-id"[0]
 					XEnvState = $oContent."xenv-state"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1832,8 +2013,8 @@ function _New-Object_fromItemTypeAndContent {
 					Name = $oContent.name
 					Index = $oContent.index
 					XmsId = $oContent."xms-id"
-					## the software version's build number; like, "41" for SWVersion "4.0.1-41"
-					BuildNumber = [int]$oContent.build
+					## the software version's build; like, "41" for SWVersion "4.0.1-41", or "41_hotfix_1" for "4.0.1-41_hotfix_1"
+					Build = $oContent.build
 					Config = New-Object -Type PSObject -Property ([ordered]@{
 						AllowEmptyPassword = [boolean]$oContent."allow-empty-password"
 						DefaultUserInactivityTimeoutMin = [int]$oContent."default-user-inactivity-timeout"

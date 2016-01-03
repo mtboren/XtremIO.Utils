@@ -10,11 +10,13 @@ function New-XIOItem {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Item type to create; currently supported types:
 		##   for all API versions:  "ig-folder", "initiator, "initiator-group", "lun-map", "volume", "volume-folder"
-		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
+		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","snapshot","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
 		## JSON for the body of the POST WebRequest, for specifying the properties for the new XIO object
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForNewItem_str,
 		## Item name being made (for checking if such item already exists)
-		[parameter(Mandatory=$true)][string]$Name
+		[parameter(Mandatory=$true)][string]$Name,
+		## XtremIO REST API version to use
+		[System.Version]$XiosRestApiVersion
 	) ## end param
 
 	Begin {
@@ -30,7 +32,8 @@ function New-XIOItem {
 
 	Process {
 		## make hashtable of params for the Get call (that verifies if any such object by given name exists); remove any extra params that were copied in that are not used for the Get call, or where the param name is not quite the same in the subsequent function being called
-		$hshParamsForGetItem = $PSBoundParameters; "SpecForNewItem_str","WhatIf" | %{$hshParamsForGetItem.Remove($_) | Out-Null}
+		$hshParamsForGetItem = @{}
+		$PSBoundParameters.Keys | Where-Object {"SpecForNewItem_str","XiosRestApiVersion","WhatIf" -notcontains $_} | Foreach-Object {$hshParamsForGetItem[$_] = $PSBoundParameters[$_]}
 		## if the item type is of "lun-map", do not need to get XIO Item Info again, as that is already done in the New-XIOLunMap call, and was $null at that point, else it would not have progressed to _this_ point
 		$oExistingXioItem = if ($ItemType_str -eq "lun-map") {$null} else {Get-XIOItemInfo @hshParamsForGetItem}
 		## if such an item already exists, write a warning and stop
@@ -45,6 +48,7 @@ function New-XIOItem {
 						## make URI
 						Uri = $(
 							$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
+							if ($PSBoundParameters.ContainsKey("XiosRestApiVersion")) {$hshParamsForNewXioApiURI["RestApiVersion"] = $XiosRestApiVersion}
 							New-XioApiURI @hshParamsForNewXioApiURI)
 						## JSON contents for body, for the params for creating the new XIO object
 						Body = $SpecForNewItem_str
@@ -56,11 +60,10 @@ function New-XIOItem {
 
 					## try request
 					try {
-						Write-Debug "$strLogEntry_ToAdd hshParamsToCreateNewXIOItem: `n$(dWrite-ObjectToTableString -ObjectToStringify $hshParamsToCreateNewXIOItem)"
-						$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem
+						$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem -ErrorAction:Stop
 					} ## end try
-					## catch, write-error, break
-					catch {Write-Error $_; break}
+					## catch, write info, throw
+					catch {_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToCreateNewXIOItem['Uri'] -ErrorRecord $_}
 					## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
 					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
 						Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
@@ -287,8 +290,8 @@ function New-XIOLunMap {
 	} ## end begin
 
 	Process {
-		## if a mapping with these properties already exists, do not proceed
-		$arrExistingLUNMaps = Get-XIOLunMap -Volume $Volume -InitiatorGroup $InitiatorGroup -ComputerName $ComputerName_arr
+		## if a mapping with these properties already exists, do not proceed; retrieve just the given properties, so as to keep the response JSON as small as possible (for speed, plus to stay under the current 2MB hard max length for ConvertFrom-JSON cmdlet)
+		$arrExistingLUNMaps = Get-XIOLunMap -Property lun,vol-name,ig-name -Volume $Volume -InitiatorGroup $InitiatorGroup -ComputerName $ComputerName_arr
 		if ($null -ne $arrExistingLUNMaps) {Write-Warning "LUN mapping already exists for this volume/LUNID/initiator group combination:`n$(dWrite-ObjectToTableString -ObjectToStringify ($arrExistingLUNMaps | Select-Object VolumeName, LunId, InitiatorGroup, tg-name, ComputerName))`nNot continuing."}
 		## else, go ahead an try to make the new LUN mappings
 		else {
@@ -444,5 +447,160 @@ function New-XIOVolumeFolder {
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new XtremIO snapshot
+	.Example
+	New-XIOSnapshot -Volume myVol0,myVol1 -SnapshotSuffix .snap.20151225-0800-5
+	Create new writable snapshots of the two volumes of these names, placing them in a single, new SnapshotSet, and the snapshots will have the specified suffix
+	.Example
+	Get-XIOVolume -Name myVol[01] | New-XIOSnapshot -Type ReadOnly
+	Create new ReadOnly snapshots of the two volumes of these names, placing them each in their own new SnapshotSet, and the snapshots will have the default suffix in their name
+	.Example
+	Get-XIOConsistencyGroup someGrp[01] | New-XIOSnapshot -Type ReadOnly
+	Get these two consistency groups and create snapshots of each group's volumes. Note:  this makes separate SnapshotSets for each consistency group's volumes' new snapshots (that is, this does not create a single SnapshotSet with the snapshots of all of the volumes from both consistency groups)
+	.Example
+	New-XIOSnapshot -SnapshotSet SnapshotSet.1449941173 -SnapshotSuffix .addlSnap.now -Type Regular
+	Create new writable snapshots for the volumes (snapshots) in the given SnapshotSet, and makes names new snapshots with given suffix
+	.Example
+	Get-XIOSnapshotSet | Where-Object {$_.CreationTime -gt (Get-Date).AddHours(-1)} | New-XIOSnapshot ReadOnly
+	Create new ReadOnly snapshots for the volumes (snapshots) in the SnapshotSets that were made in the last hour. For every source Snapshot, this makes a new SnapshotSet object for the source volumes' new snapshots.
+	.Example
+	New-XIOSnapshot -Tag /Volume/myCoolVolTag0
+	Create snapshots of the volumes tagged with the given Tag
+	.Example
+	Get-XIOTag /Volume/myCoolVolTag* | New-XIOSnapshot -Type ReadOnly
+	Get the matching Tags and create new snapshots for each tag's volumes/snapshots. Note:  this makes separate SnapshotSets for each Tag's volumes' new snapshots (that is, this does not create a single SnapshotSet with the snapshots of all of the volumes from all Tags)
+	.Outputs
+	XioItemInfo.Snapshot object for the newly created object if successful
+#>
+function New-XIOSnapshot {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Snapshot])]
+	param(
+		## XMS address to use
+		[string[]]$ComputerName,
+		## XIO Cluster to target for new snapshot activities
+		[XioItemInfo.Cluster]$Cluster,
+		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
+		[parameter(Mandatory=$true,ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
+		## XtremIO Consistency Group whose volumes from which to create new snapshot. Accepts either ConsistencyGroup name or object
+		[parameter(Mandatory=$true, ParameterSetName="ByConsistencyGroup")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.ConsistencyGroup])})][PSObject]$ConsistencyGroup,
+		## XtremIO SnapshotSet whose snapshots from which to create new snapshot. Accepts either SnapshotSet name or object
+		[parameter(Mandatory=$true, ParameterSetName="BySnapshotSet")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.SnapshotSet])})][PSObject]$SnapshotSet,
+		## XtremIO Tag whose volumes/snapshots from which to create new snapshot. Accepts either Tag names or objects. These should be Tags for Volume object types, of course.
+		[parameter(Mandatory=$true, ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag,
+		## Suffix to append to name of source volume/snapshot, making the resultant name to use for the new snapshot. Defaults to ".<numberOfSecondsSinceUnixEpoch>"
+		[string]$SnapshotSuffix,
+		## Name to use for new SnapshotSet that will hold the new snapshot. Defaults to "SnapshotSet.<numberOfSecondsSinceUnixEpoch>"
+		[string]$NewSnapshotSetName,
+		## Related object whose volumes from which to make new snapshots -- one of the types Volume, ConsistencyGroup, SnapshotSet, or Tag
+		[parameter(Mandatory=$true, ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")]
+		[ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet]) -or ($_ -is [XioItemInfo.Tag])})]
+		[PSObject]$RelatedObject,
+		## Type of snapshot to create:  "Regular" (readable/writable) or "ReadOnly". Defaults to "Regular"
+		[ValidateSet("Regular","ReadOnly")][string]$Type = "Regular"
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "snapshot"
+		## incrementer to use in case there are multiple iterations through the process scriptblock (needed for making SnapshotSet and SnapshotSuffix values unique within the same second)
+		$intI = 0
+		$int64NumSecSinceUnixEpoch_atStart = _Get-NumSecondSinceUnixEpoch
+	} ## end begin
+
+	Process {
+		## if these were not specified, get one time the number of seconds since Unix Epoch, so that the same value is used in both suffix and snapset names if _neither_ was specified (to avoid the unlikely event where the values might be different if retrieving that count multiple times)
+		#   doing this every time through the Process scriptblock, as there is a new SnapshotSet for every "new snapshot" action in XtremIO -- cannot use the same SnapshotSet name for multiple "new snapshot" calls, as the action create the new snapshot set each time
+		if ((-not $PSBoundParameters.ContainsKey("SnapshotSuffix")) -or (-not $PSBoundParameters.ContainsKey("NewSnapshotSetName"))) {
+			## if this is the first time through the process scriptblock, just use the initial num sec; else, get the num sec again
+			$int64NumSecSinceUnixEpoch = if ($intI -eq 0) {$int64NumSecSinceUnixEpoch_atStart} else {_Get-NumSecondSinceUnixEpoch}
+			## make a string to append to SnapshotSuffix and and NewSnapshotName if this is not the first time through the process scriptblock _and_ it's the same number of seconds since the Unix Epoch as when this function was in the begin scriptblock
+			$strIncrementerSuffix = if (($intI -gt 0) -and ($int64NumSecSinceUnixEpoch -eq $int64NumSecSinceUnixEpoch_atStart)) {"_$intI"}
+			if (-not $PSBoundParameters.ContainsKey("SnapshotSuffix")) {$SnapshotSuffix = ".snapshot.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
+			if (-not $PSBoundParameters.ContainsKey("NewSnapshotSetName")) {$NewSnapshotSetName = "SnapshotSet.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
+		} ## end if
+
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			"snap-suffix" = $SnapshotSuffix
+			"snapshot-set-name" = $NewSnapshotSetName
+			"snapshot-type" = $Type.ToLower()
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshNewItemSpec["cluster-id"] = $Cluster.Name}
+
+		Switch ($PsCmdlet.ParameterSetName) {
+			## if this is ByVolume, or ByRelatedObject where the object is a Volume
+			{($_ -eq "ByVolume") -or (($_ -eq "ByRelatedObject") -and ($RelatedObject -is [XioItemInfo.Volume]))} {
+				$oParamOfInterest = if ($PsCmdlet.ParameterSetName -eq "ByVolume") {$Volume} else {$RelatedObject}
+				## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
+				$arrSrcVolumeNames = @(if (($oParamOfInterest | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$oParamOfInterest.Name} else {$oParamOfInterest})
+				$hshNewItemSpec["volume-list"] = $arrSrcVolumeNames
+				$strNameForCheckingForExistingItem = "$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"
+				break
+			} ## end case
+			## if this is ByConsistencyGroup, or ByRelatedObject where the object is a ConsistencyGroup
+			{($_ -eq "ByConsistencyGroup") -or (($_ -eq "ByRelatedObject") -and ($RelatedObject -is [XioItemInfo.ConsistencyGroup]))} {
+				$oParamOfInterest = if ($PsCmdlet.ParameterSetName -eq "ByConsistencyGroup") {$ConsistencyGroup} else {$RelatedObject}
+				if ($oParamOfInterest -is [XioItemInfo.ConsistencyGroup]) {
+					$strSrcCGName = $oParamOfInterest.Name
+					$arrSrcVolumeNames = @($oParamOfInterest.VolList.Name)
+				} else {
+					$strSrcCGName = $oParamOfInterest
+				} ## end else
+				$hshNewItemSpec["consistency-group-id"] = $strSrcCGName
+				## set the name for checking; may need updated for when receiving ConsistencyGroup value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcCGName$SnapshotSuffix"}
+				break
+			} ## end case
+			## if this is BySnapshotSet, or ByRelatedObject where the object is a SnapshotSet
+			{($_ -eq "BySnapshotSet") -or (($_ -eq "ByRelatedObject") -and ($RelatedObject -is [XioItemInfo.SnapshotSet]))} {
+				$oParamOfInterest = if ($PsCmdlet.ParameterSetName -eq "BySnapshotSet") {$SnapshotSet} else {$RelatedObject}
+				if ($oParamOfInterest -is [XioItemInfo.SnapshotSet]) {
+					$strSrcSnapsetName = $oParamOfInterest.Name
+					$arrSrcVolumeNames = @($oParamOfInterest.VolList.Name)
+				} else {
+					$strSrcSnapsetName = $oParamOfInterest
+				} ## end else
+				$hshNewItemSpec["snapshot-set-id"] = $strSrcSnapsetName
+				## set the name for checking; may need updated for when receiving SnapshotSet value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcSnapsetName$SnapshotSuffix"}
+				break
+			} ## end case
+			## if this is ByTag, or ByRelatedObject where the object is a Tag
+			{($_ -eq "ByTag") -or (($_ -eq "ByRelatedObject") -and ($RelatedObject -is [XioItemInfo.Tag]))} {
+				$oParamOfInterest = if ($PsCmdlet.ParameterSetName -eq "ByTag") {$Tag} else {$RelatedObject}
+				if (($oParamOfInterest | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Tag") {
+					$arrSrcTagNames = @($oParamOfInterest.Name)
+					$arrSrcVolumeNames = @($oParamOfInterest.ObjectList.Name)
+				} else {
+					$arrSrcTagNames = @($oParamOfInterest)
+				} ## end else
+				## needs to be an array, so that the JSON will be correct for the API call, which expects an array values
+				$hshNewItemSpec["tag-list"] = $arrSrcTagNames
+				## set the name for checking; may need updated for when receiving Tag value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$($arrSrcTagNames | Select-Object -First 1)$SnapshotSuffix"}
+				break
+			} ## end case
+		} ## end switch
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType = $strThisItemType
+			Name = $strNameForCheckingForExistingItem
+			SpecForNewItem = $hshNewItemSpec | ConvertTo-Json
+			XiosRestApiVersion = "2.0"
+		} ## end hashtable
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
+
+		$intI++
 	} ## end process
 } ## end function

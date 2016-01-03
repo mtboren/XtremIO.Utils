@@ -1,5 +1,5 @@
 <#	.Description
-	Script to launch the XtremIO Java management console.  Assumes that *.jnlp files are associated w/ the proper Java WebStart app; Feb 2014
+	Script to launch the XtremIO Java management console.  Assumes that *.jnlp files are associated w/ the proper Java WebStart app.  For XMS versions of 4.0 and newer, expects that user has already connected to said XMS via Connect-XIOServer (for XIOS v4 and newer, the Open-XIOMgmtConsole cmdlet relies on XMS information from that XioConnection object for determining the correct URL for the JNLP file)
 	.Example
 	Open-XIOMgmtConsole -Computer somexmsappl01.dom.com
 	Downloads the .jnlp file for launching the Java console for this XMS appliance, then tries to launch the console by calling the program associated with .jnlp files (should be Java WebStart or the likes)
@@ -14,11 +14,11 @@ function Open-XIOMgmtConsole {
 	[CmdletBinding()]
 	param(
 		## Name(s) of XMS appliances for which to launch the Java management console
-		[parameter(Mandatory=$true)][string[]]$ComputerName_arr,
+		[parameter(Mandatory=$true)][string[]]$ComputerName,
 		## switch: Trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
-		[switch]$TrustAllCert_sw,
+		[switch]$TrustAllCert,
 		## switch:  Download the JNLP files only?  default is to open the files with the associate program
-		[switch]$DownloadOnly_sw
+		[switch]$DownloadOnly
 	) ## end param
 
 	Begin {
@@ -27,27 +27,35 @@ function Open-XIOMgmtConsole {
 	} ## end begin
 
 	Process {
-		$ComputerName_arr | %{
+		$ComputerName | Foreach-Object {
 			$strThisXmsName = $_
-			## make sure this name is legit (in DNS)
-			Try {$oIpAddress = [System.Net.DNS]::GetHostAddresses($strThisXmsName)}
-			Catch [System.Net.Sockets.SocketException] {Write-Warning "'$strThisXmsName' not found in DNS. Valid name?"; break;}
+			## if already connected to this XMS, see its version:  at XIOS v4.0, the JNLP files were named with the XMS software version in them (like "webstart-4.0.1-41.jnlp")
+			if ($($oThisXioConnection = $DefaultXmsServers | Where-Object {$_.ComputerName -like $strThisXmsName}; ($oThisXioConnection | Measure-Object).Count -eq 1)) {
+				$strXmsAddrToUse = $oThisXioConnection.ComputerName
+				$strAddlJnlpFilenamePiece = if ($oThisXioConnection.XmsVersion -ge [System.Version]("4.0")) {"-$($oThisXioConnection.XmsSWVersion)"} else {$null}
+			} ## end if
+			## else, make sure this name is legit (in DNS)
+			else {
+				Try {$oIpAddress = [System.Net.DNS]::GetHostAddresses($strThisXmsName); $strAddlJnlpFilenamePiece,$strXmsAddrToUse = $null, $strThisXmsName}
+				Catch [System.Net.Sockets.SocketException] {Write-Warning "'$strThisXmsName' not found in DNS. Valid name?"; break;}
+			} ## end else
 
 			## place to which to download this JNLP file
-			$strDownloadFilespec = Join-Path ${env:\temp} "${strThisXmsName}.jnlp"
-			$strJnlpFileUri = "http://$strThisXmsName/xtremapp/webstart.jnlp"
+			$strDownloadFilespec = Join-Path ${env:\temp} "${strXmsAddrToUse}.jnlp"
+			$strJnlpFileUri = "https://$strXmsAddrToUse/xtremapp/webstart${strAddlJnlpFilenamePiece}.jnlp"
+			Write-Verbose "Using URL '$strJnlpFileUri'"
 			$oWebClient = New-Object System.Net.WebClient
 			## if specified to do so, set session's CertificatePolicy to trust all certs (for now; will revert to original CertificatePolicy)
-			if ($true -eq $TrustAllCert_sw) {Write-Verbose "$strLogEntry_ToAdd setting ServerCertificateValidationCallback method temporarily so as to 'trust' certs (should only be used if certs are known-good / trustworthy)"; $oOrigServerCertValidationCallback = Disable-CertValidation}
+			if ($true -eq $TrustAllCert) {Write-Verbose "$strLogEntry_ToAdd setting ServerCertificateValidationCallback method temporarily so as to 'trust' certs (should only be used if certs are known-good / trustworthy)"; $oOrigServerCertValidationCallback = Disable-CertValidation}
 
 			try {
 				$oWebClient.DownloadFile($strJnlpFileUri, $strDownloadFilespec)
 				## if not DownloadOnly switch, open the item
-				if ($DownloadOnly_sw) {Write-Verbose -Verbose "downloaded to '$strDownloadFilespec'"} else {Invoke-Item $strDownloadFilespec}
+				if ($DownloadOnly) {Write-Verbose -Verbose "downloaded to '$strDownloadFilespec'"} else {Invoke-Item $strDownloadFilespec}
 			} catch {Write-Error $_}
 
 			## if CertValidationCallback was altered, set back to original value
-			if ($true -eq $TrustAllCert_sw) {
+			if ($true -eq $TrustAllCert) {
 				[System.Net.ServicePointManager]::ServerCertificateValidationCallback = $oOrigServerCertValidationCallback
 				Write-Verbose "$strLogEntry_ToAdd set ServerCertificateValidationCallback back to original value of '$oOrigServerCertValidationCallback'"
 			} ## end if

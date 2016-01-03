@@ -1,0 +1,189 @@
+TOPIC
+    about_XtremIO.Utils
+
+SHORT DESCRIPTION
+    Describes the XtremIO.Utils Powershell module, its intentions, and some of
+    its uses
+
+LONG DESCRIPTION
+    A detailed, full description of the subject or purpose of the module.
+
+    The XtremIO.Utils PowerShell module provides cmdlets for interacting with
+    EMC's XtremIO storage arrays by communicating with the XtremIO Management
+    Server (XMS) that manages the given storage array.
+
+  GET CMDLETS
+      The Get-* cmdlets in this module are meant to provide rich PowerShell
+      objects to represent the objects available on the given storage array and
+      via the given XMS.  There is nearly 1:1 coverage of XtremIO objects by
+      Get-* cmdlets in this module.  Additionally, the module provides an easy
+      way to return the "full" object from the API response with most of the
+      Get-* cmdlets, and a way to provide full URIs of objects for which to
+      retrieve information.
+
+    Object URI
+        Objects returned from the this module generally have a URI property
+        that is the full URI of the given object in the API.  You can use this
+        URI to get access the target object precisely.  While this is not the
+        most convenient way to get information for an object, it can be quite
+        handy for when you are exploring objects in the API.  It is also
+        extremely useful for when you want to experiment with additional query
+        string parameters and values, or for when, say, the API has been
+        updated, but this PowerShell module has not yet been updated to cover
+        the API changes.  See the EXAMPLES section for details of these topics.
+
+    Return Full Response
+        Along with being able to specify an URI for a given object, you can
+        tell the Get-* cmdlets in this module to return the full object from
+        the API response.  While this module strives to provide all of the
+        pertinent/useful properties of an object retrieved form the API, there
+        may be a time when you want to see _all_ of the properties for the
+        given object, raw, as returned by the API.  To easily do so, you can
+        specify the -ReturnFullResponse switch parameter to most of the Get-*
+        cmdlets here.  See the EXAMPLES section for details on the full
+        response.
+
+  NEW CMDLETS
+      The New-* cmdlet are crafted with the most common object-creation tasks
+      in mind.
+
+  SET AND REMOVE CMDLETS
+      The module has not yet evolved to the point of providing Set- and Remove-
+      cmdlets.  Like with the New- cmdlets, the focus is on providing the
+      cmdlets that deliver the most value, rather than covering 100% of the
+      API just 'cause.  While full coverage is ideal, development time has not
+      yet been able to meet that goal, yet.
+
+EXAMPLES
+  All of the cmdlets have help and examples built in.  For help on a specific
+  cmdlet, use the normal route of "Get-Help -Full Get-XIO<someCmdlet>".
+
+  Object URI
+    To see what is the API URI of a particular object, you can just select the
+    URI property of the given object:
+
+
+        Get-XIOCluster | Select-Object Name,Uri
+
+        Name       Uri
+        ----       ---
+        myxms01    https://myxms01.dom.com/api/json/types/clusters/1
+
+
+    To then use that URI for getting an object, you can use:
+
+
+        Get-XIOItemInfo -URI https://myxms01.dom.com/api/json/types/clusters/1
+
+        Name     TotSSDTB UsedSSDTB FreeSSDTB ... DataReduction IOPS
+        ----     -------- --------- --------- ... ------------- ----
+        myxms01  7.59     4.46      3.12      ... 3.1           2729
+
+
+    While this is not yet super exciting (it was easier to just Get-XIOCluster
+    to get this cluster object), this provides the aforementioned capabilities
+    of being able to retrieve new objects types provided by updated XtremIO
+    APIs in the case where this PowerShell module has not yet caught up to the
+    API update.  For example, when XIOS v4 came out, it provided 20+ new object
+    types.  A subsequent update of this PowerShell module provided Get-*
+    cmdlets for those new types, but, you could have gotten the new objects
+    from crafting and using your own URIs in the interim.  Like, for example,
+    if you wanted to get the DAE object information before there was a
+    Get-XIODAE cmdlet, you could use:
+
+
+        Get-XIOItemInfo -URI https://myxms01.com/api/json/types/daes/1 `
+          -ReturnFullResponse
+
+
+    This gets the DAE at index 1, and returns the full response object.  More
+    on the -ReturnFullResponse parameter below (in the "Return Full Response"
+    section).
+
+    A likely more valuable use of specifying an explicit URI is for things that
+    take query strings for modifying/filtering what object(s) are returned from
+    the request.  For established cmdlets in this module, you should not need
+    to specify any URI query string types of things.  But, again, for the use
+    case where the XtremIO API gets updated and this PowerShell module has not
+    yet been updated to cover such changes, you can explore and enjoy the API
+    with your own custom crafted URI.  Let us say, for example, that in the
+    same interim period as described in the previous example, we wanted to get
+    a performance counter object for a particular entity type.  Through the
+    process of a bit of trial and error, we can eventually arrive at a
+    legitimate URI to get such a performance counter.  See these steps to
+    arrive at a successful URI:
+
+
+        Get-XIOItemInfo -URI https://myxms01.dom.com/api/json/types/performance
+        ...
+        VERBOSE: (exception status of 'ProtocolError', message of 'The remote
+            server returned an error: (400) Bad Request.')
+        VERBOSE: WebException response:
+        {
+            "message": "Command Syntax Error: Missing some of mandatory
+                properties list: ['entity']",
+            "error_code": 400
+        }
+
+
+        Get-XIOItemInfo -URI `
+          https://myxms01.dom.com/api/json/types/performance/?entity=blahh
+        ...
+        VERBOSE: (exception status of 'ProtocolError', message of 'The remote
+            server returned an error: (400) Bad Request.')
+        VERBOSE: WebException response:
+        {
+            "message": "Command Syntax Error: entity property must have one of
+                the following values: [SnapshotGroup, Initiator, Target, XEnv,
+                DataProtectionGroup, Volume, Cluster, Tag, InitiatorGroup, SSD,
+                TargetGroup, Xms]",
+            "error_code": 400
+        }
+
+
+        Get-XIOItemInfo -ReturnFullResponse -URI `
+          https://myxms01.dom.com/api/json/types/performance/?entity=Cluster
+
+        <success -- an object full of counter information is returned!>
+
+
+  Return Full Response
+    Returning the full response for an object gives you the ability to have and
+    hold an object with _all_ of the available properties of that object type,
+    with the raw property names as defined by the API, and with no additional
+    Type handling/creation/manipulation by the PowerShell module.  This is
+    generally quite useful at the time of writing new cmdlets, and is the main
+    way that the developer of this module goes about such new Get-* cmdlet
+    creation and through the type definitions and property correlations between
+    objects.
+
+    While the module should be providing most (all?) of the pertinent
+    properties for objects, the ability to return the full response can make
+    API/object exploration that much easier for the day that you find yourself
+    wanting to spelunk a bit deeper.
+
+    Specifying the -ReturnFullResponse switch parameter (available on Get-*
+    cmdlets) gets you an object something like:
+
+
+        Get-XIOCluster -ReturnFullResponse | Format-List
+
+        content : @{compression-factor-text=3.5:1;
+                  cluster-expansion-sym-current-step=no_expansion;
+                  wr-iops-by-block=1722; num-of-rgs=1; wr-iops-16kb=38;
+                  ...
+        links   : {@{href=https://myxms01.dom.com/api/json/types/clusters/1;
+                  rel=self}}
+
+
+    To further inspect the object and see all of the wonderful properties
+    available, you can access the .content property.
+
+KEYWORDS
+    XtremIO
+    XIO
+    XIOS
+    XMS
+
+SEE ALSO
+    The GitHub site from which you got this PSModule, or http://vNugglets.com

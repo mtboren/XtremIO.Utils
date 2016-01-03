@@ -1,13 +1,17 @@
 todo:
+-replace usage of singular item type string (essentially used for output type name creation; make config hsh table of plural item type string -> XIOItemInfo output object type)
+	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
+-replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
+	-do same for Get-XIOItemInfo?
 -?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
 -?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
--deprecate EnabledState property on SSDs and StorageControllers, add Enabled boolean property
--add GUID property to non-v2 XIOInfoItem types
+-add properties to objects (now available in XIOS v4):
+	-to LunMap:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
+	-to SSD:  certainty, *io-error*, num-bad-sectors, tag-list
+	-to StorageController:  more full InfinibandSwitch properties, DIMM health info, LocalDisk info; remove obsolete:  encryption* properties
 -have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 	-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 	-need to update all places that specify API types as singular to use real API type name
--Open-XIOMgmtConsole:  jnlp filename is XIOS version specific, now
-	-add Get-XIOXMS and use its SW-Version to get the "4.0.1-7" string that is inserted into the $strJnlpFileUri filename; also, change to HTTPS from HTTP
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator? (ESX, Windows, Other, etc); available in XIOS v4
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
@@ -23,8 +27,6 @@ todo:
 			-possible mix-up in the API?
 		-SYR Notifiers -- no corresponding type found in API
 		-getting performance counter for Tag EntityType needs more work (API call needs obj-list defined, apparently, and is throwing errors even when having done so)
--add about_XtremIO.Utils.help.txt
-	-with the general "here's the module, here are some ways to use it"
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -arrange properties in .NET obj definitions to be in desired order, instead of alphabetical?
 -add object definitions of sub-property objects
@@ -51,12 +53,18 @@ todo:
 	Get-XIOStorageController | Get-XIOLocalDisk
 	Get-XIOLocalDisk | Get-XIOStorageController
 	Get-XIOSlot | Get-XIOSsd
-	Get-XIOSnapshotSet | Get-XIOVolume
+	Get-XIOSnapshotSet | Get-XIO[Volume|Snapshot]
+	Get-XIO[Volume|Snapshot] | Get-XIOSnapshot
+		-need to update Volume and Snapshot objects:
+			DestSnapList property to be list of Snapshot <id,name,index> objects instead of list of arrays of strings
+			AncestorVolId property to list of Volume <id,name,index> objects instead of list of arrays of strings
+	Get-XIOVolume | Get-XIOSnapshotSet
+	Get-XIOSnapshot | Get-XIOSnapshotSet
 	Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
-	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name untile adding support for "by IGrpID" when working on XIOSv4 things)
-	Get-XIOVolume | Get-XIOLunMap (just by Volume name untile adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name until adding support for "by IGrpID" when working on XIOSv4 things)
+	Get-XIO[Volume|Snapshot] | Get-XIOLunMap (just by Volume name until adding support for "by IGrpID" when working on XIOSv4 things)
 		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
-		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId
+		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId, or the LunMapList that has LunMap <id,name,index> objects instead of list of arrays of strings
 	## currently behaves unexpectedly when using something like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
 	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
@@ -68,29 +76,29 @@ todo:
 	/            29.306         769           27.256        759           56.562       1528       29298604621  77718384024
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 
 	instead of the expected
 	Name         WriteBW_MBps   WriteIOPS     ReadBW_MBps   ReadIOPS      BW_MBps      IOPS       TotWriteIOs  TotReadIOs
 	----         ------------   ---------     -----------   --------      -------      ----       -----------  ----------
 	/            21.153         851           17.813        825           38.966       1676       29298600763  77718380223
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
 	/            29.306         769           27.256        759           56.562       1528       29298604621  77718384024
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:24:52 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
+	/fol04       7.345          550           6.692         630           14.037       1180       29298607403  77718387183
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 	VERBOSE: Starting sleep for '5' sec; ending run at/about 2014.Nov.13 18:25:03 (duration of '15' sec)
 	/            7.345          550           6.692         630           14.037       1180       29298607403  77718387183
-	/VDI04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
+	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 #>
 -update pipelining behavior for things like:
 	Get-XioVolumeFolder /someFolderWithNoDirectVolumes | Get-XioVolume
@@ -139,7 +147,6 @@ todo:
 		-Storage Controller object:
 			-hw-revision
 	-also, others listed on p198 of v3.0.1 REST API guide
--add New-XIOSnapshot at some point
 -item types for which to add support in module:
 	## old and new APIs
 	iscsi-portals
@@ -160,6 +167,7 @@ todo:
 -for Get-XIOSnapshot:  add URI Param option for "ancestor-vol-id"?  available via xmcli
 -for Get-XIOVolume:  add URI Param option for "sg-id" (snapshot group ID)?  available via xmcli
 -change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
+-?eventually for Open-XIOMgmtConsole:  only act on existing XMS connections (as the cmdlet will need the XMS software version in order to create the correct URL to the JNLP file); or, will this cmdlet change to open the web management console instead of the Java management console, once the Web UI takes over?
 -may need to remove XioStoredCred support at some point, now that Connect-XIOServer is available; if so, do via deprecation; _Find-CredentialToUse goes away at that point, too?
 -potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, so that can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
 	-add InitiatorGroupList_raw = .direct-list, InitiatorGroupUID = {just those IG UIDs} to IgFolder objects
@@ -170,22 +178,44 @@ todo:
 -?add a Set-XIOUtilsConfiguration function to set things like the default port to use, and $true/$false for TrustAllCert
 -?add "if ($PsCmdlet.ShouldProcess())" portion to New-XIOVolume, around the New-XioItem call, so as to have better WhatIf output?
 -?add "small" and "unaligned" performance items, too? (available in xmcli)
+-address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  InitiatorGroupFolder objects have an IOPS property that may actually have no value, but that gets cast to an Int in the SupportingFunctions, and becomes "0" for the returned object
 -added URI property to Get-XIOItemInfo output objects; keep that?  Useful in pipeline times?
 -try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
 -once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
 	-not available as of XIOS v3.0.1
+-change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
+	-then, can more universally use that Guid in pipelining and whatnot
+-add Filtering support for API queries (good for speeding up LunMap retrieval?); see pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide
+-add Get-XIOParentVolume / Get-XIOParentSnapshot?
+-add Update-Snapshot to correspond to "refresh" operation in mgmt GUI
+	-Create a Snapshot and reassign on a Volume, Consistency Group or Snapshot Set (see Table 4, on page 192).
+		Note: Refer to example use cases for taking Snapshots and reassigning on a Volume, Consistency Group or Snapshot Set, on page 14.
+-check into pipelining of:  Get-XIOVolume matt*todel | Get-XIOSnapshot
+	-not getting snapshot if volume has no LunMap, as it is relying on InitGrp stuff, instead of child-vol kind of thing (is there such a thing?)
+-for New-Snapshot, add support for XIOSv3 (APIv1) snapshots; currently only supports new snapshots on XIOSv4 (APIv2)
+	-for XIOS v3.0, support creation:
+		-from one volume
+		-from volumes
+		-from one volumefolder
+-add Filtering support in some way (?along with "properties to retrieve" support?), possible only once supporting API v2 (else, need to handle how to only "enable" it for XIOSv4+ XMSs)
+-future release:  remove deprecated properties that are noted by System.ObsoleteAttribute statements
+	-before then, compile the type definition, so that these properties actually write warning in PowerShell session to make it more clear to users that properties are deprecated? Else, relying on them to have thoroughly read the changelog
+-?add ability for Get-XIOItemInfo to detenct, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
+-expand availability of -Property parameter on other Get-* cmdlets as it makes sense (already done on Get-XIOLunMap)
+	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
+	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
+-reorg dir -- put module files into new subfolder, XtremIO.Utils
+	-include license file
+	-include testing subdir in overall folder root
 
 
 
 
 doing:
 
-
-done for version 0.next (after v0.9.0):
+done for version 0.next (after v0.9.5):
 
 ## things below here are in changelog/readme
-
-
 
 
 

@@ -23,8 +23,28 @@ $hshCfg = @{
 	EncrCredFilespec = "${env:temp}\xioCred_by_${env:username}_on_${env:computername}.enc.xml"
 	VerboseDatetimeFormat = "yyyy.MMM.dd HH:mm:ss"
 	GetEventDatetimeFormat = "yyyy-MM-dd HH:mm:ss"
+	## the API type names that are available at the given minimum XIOS version
 	ItemTypeInfoPerXiosVersion = @{
 		"3.0" = "clusters", "data-protection-groups", "events", "ig-folders", "initiator-groups", "initiators", "lun-maps", "target-groups", "targets", "volumes", "volume-folders", "bricks", "snapshots", "ssds", "storage-controllers", "xenvs"
 		"4.0" = "alert-definitions", "alerts", "bbus", "consistency-groups", "daes", "dae-controllers", "dae-psus", "email-notifier", "infiniband-switches", "ldap-configs", "local-disks", "performance", "schedulers", "slots", "snapshot-sets", "snmp-notifier", "storage-controller-psus", "syslog-notifier", "tags", "user-accounts", "xms"
 	} ## end hashtable
+	## mapping of PowerShell object property names to their property names in the XtremIO REST API
+	TypePropMapping = @{
+		"lun-maps" = @{
+			VolumeName = "vol-name"
+			LunId = "lun"
+			LunMapId = "mapping-id"
+			Name = "mapping-id"
+			Guid = "guid"
+			InitiatorGroup = "ig-name"
+			InitiatorGrpIndex = "ig-index"
+			TargetGrpName = "tg-name"
+			TargetGrpIndex = "tg-index"
+			MappingId = "mapping-id"
+			MappingIndex = "mapping-index"
+			Severity = "obj-severity"
+			XmsId = "xms-id"
+			VolumeIndex = "vol-index"
+		} ## end hsh
+	} ## end hsh
 } ## end hashtable
