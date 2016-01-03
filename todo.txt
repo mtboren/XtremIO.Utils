@@ -200,18 +200,20 @@ todo:
 -add Filtering support in some way (?along with "properties to retrieve" support?), possible only once supporting API v2 (else, need to handle how to only "enable" it for XIOSv4+ XMSs)
 -future release:  remove deprecated properties that are noted by System.ObsoleteAttribute statements
 	-before then, compile the type definition, so that these properties actually write warning in PowerShell session to make it more clear to users that properties are deprecated? Else, relying on them to have thoroughly read the changelog
--?add ability for Get-XIOItemInfo to detenct, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
+-?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -expand availability of -Property parameter on other Get-* cmdlets as it makes sense (already done on Get-XIOLunMap)
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
--reorg dir -- put module files into new subfolder, XtremIO.Utils
-	-include license file
-	-include testing subdir in overall folder root
 
 
 
 
 doing:
+[impr_ProjectDirReorg]
+-reorg dir -- put module files into new subfolder, XtremIO.Utils
+	-include license file
+	-include testing subdir in overall folder root
+
 
 done for version 0.next (after v0.9.5):
 
