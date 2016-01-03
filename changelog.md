@@ -1,8 +1,8 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
-### v0.9.x
-Jan 2016
+### v0.9.5
+03 Jan 2016
 
 This version is a collection of improvements, bug fixes, feature additions, and standardization.  Fixed are several bugs relating to using the module in PowerShell v5, and changes in behavior due to changes in the XMS (particularly, the launching of the Java management console).
 
