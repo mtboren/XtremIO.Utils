@@ -3,7 +3,6 @@ todo:
 	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
--?add Cluster-Id type of property to output objects, for multi-cluster XMS situations
 -?add "v2 URI" property to Tag objects (VolumeFolder, IniatorGroupFolder), so that Set- calls for them are easier to make
 -add properties to objects (now available in XIOS v4):
 	-to LunMap:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
@@ -209,6 +208,18 @@ todo:
 
 
 doing:
+[feat_MultiCluster]
+-add support for multi-cluster XMS situations
+	-need to pass "cluster-name" or "cluster-index" -- seemingly optional for Get-* for some object types, not for others (but, need to accept for all but Get-XIOCluster?). Mandatory for:
+		Get-XIOBBU, Get-XIOBrick, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOLocalDisk, Get-XIOSlot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOXenv
+	-for these types where -Cluster is mandatory, need to handle that gracefully
+		-add to the XMS object a, "cluster" property or something?  And, then, if ($oThisXms.Cluster | Measure).Count -gt 1, and if -Cluster not passed, code will iterate through all clusters known to that XMS?  yes
+	-what about for New-XIO*?
+	-next iteration:
+		-take -RelatedObject from pipeline that is only cluster?  Or, just add -Cluster to e'erything?
+			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
+
+
 [impr_ProjectDirReorg]
 -reorg dir -- put module files into new subfolder, XtremIO.Utils
 	-include license file
