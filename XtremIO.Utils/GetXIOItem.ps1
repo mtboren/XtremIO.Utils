@@ -246,6 +246,9 @@ function Get-XIOItemInfo {
 	Get-XIOBrick X3
 	Get the "brick" named X3
 	.Example
+	Get-XIOBrick -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "Brick" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
 	Get-XIOBrick -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -263,7 +266,9 @@ function Get-XIOBrick {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1217,7 +1222,7 @@ function Get-XIOAlertDefinition {
 	Get-XIOBBU
 	Get the "BBU" items
 	.Example
-	Get-XIOBBU -Cluster mycluster0,mycluster3 -ComputerName somexmsappl01.dom.com
+	Get-XIOBBU -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "BBU" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.BBU
@@ -1260,6 +1265,9 @@ function Get-XIOBBU {
 	.Example
 	Get-XIOConsistencyGroup
 	Get the "ConsistencyGroup" items
+	.Example
+	Get-XIOConsistencyGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "ConsistencyGroup" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.ConsistencyGroup
 #>
@@ -1275,7 +1283,9 @@ function Get-XIOConsistencyGroup {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1299,6 +1309,9 @@ function Get-XIOConsistencyGroup {
 	.Example
 	Get-XIODAE
 	Get the "DAE" items
+	.Example
+	Get-XIODAE -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "DAE" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.DAE
 #>
@@ -1314,7 +1327,9 @@ function Get-XIODAE {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1338,6 +1353,9 @@ function Get-XIODAE {
 	.Example
 	Get-XIODAEController
 	Get the "DAEController" items
+	.Example
+	Get-XIODAEController -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "DAEController" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.DAEController
 #>
@@ -1353,7 +1371,9 @@ function Get-XIODAEController {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1377,6 +1397,9 @@ function Get-XIODAEController {
 	.Example
 	Get-XIODAEPsu
 	Get the "DAEPsu" items
+	.Example
+	Get-XIODAEPsu -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "DAEPsu" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.DAEPsu
 #>
@@ -1392,7 +1415,9 @@ function Get-XIODAEPsu {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
