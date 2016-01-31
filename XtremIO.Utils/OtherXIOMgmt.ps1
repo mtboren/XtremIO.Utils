@@ -190,6 +190,8 @@ function Connect-XIOServer {
 						} ## end if
 						## else, this must be older XIOS/XMS version, which uses the XMS REST API version 1.0
 						else {$hshPropertiesForNewXmsConnectionObj["RestApiVersion"] = [System.Version]"1.0"}
+						## get the names of the XIO Cluster(s) managed by this XMS, to include in the XIO connection object
+						$hshPropertiesForNewXmsConnectionObj["Cluster"] = (Get-XIOInfo -RestCommand_str /types/clusters -Credential $Credential -ComputerName $strThisXmsName -Port $intPortToUse).clusters.name | Sort-Object
 						$oTmpThisXmsConnection = New-Object -Type XioItemInfo.XioConnection -Property $hshPropertiesForNewXmsConnectionObj
 						## add connection object to global connection variable
 						$Global:DefaultXmsServers += $oTmpThisXmsConnection

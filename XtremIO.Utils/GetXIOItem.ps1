@@ -45,7 +45,9 @@ function Get-XIOItemInfo {
 		## Switch: Use the API v2 feature of "full=1", which returns full object details, instead of just name and HREF for the given XIO object?
 		[Switch]$UseApiFullFeature,
 		## Select properties to retrieve/return for given object type, instead of retrieving all (default). This capability is available as of the XIOS REST API v2
-		[string[]]$Property
+		[string[]]$Property,
+		## Name of XtremIO Cluster whose child objects to get
+		[string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -63,6 +65,8 @@ function Get-XIOItemInfo {
 		## iterate through the list of $arrXioConnectionsToUse
 		$arrXioConnectionsToUse | Foreach-Object {
 			$oThisXioConnection = $_
+			## the XtremIO Cluster name(s) to use for the query; if cluster(s) are specified, use them, else use all Cluster names known for this XioConnection
+			$arrXioClusterNamesToPotentiallyUse = if ($PSBoundParameters.ContainsKey("Cluster")) {$Cluster} else {$oThisXioConnection.Cluster}
 			$arrDataHashtablesForGettingXioInfo = @()
 			## if full URI specified, use it to populate hashtables for getting XIO info
 			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {
@@ -93,8 +97,8 @@ function Get-XIOItemInfo {
 			else {
 				## if not FullUri, need to get the other attributes to use for query (not full URI)
 				if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {
-					## the base portion of the REST command to issue
-					$strRestCmd_base = "/types/$strItemType_plural"
+					## the base portion of the REST command to issue (not including any "?cluster-name=<blahh>" portion, yet)
+					$strRestCmd_base = "/types/${strItemType_plural}"
 
 					## this XMS name
 					$strThisXmsName = $oThisXioConnection.ComputerName
@@ -113,77 +117,89 @@ function Get-XIOItemInfo {
 					} ## end if
 					## do all the necessary things to populate $arrDataHashtablesForGettingXioInfo with individual XIO item's HREFs
 					else { ## making arrDataHashtablesForGettingXioInfo from "default" view via API, or array of objets with "full" properties, as is supported in XIOS API v2
-						## for this XMS name, get ready to get API objects (either ones of default view with just HREFs, or ones with partial/full properties to consume directly with no further calls to API needed)
-						$hshParamsForGetXioInfo_allItemsOfThisType = @{
-							Credential = $oThisXioConnection.Credential
-							ComputerName_str = $strThisXmsName
-							RestCommand_str = "$strRestCmd_base"
-							Port_int = $oThisXioConnection.Port
-							TrustAllCert_sw = $oThisXioConnection.TrustAllCert
-						} ## end hsh
-						## the base info for all items of this type known by this XMS (href & name pairs)
-						## the general pattern:  the property returned is named the same as the item type
-						#   however, not the case with:
-						#     volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
-						#     xms:  the property is "xmss"
-						$strPropertyNameToAccess = Switch ($strItemType_plural) {
-														{"volume-folders","ig-folders" -contains $_} {"folders"; break}
-														"xms" {"xmss"; break}
-														default {$strItemType_plural}
-													} ## end switch
+						## if type supports cluster-name param, iterate through the specified (or default) clusters; else, do not include "cluster-name" in the URIs (passing empty string to Foreach-Object that will not get used, as the designated boolean is $false)
+						$(if ($hshCfg["ItemTypesSupportingClusterNameInput"] -contains $strItemType_plural) {$bUseClusterNameInUri = $true; $arrXioClusterNamesToPotentiallyUse} else {$bUseClusterNameInUri = $false; ""}) | Foreach-Object {
+							## the current XIO Cluster whose objects to get
+							$strThisXIOClusterName = $_
+							## for this XMS name, get ready to get API objects (either ones of default view with just HREFs, or ones with partial/full properties to consume directly with no further calls to API needed)
+							$hshParamsForGetXioInfo_allItemsOfThisType = @{
+								Credential = $oThisXioConnection.Credential
+								ComputerName_str = $strThisXmsName
+				 				## the REST command will include the "?cluster-name=<blahh>" portion if this XIO object type supports it
+								RestCommand_str = "${strRestCmd_base}{0}" -f $(if ($bUseClusterNameInUri) {"?cluster-name=$strThisXIOClusterName"})
+								Port_int = $oThisXioConnection.Port
+								TrustAllCert_sw = $oThisXioConnection.TrustAllCert
+							} ## end hsh
+							## the base info for all items of this type known by this XMS (href & name pairs)
+							## the general pattern:  the property returned is named the same as the item type
+							#   however, not the case with:
+							#     volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
+							#     xms:  the property is "xmss"
+							$strPropertyNameToAccess = Switch ($strItemType_plural) {
+															{"volume-folders","ig-folders" -contains $_} {"folders"; break}
+															"xms" {"xmss"; break}
+															default {$strItemType_plural}
+														} ## end switch
 
-						## if v2 or higher API is available and "full" object views can be gotten directly (without subesquent calls for every object), and the -UseApiFullFeature switch was specified
-						if (($UseApiFullFeature -or $PSBoundParameters.ContainsKey("Property")) -and ($oThisXioConnection.RestApiVersion -ge [System.Version]"2.0")) {
-							$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] = "${strRestCmd_base}?full=1"
-							## if -Property was specified, add &prop=<propName0>&prop=<propName1>... to the REST command
-							if ($PSBoundParameters.ContainsKey("Property")) {
-								$arrNamesOfPropertiesToGet = `
-									## if there is a "mapping" config hashtable that holds PSObjectPropertyName -> APIObjectPropertyName info, get the API property names
-									if ($hshCfg["TypePropMapping"].ContainsKey($strItemType_plural)) {
-										## if "friendly" property names were passed, get the corresponding XIO API property names to use in the request
-										$Property | Where-Object {$null -ne $_} | Foreach-Object {if ($hshCfg["TypePropMapping"][$strItemType_plural].ContainsKey($_)) {$hshCfg["TypePropMapping"][$strItemType_plural][$_]} else {$_}}
-									} ## end if
-									## else, just use the property names as passed in
-									else {$Property | Where-Object {$null -ne $_}}
-								$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += ("&{0}" -f (($arrNamesOfPropertiesToGet | Foreach-Object {"prop=$_"}) -join "&"))
-							} ## end if
-							## get an object from the API that holds the full view of the given object types, and that has properties <objectsType> and "Links"
-							$oApiResponseToGettingFullObjViews = Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType
-							## get the array of full object views from the API response
-							$arrFullApiObjects = $oApiResponseToGettingFullObjViews.$strPropertyNameToAccess
-							## the base URI for these item types, with a trailing slash; like "https://xms.dom.com/api/json/types/lun-maps/"; to be used along with item index for generating item-specific URIs
-							$strUriBaseTheseItems = ($oApiResponseToGettingFullObjViews.Links | Where-Object {$_.Rel -eq "Self"}).Href
-						} ## end if
-						## making arrDataHashtablesForGettingXioInfo from "default" view via API
-						else {
-							## get the HREF->Name objects for this type of item
-							$arrKnownItemsOfThisTypeHrefInfo = (Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType).$strPropertyNameToAccess
-
-							## get the API Hrefs for getting the detailed info for the desired items (specified items, or all items of this type)
-							$arrHrefsToGetItemsInfo_thisXmsAppl =
-								## if particular initiator names specified, get just the hrefs for those
-								if ($PSBoundParameters.ContainsKey("Name_arr")) {
-									$Name_arr | Select-Object -Unique | Foreach-Object {
-										$strThisItemNameToGet = $_
-										## if any of the names are like the specified name, add those HREFs to the array of HREFs to get
-										if ( (($arrKnownItemsOfThisTypeHrefInfo | Foreach-Object {$_.Name}) -like $strThisItemNameToGet | Measure-Object).Count -gt 0 ) {
-											($arrKnownItemsOfThisTypeHrefInfo | Where-Object {$_.Name -like $strThisItemNameToGet}).href
+							## if v2 or higher API is available and "full" object views can be gotten directly (without subesquent calls for every object), and the -UseApiFullFeature switch was specified
+							if (($UseApiFullFeature -or $PSBoundParameters.ContainsKey("Property")) -and ($oThisXioConnection.RestApiVersion -ge [System.Version]"2.0")) {
+								## add the "?full=1" or "&full=1" bit to the REST command (the command may already have a ?<someparam>=<blahh> piece)
+								$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += "{0}full=1" -f $(if ($hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] -match "\?") {"&"} else {"?"})
+								## if -Property was specified, add &prop=<propName0>&prop=<propName1>... to the REST command
+								if ($PSBoundParameters.ContainsKey("Property")) {
+									$arrNamesOfPropertiesToGet = `
+										## if there is a "mapping" config hashtable that holds PSObjectPropertyName -> APIObjectPropertyName info, get the API property names
+										if ($hshCfg["TypePropMapping"].ContainsKey($strItemType_plural)) {
+											## if "friendly" property names were passed, get the corresponding XIO API property names to use in the request
+											$Property | Where-Object {$null -ne $_} | Foreach-Object {if ($hshCfg["TypePropMapping"][$strItemType_plural].ContainsKey($_)) {$hshCfg["TypePropMapping"][$strItemType_plural][$_]} else {$_}}
 										} ## end if
-										else {Write-Verbose "$strLogEntry_ToAdd No '$ItemType_str' item of name '$_' found on '$strThisXmsName'. Valid item name/type pair?"}
-									} ## end foreach-object
+										## else, just use the property names as passed in
+										else {$Property | Where-Object {$null -ne $_}}
+									$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += ("&{0}" -f (($arrNamesOfPropertiesToGet | Foreach-Object {"prop=$_"}) -join "&"))
 								} ## end if
-								## else, getting all initiators known; get all the hrefs
-								else {$arrKnownItemsOfThisTypeHrefInfo | Foreach-Object {$_.href}} ## end else
-
-							## if there are HREFs from which to get info, add new hashtable to the overall array
-							if (($arrHrefsToGetItemsInfo_thisXmsAppl | Measure-Object).Count -gt 0) {
-								$arrDataHashtablesForGettingXioInfo += @{
-									ComputerName = $strThisXmsName
-									## HREFs to get are the unique HREFs (depending on the -Name value provided, user might have made overlapping matches)
-									arrHrefsToGetItemsInfo = $arrHrefsToGetItemsInfo_thisXmsAppl | Select-Object -Unique
-								} ## end hashtable
+								## get an object from the API that holds the full view of the given object types, and that has properties <objectsType> and "Links"
+								$oApiResponseToGettingFullObjViews = Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType
+								## get the array of full object views from the API response
+								$arrFullApiObjects = $oApiResponseToGettingFullObjViews.$strPropertyNameToAccess
 							} ## end if
-						} ## end else
+							## making arrDataHashtablesForGettingXioInfo from "default" view via API
+							else {
+								## get the HREF->Name objects for this type of item
+								$arrKnownItemsOfThisTypeHrefInfo = (Get-XIOInfo @hshParamsForGetXioInfo_allItemsOfThisType).$strPropertyNameToAccess
+
+								## get the known items of this type, based on Name matching (if any)
+								$arrItemsOfThisTypeToReturn_HrefInfo =
+									## if particular initiator names specified, get just the hrefs for those
+									if ($PSBoundParameters.ContainsKey("Name_arr")) {
+										$Name_arr | Select-Object -Unique | Foreach-Object {
+											$strThisItemNameToGet = $_
+											## if any of the names are like the specified name, add those HREFs to the array of HREFs to get
+											$arrTmp_ItemsOfThisTypeAndNameHrefInfo = $arrKnownItemsOfThisTypeHrefInfo | Where-Object {$_.Name -like $strThisItemNameToGet}
+											if (($arrTmp_ItemsOfThisTypeAndNameHrefInfo | Measure-Object).Count -gt 0) {$arrTmp_ItemsOfThisTypeAndNameHrefInfo.href } ## end if
+											else {Write-Verbose "$strLogEntry_ToAdd No '$ItemType_str' item of name '$_' found on '$strThisXmsName'. Valid item name/type pair?"}
+										} ## end foreach-object
+									} ## end if
+									## else, getting all objects of this type known; get all the hrefs
+									else {$arrKnownItemsOfThisTypeHrefInfo | Foreach-Object {$_.href}} ## end else
+
+								## get the API Hrefs for getting the detailed info for the desired items (specified items, or all items of this type)
+								#   and, add the "?cluster-name=<blahh>" bit here if using ClusterName in Uri
+								$arrHrefsToGetItemsInfo_thisXmsAppl = if ($bUseClusterNameInUri) {
+										$arrItemsOfThisTypeToReturn_HrefInfo | Foreach-Object {"{0}?cluster-name={1}" -f $_, $strThisXIOClusterName}
+									} ## end if
+									else {$arrItemsOfThisTypeToReturn_HrefInfo}
+
+								## if there are HREFs from which to get info, add new hashtable to the overall array
+								if (($arrHrefsToGetItemsInfo_thisXmsAppl | Measure-Object).Count -gt 0) {
+									$arrDataHashtablesForGettingXioInfo += @{
+										ComputerName = $strThisXmsName
+										## HREFs to get are the unique HREFs (depending on the -Name value provided, user might have made overlapping matches)
+										arrHrefsToGetItemsInfo = $arrHrefsToGetItemsInfo_thisXmsAppl | Select-Object -Unique
+									} ## end hashtable
+								} ## end if
+							} ## end else
+						} ## end of foreach-object on XIO Cluster names
+
 					} ## end else "making arrDataHashtablesForGettingXioInfo"
 				} ## end if "not full URI"
 
@@ -192,23 +208,27 @@ function Get-XIOItemInfo {
 					$arrDataHashtablesForGettingXioInfo | Foreach-Object {
 						## $_ is a hsh of DataForGettingInfoFromThisXmsAppl, with key arrHrefsToGetItemsInfo that has HREFs for getting items' info
 						$_.arrHrefsToGetItemsInfo | Foreach-Object {
+							$strUriThisItem = $_
 							## make the params hash for this item
 							$hshParamsForGetXioInfo_thisItem = @{
 								Credential = $oThisXioConnection.Credential
-								URI_str = $_
+								URI_str = $strUriThisItem
 							} ## end hsh
 							$hshParamsForGetXioInfo_thisItem["TrustAllCert_sw"] = $oThisXioConnection.TrustAllCert
 							## call main Get-Info function with given params, getting a web response object back
 							$oResponseCustObj = Get-XIOInfo @hshParamsForGetXioInfo_thisItem
-							if ($ReturnFullResponse_sw) {$oResponseCustObj} else {_New-ObjectFromApiObject -ApiObject $oResponseCustObj -ItemType $strItemType_plural -ComputerName $oThisXioConnection.ComputerName}
+## for returnfullresponse, need to include the cluster-name to make proper, full URI?
+							if ($ReturnFullResponse_sw) {$oResponseCustObj}
+							else {_New-ObjectFromApiObject -ApiObject $oResponseCustObj -ItemType $strItemType_plural -ComputerName $oThisXioConnection.ComputerName -ItemURI $strUriThisItem}
 						} ## end foreach-object
 					} ## end foreach-object
 				} ## end "if there are hrefs from which to get item info, do so for each"
 				## else, expect that there were objects retrieved with their full properties (via the new "full" view in API v2), instead of via the default view that only has objects' HREFs
 				elseif (($oApiResponseToGettingFullObjViews | Measure-Object).Count -gt 0) {
 					## if returning full API response, do so
+## for returnfullresponse, need to include the cluster-name to make proper, full URI?
 					if ($ReturnFullResponse_sw) {$oApiResponseToGettingFullObjViews}
-					else {_New-ObjectFromApiObject -ApiObject $arrFullApiObjects -ItemType $strItemType_plural -ComputerName $oThisXioConnection.ComputerName -BaseItemTypeUri $strUriBaseTheseItems -UsingFullApiObjectView}
+					else {_New-ObjectFromApiObject -ApiObject $arrFullApiObjects -ItemType $strItemType_plural -ComputerName $oThisXioConnection.ComputerName -ItemURI $strUriThisItem -UsingFullApiObjectView}
 				} ## end elseif
 				else {Write-Verbose "no matching objects found"}
 			} ## end else (item type _does_ exist in this XIOS version)

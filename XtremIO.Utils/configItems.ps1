@@ -28,6 +28,8 @@ $hshCfg = @{
 		"3.0" = "clusters", "data-protection-groups", "events", "ig-folders", "initiator-groups", "initiators", "lun-maps", "target-groups", "targets", "volumes", "volume-folders", "bricks", "snapshots", "ssds", "storage-controllers", "xenvs"
 		"4.0" = "alert-definitions", "alerts", "bbus", "consistency-groups", "daes", "dae-controllers", "dae-psus", "email-notifier", "infiniband-switches", "ldap-configs", "local-disks", "performance", "schedulers", "slots", "snapshot-sets", "snmp-notifier", "storage-controller-psus", "syslog-notifier", "tags", "user-accounts", "xms"
 	} ## end hashtable
+	## item types that support specifying ?cluster-name=<somename> in the URI to retrieve items specific to the given cluster (per the API reference)
+	ItemTypesSupportingClusterNameInput = "bbus", "bricks", "consistency-group-volumes", "consistency-groups", "dae-controllers", "dae-psus", "daes", "data-protection-groups", "infiniband-switches", "initiator-groups", "initiators", "iscsi-portals", "iscsi-routes", "local-disks", "lun-maps", "performance", "schedulers", "slots", "snapshot-sets", "snapshots", "ssds", "storage-controller-psus", "storage-controllers", "target-groups", "targets", "volumes", "xenvs"
 	## mapping of PowerShell object property names to their property names in the XtremIO REST API
 	TypePropMapping = @{
 		"lun-maps" = @{

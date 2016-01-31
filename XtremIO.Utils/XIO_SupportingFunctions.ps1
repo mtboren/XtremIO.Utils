@@ -571,8 +571,8 @@ function _New-ObjectFromApiObject {
 		[parameter(Mandatory=$true)][String]$ItemType,
 		## The XMS Computer Name from which this object came, for populating that property on the return object
 		[parameter(Mandatory=$true)][String]$ComputerName,
-		## The base URI for this item's type, with which to generat a full item URI (base plus the item's index)
-		[String]$BaseItemTypeUri,
+		## The URI for this item
+		[parameter(Mandatory=$true)][String]$ItemUri,
 		## Switch:  is this object from the API call that returns a "full" object view, instead of from other subsequent calls to the API (such as calls to v1 API)?
 		[Switch]$UsingFullApiObjectView
 	)
@@ -580,8 +580,6 @@ function _New-ObjectFromApiObject {
 	##   for type Events, $ApiObject is one object with an Events property, which is an array of PSCustomObject
 	$ApiObject | Foreach-Object {
 		$oThisResponseObj = $_
-		## the URI of this item (or of all of the events, if this item type is "events", due to the difference in the way event objects are returned from API)
-		$strUriThisItem = if ($PSBoundParameters.ContainsKey("BaseItemTypeUri")) {"$BaseItemTypeUri{0}" -f $oThisResponseObj.Index} else {($oThisResponseObj.Links | Where-Object {$_.Rel -eq "Self"}).Href}
 		## FYI:  name of the property of the response object that holds the details about the XIO item is "content" for nearly all types, but "events" for event type
 		## if the item type is events, access the "events" property of the response object; else, if "performance", use whole object, else, access the "Content" property
 		$(if ($ItemType -eq "events") {$oThisResponseObj.$ItemType} elseif (($ItemType -eq "performance") -or $UsingFullApiObjectView) {$oThisResponseObj} else {$oThisResponseObj."Content"}) | Foreach-Object {
@@ -600,7 +598,7 @@ function _New-ObjectFromApiObject {
 				## set ComputerName property
 				$oObjToReturn.ComputerName = $ComputerName
 				## set URI property that uniquely identifies this object
-				$oObjToReturn.Uri = $strUriThisItem
+				$oObjToReturn.Uri = $ItemUri
 				## if this is a PerformanceCounter item, add the EntityType property
 				if ("performance" -eq $ItemType_str) {$oObjToReturn.EntityType = $strPerformanceCounterEntityType}
 				## return the object

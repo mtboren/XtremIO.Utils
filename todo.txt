@@ -210,14 +210,27 @@ todo:
 doing:
 [feat_MultiCluster]
 -add support for multi-cluster XMS situations
-	-need to pass "cluster-name" or "cluster-index" -- seemingly optional for Get-* for some object types, not for others (but, need to accept for all but Get-XIOCluster?). Mandatory for:
-		Get-XIOBBU, Get-XIOBrick, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOLocalDisk, Get-XIOSlot, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOXenv
+	-need to pass "cluster-name" or "cluster-index" -- seemingly optional for Get-* for some object types, not for others (but, need to accept for all?). Mandatory for:
+		Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOXenv
+		-make config item that holds these types that require "cluster-name" when the XMS has more than one cluster?
 	-for these types where -Cluster is mandatory, need to handle that gracefully
-		-add to the XMS object a, "cluster" property or something?  And, then, if ($oThisXms.Cluster | Measure).Count -gt 1, and if -Cluster not passed, code will iterate through all clusters known to that XMS?  yes
+		-add to the XIOConnection object a, "cluster" property or something?  And, then, if ($oThisXIOConnection.Cluster | Measure).Count -gt 1, and if -Cluster not passed, code will iterate through all clusters managed by the XMS for that XIOConnection?  yes
 	-what about for New-XIO*?
-	-next iteration:
+		?Volumes are per array, but initiators and the like are per XMS?  What about other object types?
+	-and, for next iteration:
 		-take -RelatedObject from pipeline that is only cluster?  Or, just add -Cluster to e'erything?
 			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
+	so, to do this:
+		-add -Cluster param to the Get-* cmdlets that need it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"])
+		done:
+			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
+				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
+				-make the URI on the return object include the ?cluster-name=blahh portion, so people can reuse that URI to directly get that object
+			-add Cluster property to XioConnection objects, that holds the XIOCluster objects for the clusters that this XMS appliance manages
+			-update Get-XIOItemInfo to, if no -Cluster is passed and the item type is one that supports ?cluster-name=<something> input, do the given get calls for each cluster managed by this XMS (per this XIO connection)
+				-to give the behavior of, "if you specify no cluster, you get objects for all clusters managed by the XMS in this XIOConnection"
+
+
 
 
 [impr_ProjectDirReorg]

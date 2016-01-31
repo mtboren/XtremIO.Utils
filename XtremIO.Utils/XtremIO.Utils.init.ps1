@@ -882,6 +882,7 @@ namespace XioItemInfo {
 
 	// connection to XMS appliance
 	public class XioConnection {
+		public String[] Cluster;
 		public String ComputerName;
 		public DateTime ConnectDatetime;
 		public System.Management.Automation.PSCredential Credential;
