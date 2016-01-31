@@ -221,7 +221,12 @@ doing:
 		-take -RelatedObject from pipeline that is only cluster?  Or, just add -Cluster to e'erything?
 			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
 	so, to do this:
-		-add -Cluster param to the Get-* cmdlets that need it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"])
+		-add tests that do -Cluster on the 26 object-specific cmdlets, plus on Get-XIOItemInfo
+		-add piece that checks that the given Cluster values are managed by this XMS and if not, doesn't even try to get the given object, just does write-verbose of "no such cluster managed by this XMS", instead of non-graceful throw of, ""message": "sys_not_found""
+		-add -Cluster param plus .Example to the Get-* cmdlets that need it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
+			Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOXenv
+			done:
+				Get-XIOBBU,
 		done:
 			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
 				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)

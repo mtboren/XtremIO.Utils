@@ -1216,6 +1216,9 @@ function Get-XIOAlertDefinition {
 	.Example
 	Get-XIOBBU
 	Get the "BBU" items
+	.Example
+	Get-XIOBBU -Cluster mycluster0,mycluster3 -ComputerName somexmsappl01.dom.com
+	Get the "BBU" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.BBU
 #>
@@ -1231,7 +1234,9 @@ function Get-XIOBBU {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
