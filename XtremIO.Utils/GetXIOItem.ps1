@@ -339,10 +339,13 @@ function Get-XIOCluster {
 	Request info from current XMS connection and return an object with the "data-protection-group" info for the logical storage entity defined on the array
 	.Example
 	Get-XIODataProtectionGroup X[34]-DPG
-	Get the "data-protection-group" objects named X3-DPG and X4-DPG
+	Get the DataProtectionGroup objects named X3-DPG and X4-DPG
 	.Example
 	Get-XIODataProtectionGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+	.Example
+	Get-XIODataProtectionGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "DataProtectionGroup" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.DataProtectionGroup
 #>
@@ -358,7 +361,9 @@ function Get-XIODataProtectionGroup {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -392,6 +397,9 @@ function Get-XIODataProtectionGroup {
 	Get-XIOInitiatorGroup someIG | Get-XIOInitiator
 	Get the "initiator" object in the given initiator group
 	.Example
+	Get-XIOInitiator -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "initiator" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
 	Get-XIOInitiator -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -413,7 +421,9 @@ function Get-XIOInitiator {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -462,6 +472,9 @@ function Get-XIOInitiator {
 	Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
 	Get the "initiator group(s)" that are mapped to the given snapshot
 	.Example
+	Get-XIOInitiatorGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "initiator group" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
 	Get-XIOInitiatorGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -481,7 +494,9 @@ function Get-XIOInitiatorGroup {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -585,6 +600,9 @@ function Get-XIOInitiatorGroupFolder {
 	Get-XIOLunMap -Property VolumeName,LunId
 	Get the "LUN map" objects, but retrieve only their VolumeName and LunId properties, so as to optimize the data retrieval (retrieve just the data desired). Note:  this is only effective when dealing with an XMS of at least v2.0 of the REST API -- the older API does not support this functionality.  The -Property parameter value is ignored if the REST API is not of at least v2.0
 	.Example
+	Get-XIOLunMap -HostLunId 101 -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "LUN map" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
 	Get-XIOLunMap -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -608,7 +626,9 @@ function Get-XIOLunMap {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -642,13 +662,16 @@ function Get-XIOLunMap {
 	Function to get XtremIO snapshot info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSnapshot
-	Request info from current XMS connection and return an object with the "snapshot" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "Snapshot" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOVolumeFolder /myVolumeFolder | Get-XIOSnapshot
-	Get the "snapshot" objects that are directly in the given volume folder
+	Get the "Snapshot" objects that are directly in the given volume folder
 	.Example
 	Get-XIOInitiatorGroup myIgroup | Get-XIOSnapshot
-	Get the "snapshot" objects that are mapped to the given initiator group
+	Get the "Snapshot" objects that are mapped to the given initiator group
+	.Example
+	Get-XIOSnapshot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "Snapshot" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
 	Get-XIOSnapshot -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -671,7 +694,9 @@ function Get-XIOSnapshot {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -708,6 +733,9 @@ function Get-XIOSnapshot {
 	Get-XIOSsd wwn-0x500000000abcdef0
 	Get the "SSD" named wwn-0x500000000abcdef0
 	.Example
+	Get-XIOSsd -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "SSD" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
 	Get-XIOSsd -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -725,7 +753,9 @@ function Get-XIOSsd {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -753,6 +783,9 @@ function Get-XIOSsd {
 	Get-XIOStorageController X3-SC1
 	Get the "storage controller" named X3-SC1
 	.Example
+	Get-XIOStorageController -Name X1-SC2 -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the given "storage controller" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
 	Get-XIOStorageController -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -770,7 +803,9 @@ function Get-XIOStorageController {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1558,6 +1593,9 @@ function Get-XIOLdapConfig {
 	.Example
 	Get-XIOLocalDisk
 	Get the "LocalDisk" items
+	.Example
+	Get-XIOLocalDisk -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "LocalDisk" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.LocalDisk
 #>
@@ -1573,7 +1611,9 @@ function Get-XIOLocalDisk {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1696,6 +1736,9 @@ function Get-XIOPerformanceCounter {
 	.Example
 	Get-XIOSnapshotSet
 	Get the "SnapshotSet" items
+	.Example
+	Get-XIOSnapshotSet -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "SnapshotSet" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.SnapshotSet
 #>
@@ -1711,7 +1754,9 @@ function Get-XIOSnapshotSet {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1774,6 +1819,9 @@ function Get-XIOSnmpNotifier {
 	.Example
 	Get-XIOStorageControllerPsu
 	Get the "StorageControllerPsu" items
+	.Example
+	Get-XIOStorageControllerPsu -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "StorageControllerPsu" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.StorageControllerPsu
 #>
@@ -1789,7 +1837,9 @@ function Get-XIOStorageControllerPsu {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1930,6 +1980,9 @@ function Get-XIOUserAccount {
 	.Example
 	Get-XIOSlot
 	Get the "Slot" items
+	.Example
+	Get-XIOSlot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "Slot" items from the given XMS appliance, and only for the given XIO Clusters
 	.Outputs
 	XioItemInfo.Slot
 #>
@@ -1945,7 +1998,9 @@ function Get-XIOSlot {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {

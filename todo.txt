@@ -204,7 +204,7 @@ todo:
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
-
+-add Cluster or SysId properties to: Initiator, InitiatorGroup
 
 
 
@@ -226,9 +226,11 @@ doing:
 		-add tests that do -Cluster on the 26 object-specific cmdlets, plus on Get-XIOItemInfo
 		-add piece that checks that the given Cluster values are managed by this XMS and if not, doesn't even try to get the given object, just does write-verbose of "no such cluster managed by this XMS", instead of non-graceful throw of, ""message": "sys_not_found""
 		-add -Cluster param plus .Example to the Get-* cmdlets that need it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
-			Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOXenv
+			Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOXenv
+			not addressed yet (requires further investigation):
+				Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance
 			done:
-				Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu,
+				Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu,
 		done:
 			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
 				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
