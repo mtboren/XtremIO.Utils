@@ -828,10 +828,13 @@ function Get-XIOStorageController {
 	Function to get XtremIO target info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOTarget
-	Request info from current XMS connection and return an object with the "target" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "Target" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOTarget *fc[12]
-	Get the "target" objects with names ending in "fc1" or "fc2"
+	Get the "Target" objects with names ending in "fc1" or "fc2"
+	.Example
+	Get-XIOTarget -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "Target" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
 	Get-XIOTarget -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -850,7 +853,9 @@ function Get-XIOTarget {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -873,10 +878,13 @@ function Get-XIOTarget {
 	Function to get XtremIO target group info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOTargetGroup
-	Request info from current XMS connection and return an object with the "target group" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "TargetGroup" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOTargetGroup Default
-	Get the "target group" named Default
+	Get the "TargetGroup" named Default
+	.Example
+	Get-XIOTargetGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "TargetGroup" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
 	Get-XIOTargetGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -895,7 +903,9 @@ function Get-XIOTargetGroup {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -915,19 +925,22 @@ function Get-XIOTargetGroup {
 
 
 <#	.Description
-	Function to get XtremIO volume info using REST API from XtremIO Management Server (XMS)
+	Function to get XtremIO Volume info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOVolume
-	Request info from current XMS connection and return an object with the "volume" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "Volume" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOVolume someTest02
-	Get the "volume" named someTest02
+	Get the "Volume" named someTest02
 	.Example
 	Get-XIOVolumeFolder /myVolumeFolder | Get-XIOVolume
-	Get the "volume" objects that are directly in the given volume folder
+	Get the "Volume" objects that are directly in the given volume folder
 	.Example
 	Get-XIOInitiatorGroup myIgroup | Get-XIOVolume
-	Get the "volume" objects that are mapped to the given initiator group
+	Get the "Volume" objects that are mapped to the given initiator group
+	.Example
+	Get-XIOVolume -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "Volume" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
 	Get-XIOVolume -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -950,7 +963,9 @@ function Get-XIOVolume {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -1044,6 +1059,9 @@ function Get-XIOVolumeFolder {
 	Get-XIOXenv X3-SC1-E1,X3-SC1-E2
 	Get the "XEnv" items namedX3-SC1-E1 and X3-SC1-E2
 	.Example
+	Get-XIOXenv -Cluster myCluster0,myCluster3 -Name X1-SC2-E1, X1-SC2-E2 -ComputerName somexmsappl01.dom.com
+	Get the given "XEnv" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
 	Get-XIOXenv -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -1061,7 +1079,9 @@ function Get-XIOXenv {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {

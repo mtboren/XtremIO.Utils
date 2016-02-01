@@ -204,7 +204,11 @@ todo:
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
--add Cluster or SysId properties to: Initiator, InitiatorGroup
+-add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv
+-for supporting targeted cluster queries on XMS appliances that manage multiple clusters, still need to:
+	-add -Cluster param plus .Example to the Get-* cmdlets below (not addressed yet, as this requires further investigation):
+		Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance
+		-these just query all related objects from given XMS, without the current ability to narrow by cluster
 
 
 
@@ -225,12 +229,7 @@ doing:
 	so, to do this:
 		-add tests that do -Cluster on the 26 object-specific cmdlets, plus on Get-XIOItemInfo
 		-add piece that checks that the given Cluster values are managed by this XMS and if not, doesn't even try to get the given object, just does write-verbose of "no such cluster managed by this XMS", instead of non-graceful throw of, ""message": "sys_not_found""
-		-add -Cluster param plus .Example to the Get-* cmdlets that need it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
-			Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOXenv
-			not addressed yet (requires further investigation):
-				Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance
-			done:
-				Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu,
+		-?add piece that, if .Cluster count on given XIOConnection is 1, does not try to use cluster-name input param in URI
 		done:
 			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
 				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
@@ -238,7 +237,11 @@ doing:
 			-add Cluster property to XioConnection objects, that holds the XIOCluster objects for the clusters that this XMS appliance manages
 			-update Get-XIOItemInfo to, if no -Cluster is passed and the item type is one that supports ?cluster-name=<something> input, do the given get calls for each cluster managed by this XMS (per this XIO connection)
 				-to give the behavior of, "if you specify no cluster, you get objects for all clusters managed by the XMS in this XIOConnection"
-
+			-add -Cluster param plus .Example to the Get-* cmdlets that need it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
+				not addressed yet (requires further investigation):
+					Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance
+				done:
+					Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
 
 
 
