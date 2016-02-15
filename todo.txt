@@ -209,6 +209,9 @@ todo:
 	-add -Cluster param plus .Example to the Get-* cmdlets below (not addressed yet, as this requires further investigation):
 		Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance
 		-these just query all related objects from given XMS, without the current ability to narrow by cluster
+		-if/when adding these, be sure to update tests for them to test -Cluster param, too
+	-add piece that checks that the given Cluster values are managed by this XMS and if not, doesn't even try to get the given object, just does write-verbose of "no such cluster managed by this XMS", instead of non-graceful throw of, ""message": "sys_not_found""
+	-?add piece that, if .Cluster count on given XIOConnection is 1, does not try to use cluster-name input param in URI
 
 
 
@@ -221,15 +224,12 @@ doing:
 	-for these types where -Cluster is mandatory, need to handle that gracefully
 		-add to the XIOConnection object a, "cluster" property or something?  And, then, if ($oThisXIOConnection.Cluster | Measure).Count -gt 1, and if -Cluster not passed, code will iterate through all clusters managed by the XMS for that XIOConnection?  yes
 	-what about for New-XIO*?
-		?Volumes are per array, but initiators and the like are per XMS?  What about other object types?
 	-for returnfullresponse, need to include the cluster-name to make proper, full URI?
 	-and, for next iteration:
 		-take -RelatedObject from pipeline that is only cluster?  Or, just add -Cluster to e'erything?
 			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
 	so, to do this:
-		-add tests that do -Cluster on the 26 object-specific cmdlets, plus on Get-XIOItemInfo
-		-add piece that checks that the given Cluster values are managed by this XMS and if not, doesn't even try to get the given object, just does write-verbose of "no such cluster managed by this XMS", instead of non-graceful throw of, ""message": "sys_not_found""
-		-?add piece that, if .Cluster count on given XIOConnection is 1, does not try to use cluster-name input param in URI
+		-add multi-cluster support to New-XIO* cmdlets
 		done:
 			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
 				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
@@ -242,6 +242,7 @@ doing:
 					Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance
 				done:
 					Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
+			-add tests that do -Cluster on the 21 object-specific cmdlets
 
 
 
