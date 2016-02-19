@@ -107,8 +107,14 @@ function New-XIOItem {
 	One cannot create a new initiator group with a port address that is already used in another initiator on the XMS -- this will fail.
 	Similarly, attempting to create an initiator group that contains an initiator name already defined on the XMS will fail.
 	.Example
-	New-XIOInitiatorGroup -Name testIG0 -ParentFolder "/testIGs" -InitiatorList @{"myserver-hba2" = "10:00:00:00:00:00:00:F4"; "myserver-hba3" = "10:00:00:00:00:00:00:F5"}
-	Create an initiator-group named testIG0 with two initiators defined therein
+	New-XIOInitiatorGroup -Name testIG0
+	Create an initiator-group named testIG0 with no initiators defined therein
+	.Example
+	New-XIOInitiatorGroup -Name testIG1 -ParentFolder "/testIGs" -InitiatorList @{'"myserver-hba2"' = '"10:00:00:00:00:00:00:F4"'; '"myserver-hba3"' = '"10:00:00:00:00:00:00:F5"'}
+	Create an initiator-group named testIG1 with two initiators defined therein (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0). And, notice the keys/values in the InitatorList hashtable:  they are made to include quotes in them by wrapping the double-quoted value in single quotes. This is a "feature" of XIOS REST API v1.0 -- these values need to reach the REST API with quotes around them
+	.Example
+	New-XIOInitiatorGroup -Name testIG2 -Cluster myCluster0 -InitiatorList @{"myserver2-hba2" = "10:00:00:00:00:00:00:F6"; "myserver2-hba3" = "10:00:00:00:00:00:00:F7"}
+	Create an initiator-group named testIG3 with two initiators defined therein, and for XIO Cluster "myCluster0" (-Cluster being handy/necessary for connection to XMS that manages multiple XIO Clusters).  Notice, no additional quoting needed for InitiatorList hashtable keys/values -- the XIOS REST API v2 does not have the "feature" described in the previous example
 	.Outputs
 	XioItemInfo.InitiatorGroup object for the newly created object if successful
 #>
@@ -120,6 +126,8 @@ function New-XIOInitiatorGroup {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator-group being made
 		[parameter(Mandatory=$true)][string]$Name_str,
+		## The name of the XIO Cluster on which to make new initiator group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## The initiator-name and port-address for each initiator you want to add to the group, if any (why not, though?). Each key/value pair shall use initiator-name as the key, and the corresponding port-address for the value.
 		#For the port addresses, valid values are colon-separated hex numbers, non-separated hex numbers, or non-separated hex numbers prefixed with "0x".  That is, the following formats are acceptable for port-address values:  XX:XX:XX:XX:XX:XX:XX:XX, XXXXXXXXXXXXXXXX, or 0xXXXXXXXXXXXXXXXX
 		#Example hashtable for two initiators named "myserver-hba2" and "myserver-hba3":
@@ -134,6 +142,7 @@ function New-XIOInitiatorGroup {
 		$strThisItemType = "initiator-group"
 		## string to add to messages written by this function; function name in square brackets
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		if ($PSBoundParameters.ContainsKey("ParentFolder_str")) {Write-Warning "Parameter ParentFolder is obsolete in XIOS API v2.0.  Parameter will be removed from this cmdlet in a future release."}
 	} ## end begin
 
 	Process {
@@ -145,11 +154,12 @@ function New-XIOInitiatorGroup {
 		## make array of new hashtables, add to NewItemSpec hashtable; these new hashtables have backslash-escaped double-quoted values (using key/value pairs from parameter value)
 		if ($PSBoundParameters.ContainsKey("InitiatorList_hsh")) {
 			## for each key in the hashtable, make a new hashtable for the array that holds the initiators info (this is an array of hashtables); Values will have escaped double-quotes added by the function, as this is the current format expected by the XtremIO API
-			$InitiatorList_hsh.Keys | Foreach-Object -begin {$arrInitiatorsInfo = @()} -process {
+			$arrInitiatorsInfo = @($InitiatorList_hsh.Keys | Foreach-Object {
 				$strKey = $_
 				## add a hash to the array of initiator definitions
-				$arrInitiatorsInfo += @{"initiator-name" = ('\"{0}\"' -f $strKey); "port-address" = ('\"{0}\"' -f $InitiatorList_hsh[$strKey])}
+				@{"initiator-name" = $strKey; "port-address" = $InitiatorList_hsh[$strKey]}
 			} ## end foreach-object
+			)
 			$hshNewItemSpec["initiator-list"] = $arrInitiatorsInfo
 		} ## end if
 		if ($PSBoundParameters.ContainsKey("ParentFolder_str")) {$hshNewItemSpec["parent-folder-id"] = $ParentFolder_str}
@@ -158,9 +168,11 @@ function New-XIOInitiatorGroup {
 			ComputerName = $ComputerName_arr
 			ItemType_str = $strThisItemType
 			Name = $Name_str
-			## need to replace triple backslash with single backslash where there is a backslash in the literal value of some field (as req'd by new initiator group call); triple-backslashes come about due to ConvertTo-Json escaping backslashes with backslashes, but causes issue w/ the format expected by XIO API
-			SpecForNewItem_str = ($hshNewItemSpec | ConvertTo-Json).Replace("\\\","\")
+			SpecForNewItem_str = ($hshNewItemSpec | ConvertTo-Json)
 		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param, and set the XIOS REST API param to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO initiator groups with this cmdlet
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster; $hshParamsForNewItem["XiosRestApiVersion"] = "2.0"}
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
@@ -347,7 +359,7 @@ function New-XIOLunMap {
 	Create a 2TB (which is 2048GB, as represented by the "2KB" value for the -SizeGB param) volume named testvol0
 	.Example
 	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol04 -SizeGB 5120 -ParentFolder "/testVols"
-	Create a 5TB volume named testvol04 in the given parent folder (specifying parent folder no longer supported in XIOS REST API v2.0)
+	Create a 5TB volume named testvol04 in the given parent folder (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0)
 	.Example
 	New-XIOVolume -Name testvol05 -SizeGB 5KB -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert
 	Create a 5TB volume named testvol05 with all three alert types enabled

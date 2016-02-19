@@ -234,15 +234,15 @@ doing:
 			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
 	so, to do this:
 		-add multi-cluster support to New-XIO* cmdlets
-			-for New-XIOInitiatorGroup, New-XIOInitiator, New-XIOLunMap
-				-for New-XIOInitiatorGroup, does the add'l conversion from- and back to JSON in New-XIOItem do anything bad to bring back the "\\\" string that is replaced at create-json time in the function itself?
+			-for New-XIOInitiator, New-XIOLunMap
 			-_not_ for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
 			-"un-export" New-XIOItem cmdlet from psm1 after done testing
 			-add tests
 			done:
 				-add to New-XIOItem, first
 				-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
-				-New-XIOSnapshot, New-XIOVolume
+				-for New-XIOInitiatorGroup, syntax changed for aging XIOS REST API v1.0 for when specifying new Initiators to make at New-XIOInitiatorGroup time:  need to add extra quoting to keys/values in InitiatorList paramer hashtable, due to quirk in REST API v1.0 around which the New-XIOInitiatorGroup code no longer works, to focus on current/forward compatibility
+				-New-XIOInitiatorGroup, New-XIOSnapshot, New-XIOVolume
 		done:
 			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
 				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
