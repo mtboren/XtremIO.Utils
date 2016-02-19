@@ -484,6 +484,9 @@ function New-XIOVolumeFolder {
 	New-XIOSnapshot -Volume myVol0,myVol1 -SnapshotSuffix .snap.20151225-0800-5
 	Create new writable snapshots of the two volumes of these names, placing them in a single, new SnapshotSet, and the snapshots will have the specified suffix
 	.Example
+	New-XIOSnapshot -Volume myVol0_clu3,myVol1_clu3 -Cluster myCluster03
+	Create new writable snapshots of the two volumes of these names that are defined in XIO cluster "myCluster03"
+	.Example
 	Get-XIOVolume -Name myVol[01] | New-XIOSnapshot -Type ReadOnly
 	Create new ReadOnly snapshots of the two volumes of these names, placing them each in their own new SnapshotSet, and the snapshots will have the default suffix in their name
 	.Example
@@ -510,8 +513,8 @@ function New-XIOSnapshot {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## XIO Cluster to target for new snapshot activities
-		[XioItemInfo.Cluster]$Cluster,
+		## The name of the XIO Cluster on which to make new volume. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
 		[parameter(Mandatory=$true,ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
 		## XtremIO Consistency Group whose volumes from which to create new snapshot. Accepts either ConsistencyGroup name or object
@@ -520,7 +523,7 @@ function New-XIOSnapshot {
 		[parameter(Mandatory=$true, ParameterSetName="BySnapshotSet")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.SnapshotSet])})][PSObject]$SnapshotSet,
 		## XtremIO Tag whose volumes/snapshots from which to create new snapshot. Accepts either Tag names or objects. These should be Tags for Volume object types, of course.
 		[parameter(Mandatory=$true, ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag,
-		## Suffix to append to name of source volume/snapshot, making the resultant name to use for the new snapshot. Defaults to ".<numberOfSecondsSinceUnixEpoch>"
+		## Suffix to append to name of source volume/snapshot, making the resultant name to use for the new snapshot. Defaults to "<numberOfSecondsSinceUnixEpoch>"
 		[string]$SnapshotSuffix,
 		## Name to use for new SnapshotSet that will hold the new snapshot. Defaults to "SnapshotSet.<numberOfSecondsSinceUnixEpoch>"
 		[string]$NewSnapshotSetName,
@@ -548,7 +551,7 @@ function New-XIOSnapshot {
 			$int64NumSecSinceUnixEpoch = if ($intI -eq 0) {$int64NumSecSinceUnixEpoch_atStart} else {_Get-NumSecondSinceUnixEpoch}
 			## make a string to append to SnapshotSuffix and and NewSnapshotName if this is not the first time through the process scriptblock _and_ it's the same number of seconds since the Unix Epoch as when this function was in the begin scriptblock
 			$strIncrementerSuffix = if (($intI -gt 0) -and ($int64NumSecSinceUnixEpoch -eq $int64NumSecSinceUnixEpoch_atStart)) {"_$intI"}
-			if (-not $PSBoundParameters.ContainsKey("SnapshotSuffix")) {$SnapshotSuffix = ".snapshot.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
+			if (-not $PSBoundParameters.ContainsKey("SnapshotSuffix")) {$SnapshotSuffix = "snapshot.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
 			if (-not $PSBoundParameters.ContainsKey("NewSnapshotSetName")) {$NewSnapshotSetName = "SnapshotSet.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
 		} ## end if
 
@@ -558,8 +561,6 @@ function New-XIOSnapshot {
 			"snapshot-set-name" = $NewSnapshotSetName
 			"snapshot-type" = $Type.ToLower()
 		} ## end hashtable
-
-		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshNewItemSpec["cluster-id"] = $Cluster.Name}
 
 		Switch ($PsCmdlet.ParameterSetName) {
 			## if this is ByVolume, or ByRelatedObject where the object is a Volume
@@ -624,6 +625,9 @@ function New-XIOSnapshot {
 			SpecForNewItem = $hshNewItemSpec | ConvertTo-Json
 			XiosRestApiVersion = "2.0"
 		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param (the XIOS REST API param is already set to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO snapshots with this cmdlet)
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster}
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem

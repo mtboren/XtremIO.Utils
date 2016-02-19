@@ -204,7 +204,8 @@ todo:
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
--add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv
+-add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv, Volume, Snapshot
+	-once added to Volume, update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 -for supporting targeted cluster queries on XMS appliances that manage multiple clusters, still need to:
 	-add -Cluster param plus .Example to the Get-* cmdlets below (not addressed yet, as this requires further investigation):
 		Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance
@@ -233,7 +234,7 @@ doing:
 			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
 	so, to do this:
 		-add multi-cluster support to New-XIO* cmdlets
-			-for New-XIOInitiatorGroup, New-XIOInitiator, New-XIOLunMap, New-XIOSnapshot
+			-for New-XIOInitiatorGroup, New-XIOInitiator, New-XIOLunMap
 				-for New-XIOInitiatorGroup, does the add'l conversion from- and back to JSON in New-XIOItem do anything bad to bring back the "\\\" string that is replaced at create-json time in the function itself?
 			-_not_ for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
 			-"un-export" New-XIOItem cmdlet from psm1 after done testing
@@ -241,7 +242,7 @@ doing:
 			done:
 				-add to New-XIOItem, first
 				-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
-				-New-XIOVolume
+				-New-XIOSnapshot, New-XIOVolume
 		done:
 			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
 				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
