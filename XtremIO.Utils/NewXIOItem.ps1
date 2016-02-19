@@ -190,6 +190,8 @@ function New-XIOInitiatorGroup {
 	.Example
 	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54
 	Create a new initiator in the initiator group "myserver0"
+	New-XIOInitiator -Name myserver0-hba3 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
+	Create a new initiator in the initiator group "myserver0"
 	.Outputs
 	XioItemInfo.Initiator object for the newly created object if successful
 #>
@@ -201,6 +203,8 @@ function New-XIOInitiator {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator being made
 		[parameter(Mandatory=$true)][string]$Name_str,
+		## The name of the XIO Cluster on which to make new initiator group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## The existing initiator group name to which associate the initiator
 		[parameter(Mandatory=$true)][string]$InitiatorGroup,
 		## The initiator's port address.  The following rules apply:
@@ -237,6 +241,9 @@ function New-XIOInitiator {
 			## need to replace triple backslash with single backslash where there is a backslash in the literal value of some field (as req'd by new initiator group call); triple-backslashes come about due to ConvertTo-Json escaping backslashes with backslashes, but causes issue w/ the format expected by XIO API
 			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param, and set the XIOS REST API param to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO initiator with this cmdlet
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster; $hshParamsForNewItem["XiosRestApiVersion"] = "2.0"}
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
