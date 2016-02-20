@@ -203,7 +203,7 @@ function New-XIOInitiator {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator being made
 		[parameter(Mandatory=$true)][string]$Name_str,
-		## The name of the XIO Cluster on which to make new initiator group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new initiator. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The existing initiator group name to which associate the initiator
 		[parameter(Mandatory=$true)][string]$InitiatorGroup,
@@ -302,6 +302,9 @@ function New-XIOInitiatorGroupFolder {
 	.Example
 	New-XIOLunMap -Volume someVolume02 -InitiatorGroup myIG0,myIG1 -HostLunId 21
 	Create a new LUN mapping for volume "someVolume02" to the two given initiator groups, using host LUN ID of 21
+	.Example
+	New-XIOLunMap -Volume someVolume03 -Cluster myCluster0 -InitiatorGroup myIG0,myIG1 -HostLunId 22
+	Create a new LUN mapping specific to myCluster0, for this cluster's volume "someVolume03" to the two given initiator groups in this cluster, using host LUN ID of 22
 	.Outputs
 	XioItemInfo.LunMap object for the newly created object if successful
 #>
@@ -311,6 +314,8 @@ function New-XIOLunMap {
 	param(
 		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
+		## The name of the XIO Cluster on which to make new lun mapping. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## The name of the volume to map
 		[parameter(Mandatory=$true)][string]$Volume,
 		## The names of one or more initiator groups to which to map volume
@@ -329,8 +334,10 @@ function New-XIOLunMap {
 	} ## end begin
 
 	Process {
+		$hshParamForGetXioLunMap = @{Volume = $Volume; InitiatorGroup = $InitiatorGroup; ComputerName = $ComputerName_arr}
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamForGetXioLunMap["Cluster"] = $Cluster}
 		## if a mapping with these properties already exists, do not proceed; retrieve just the given properties, so as to keep the response JSON as small as possible (for speed, plus to stay under the current 2MB hard max length for ConvertFrom-JSON cmdlet)
-		$arrExistingLUNMaps = Get-XIOLunMap -Property lun,vol-name,ig-name -Volume $Volume -InitiatorGroup $InitiatorGroup -ComputerName $ComputerName_arr
+		$arrExistingLUNMaps = Get-XIOLunMap -Property lun,vol-name,ig-name @hshParamForGetXioLunMap
 		if ($null -ne $arrExistingLUNMaps) {Write-Warning "LUN mapping already exists for this volume/LUNID/initiator group combination:`n$(dWrite-ObjectToTableString -ObjectToStringify ($arrExistingLUNMaps | Select-Object VolumeName, LunId, InitiatorGroup, tg-name, ComputerName))`nNot continuing."}
 		## else, go ahead an try to make the new LUN mappings
 		else {
@@ -350,6 +357,9 @@ function New-XIOLunMap {
 					Name = "${Volume}_${InitiatorGroup}_${HostLunId}"
 					SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 				} ## end hashtable
+
+				## if the user specified a cluster to use, include that param, and set the XIOS REST API param to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO lun mappings with this cmdlet
+				if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster; $hshParamsForNewItem["XiosRestApiVersion"] = "2.0"}
 
 				## call the function to actually make this new item
 				New-XIOItem @hshParamsForNewItem
@@ -532,7 +542,7 @@ function New-XIOSnapshot {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## The name of the XIO Cluster on which to make new volume. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new snapshot. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
 		[parameter(Mandatory=$true,ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,

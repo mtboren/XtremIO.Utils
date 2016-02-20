@@ -234,15 +234,18 @@ doing:
 			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
 	so, to do this:
 		-add multi-cluster support to New-XIO* cmdlets
-			-for New-XIOLunMap
 			-_not_ for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
 			-"un-export" New-XIOItem cmdlet from psm1 after done testing
-			-add tests
+			-add tests for New-XIO*
+				-for new lunmap:
+					-InitiatorGroup blah -volume blahvol -cluster xio04,xio05
+					-InitiatorGroup blah -volume blahvol ## with no -Cluster and on 4.0 single-cluster
 			done:
 				-add to New-XIOItem, first
 				-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
 				-for New-XIOInitiatorGroup, syntax changed for aging XIOS REST API v1.0 for when specifying new Initiators to make at New-XIOInitiatorGroup time:  need to add extra quoting to keys/values in InitiatorList paramer hashtable, due to quirk in REST API v1.0 around which the New-XIOInitiatorGroup code no longer works, to focus on current/forward compatibility
-				-New-XIOInitiator, New-XIOInitiatorGroup, New-XIOSnapshot, New-XIOVolume
+				-New-XIOInitiator, New-XIOInitiatorGroup, New-XIOLunMap, New-XIOSnapshot, New-XIOVolume
+				-updated Get-XIOItemInfo cmdlet to fix bug that only returned items for the last XIO cluster managed by the XMS when using -Property parameter (which the New-XIOLunMap uses by default for when checking for existing LUN Maps before trying to create new LUN Map)
 		done:
 			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
 				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
