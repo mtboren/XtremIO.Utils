@@ -207,14 +207,21 @@ todo:
 -add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv, Volume, Snapshot
 	-once added to Volume, update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 -for supporting targeted cluster queries on XMS appliances that manage multiple clusters, still need to:
-	-add -Cluster param plus .Example to the Get-* cmdlets below (not addressed yet, as this requires further investigation):
-		Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance
-		-these just query all related objects from given XMS, without the current ability to narrow by cluster
-		-if/when adding these, be sure to update tests for them to test -Cluster param, too
 	-add piece that checks that the given Cluster values are managed by this XMS and if not, doesn't even try to get the given object, just does write-verbose of "no such cluster managed by this XMS", instead of non-graceful throw of, ""message": "sys_not_found""
 	-?add piece that, if .Cluster count on given XIOConnection is 1, does not try to use cluster-name input param in URI
--add New-XIOTag
--?accept multiple values for -Cluster for New-XIO* cmdlets
+-add other New-XIO* cmdlets:
+	New-XIOConsistencyGroup, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount
+-and, for next iteration on New-XIO* cmdlets:
+	-take -RelatedObject from pipeline that is only cluster?  Or, just add -Cluster to e'erything?
+		-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
+-for Get-XIO*Performance returns, include the GUID or URI or so of the given XIO object, for clarification (return of Get-XIODataProtectionGroupPerformance for multi-cluster does not give distinguishable objects -- can't tell the cluster of each DPG)
+-add Pester tests for New-XIO*
+	-for new LunMap:
+		-InitiatorGroup blah -volume blahvol -cluster xio04,xio05
+		-InitiatorGroup blah -volume blahvol ## with no -Cluster and on 4.0 single-cluster
+	-?need to use GUIDs in the names of new objs, so as to be able to remove them, and need to remove the items, too? Or, report on the objects created and generate the code to remove them, so whomever can remove at will?
+
+
 
 
 
@@ -222,43 +229,38 @@ todo:
 doing:
 [feat_MultiCluster]
 -add support for multi-cluster XMS situations
-	-need to pass "cluster-name" or "cluster-index" -- seemingly optional for Get-* for some object types, not for others (but, need to accept for all?). Mandatory for:
+	-need to pass "cluster-name" or "cluster-index" -- optional for Get-* for some object types, not for others (but, need to accept for all). Mandatory for:
 		Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOXenv
 		-make config item that holds these types that require "cluster-name" when the XMS has more than one cluster?
 	-for these types where -Cluster is mandatory, need to handle that gracefully
-		-add to the XIOConnection object a, "cluster" property or something?  And, then, if ($oThisXIOConnection.Cluster | Measure).Count -gt 1, and if -Cluster not passed, code will iterate through all clusters managed by the XMS for that XIOConnection?  yes
-	-what about for New-XIO*?
-	-for returnfullresponse, need to include the cluster-name to make proper, full URI?
-	-and, for next iteration:
-		-take -RelatedObject from pipeline that is only cluster?  Or, just add -Cluster to e'erything?
-			-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
+		-added to the XIOConnection object a, "cluster" property.  And, then, if ($oThisXIOConnection.Cluster | Measure).Count -gt 1, and if -Cluster not passed, code will iterate through all clusters managed by the XMS for that XIOConnection
+	-for ReturnFullResponse, not altering the object in this module, and the URIs returned on objects by the API do not generally (ever) have the ?cluster-name=<blahh> portion on them
+
 	so, to do this:
-		-add multi-cluster support to New-XIO* cmdlets
-			-_not_ for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
-			-"un-export" New-XIOItem cmdlet from psm1 after done testing
-			-add tests for New-XIO*
-				-for new lunmap:
-					-InitiatorGroup blah -volume blahvol -cluster xio04,xio05
-					-InitiatorGroup blah -volume blahvol ## with no -Cluster and on 4.0 single-cluster
-			done:
-				-add to New-XIOItem, first
-				-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
-				-for New-XIOInitiatorGroup, syntax changed for aging XIOS REST API v1.0 for when specifying new Initiators to make at New-XIOInitiatorGroup time:  need to add extra quoting to keys/values in InitiatorList paramer hashtable, due to quirk in REST API v1.0 around which the New-XIOInitiatorGroup code no longer works, to focus on current/forward compatibility
-				-New-XIOInitiator, New-XIOInitiatorGroup, New-XIOLunMap, New-XIOSnapshot, New-XIOVolume
-				-updated Get-XIOItemInfo cmdlet to fix bug that only returned items for the last XIO cluster managed by the XMS when using -Property parameter (which the New-XIOLunMap uses by default for when checking for existing LUN Maps before trying to create new LUN Map)
-		done:
-			-add -Cluster param to Get-XIOItemInfo and support passing it in the URI
-				-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
-				-make the URI on the return object include the ?cluster-name=blahh portion, so people can reuse that URI to directly get that object
-			-add Cluster property to XioConnection objects, that holds the XIOCluster objects for the clusters that this XMS appliance manages
-			-update Get-XIOItemInfo to, if no -Cluster is passed and the item type is one that supports ?cluster-name=<something> input, do the given get calls for each cluster managed by this XMS (per this XIO connection)
-				-to give the behavior of, "if you specify no cluster, you get objects for all clusters managed by the XMS in this XIOConnection"
-			-add -Cluster param plus .Example to the Get-* cmdlets that need it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
-				not addressed yet (requires further investigation):
-					Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance
-				done:
-					Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
-			-add tests that do -Cluster on the 21 object-specific cmdlets
+		-added -Cluster param to Get-XIOItemInfo and support passing it in the URI
+			-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
+			-make the URI on the return object include the ?cluster-name=blahh portion, so people can reuse that URI to directly get that object
+		-added Cluster property to XioConnection objects, that holds the XIOCluster objects for the clusters that this XMS appliance manages
+		-updated Get-XIOItemInfo to, if no -Cluster is passed and the item type is one that supports ?cluster-name=<something> input, do the given get calls for each cluster managed by this XMS (per this XIO connection)
+			-to give the behavior of, "if you specify no cluster, you get objects for all clusters managed by the XMS in this XIOConnection"
+		-added -Cluster param plus .Example to the Get-XIO* cmdlets that needed it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
+			-done:
+				Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
+			-WORKING ON: not addressed yet (requires further investigation):  add -Cluster support plus .Example for these cmdlets:
+				-when adding these, be sure to update tests for them to test -Cluster param, too
+					Get-XIOPerformanceCounter (need to deal with ?cluster-name="blahh" for this cmdlet, as it currently builds URI with AddlParams, and Get-XIOItemInfo cmdlet does not then use -Cluster param in that section right now)
+					not valid on Get-XIOClusterPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance
+				updated, but need to add to multi-cluster tests:
+					Get-XIOPerformanceInfo, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumePerformance
+
+		-add tests that do -Cluster on the 21 object-specific Get-XIO* cmdlets
+		-added multi-cluster support to New-XIO* cmdlets
+			-added to New-XIOItem, first
+			-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
+			-for New-XIOInitiatorGroup, syntax changed for aging XIOS REST API v1.0 for when specifying new Initiators to make at New-XIOInitiatorGroup time:  need to add extra quoting to keys/values in InitiatorList paramer hashtable, due to quirk in REST API v1.0 around which the New-XIOInitiatorGroup code no longer works, to focus on current/forward compatibility
+			-New-XIOInitiator, New-XIOInitiatorGroup, New-XIOLunMap, New-XIOSnapshot, New-XIOVolume
+			-updated Get-XIOItemInfo cmdlet to fix bug that only returned items for the last XIO cluster managed by the XMS when using -Property parameter (which the New-XIOLunMap uses by default for when checking for existing LUN Maps before trying to create new LUN Map)
+			-this is _not_ relevant for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
 
 
 

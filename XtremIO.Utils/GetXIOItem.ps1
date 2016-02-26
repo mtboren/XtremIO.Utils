@@ -2143,6 +2143,9 @@ function Get-XIOXMS {
 	Get-XIOPerformanceInfo -ComputerName somexmsappl01.dom.com  -ItemType cluster
 	Request info from specified XMS connection and return an object with the cluster peformance info
 	.Example
+	Get-XIOPerformanceInfo -ComputerName somexmsappl01.dom.com  -ItemType initiator-group -Cluster myCluster0
+	Request info from specified XMS connection and return an object with the cluster peformance info, and only for the specified XIO Cluster's objects
+	.Example
 	Get-XIOCluster somecluster | Get-XIOPerformanceInfo -FrequencySeconds 5 -DurationSeconds 30
 	Get info for specified item and return cluster peformance info every 5 seconds for 30 seconds
 	.Outputs
@@ -2160,6 +2163,8 @@ function Get-XIOPerformanceInfo {
 		## "target-group" performance not available via API, yet
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")]
 		[ValidateSet("cluster","data-protection-group","ig-folder","initiator","initiator-group","ssd","target","volume-folder","volume")][string]$ItemType_str,
+		## Name of XtremIO Cluster whose child objects to get
+		[string[]]$Cluster,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
 		## Duration for which to refresh performance info, in seconds
@@ -2178,6 +2183,7 @@ function Get-XIOPerformanceInfo {
 	process {
 		## params to pass to Get-XIOItemInfo (since there are potentially some PSBoundParameters params specific to only this function)
 		$hshParamsForGetXIOItemInfo = @{}
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForGetXIOItemInfo["Cluster"] = $Cluster}
 		Switch ($PSCmdlet.ParameterSetName) {
 			"ByComputerName" {
 				"ComputerName_arr","ItemType_str","Name_arr" | Foreach-Object {if ($PSBoundParameters.ContainsKey($_)) {$hshParamsForGetXIOItemInfo[$_] = $PSBoundParameters[$_]}}
@@ -2267,6 +2273,9 @@ function Get-XIOClusterPerformance {
 	Get-XIODataProtectionGroupPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return object with the data-protection-group peformance info
 	.Example
+	Get-XIODataProtectionGroupPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
+	Request info from specified XMS connection and return object with the data-protection-group peformance info for the objects just in the specified cluster
+	.Example
 	Get-XIODataProtectionGroupPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get data-protection-group peformance info every 5 seconds for 30 seconds
 	.Outputs
@@ -2278,6 +2287,8 @@ function Get-XIODataProtectionGroupPerformance {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
 		## Duration for which to refresh performance info, in seconds
@@ -2348,6 +2359,9 @@ function Get-XIOInitiatorGroupFolderPerformance {
 	Get-XIOInitiatorGroupPerformance
 	Request info from all current XMS connections and return objects with the initiator-group performance info
 	.Example
+	Get-XIOInitiatorGroupPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
+	Request info from specified XMS connection and return objects with the initiator-group performance info for the objects just in the specified cluster
+	.Example
 	Get-XIOInitiatorGroupPerformance -ComputerName somexmsappl01.dom.com -Name someig*,otherig*
 	Request info from specified XMS connection and return objects with the initiator-group peformance info for initiator groups with names like someig* and otherig*
 	.Example
@@ -2362,6 +2376,8 @@ function Get-XIOInitiatorGroupPerformance {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
 		## Duration for which to refresh performance info, in seconds
@@ -2393,6 +2409,9 @@ function Get-XIOInitiatorGroupPerformance {
 	Get-XIOInitiatorPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return an object with the initiator peformance info
 	.Example
+	Get-XIOInitiatorPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
+	Request info from specified XMS connection and return an object with the initiator peformance info for the objects just in the specified cluster
+	.Example
 	Get-XIOInitiatorPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get initiator peformance info every 5 seconds for 30 seconds
 	.Outputs
@@ -2404,6 +2423,8 @@ function Get-XIOInitiatorPerformance {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
 		## Duration for which to refresh performance info, in seconds
@@ -2435,6 +2456,9 @@ function Get-XIOInitiatorPerformance {
 	Get-XIOSsdPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return objects with the SSD peformance info
 	.Example
+	Get-XIOSsdPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
+	Request info from specified XMS connection and return objects with the SSD peformance info for the objects just in the specified cluster
+	.Example
 	Get-XIOSsdPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get SSD peformance info every 5 seconds for 30 seconds
 	.Outputs
@@ -2446,6 +2470,8 @@ function Get-XIOSsdPerformance {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
 		## Duration for which to refresh performance info, in seconds
@@ -2477,6 +2503,9 @@ function Get-XIOSsdPerformance {
 	Get-XIOTargetPerformance X1-SC2-fc1,X1-SC2-fc2
 	Get the target peformance info for targets X1-SC2-fc1 and X1-SC2-fc2
 	.Example
+	Get-XIOTargetPerformance X1-SC2-fc1,X1-SC2-fc2 -ComputerName somexmsappl01.dom.com -Cluster myCluster0
+	Get the target peformance info for targets X1-SC2-fc1 and X1-SC2-fc2 for the objects just in the specified cluster
+	.Example
 	Get-XIOTargetPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get target peformance info every 5 seconds for 30 seconds
 	.Outputs
@@ -2488,6 +2517,8 @@ function Get-XIOTargetPerformance {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
 		## Duration for which to refresh performance info, in seconds
@@ -2561,6 +2592,9 @@ function Get-XIOVolumeFolderPerformance {
 	Get-XIOVolumePerformance *somevols*.02[5-8]
 	Get the volume peformance info for volumes with names like *somevols*.025, *somevols*.026, *somevols*.027, *somevols*.028
 	.Example
+	Get-XIOVolumePerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
+	Request info from all current XMS connections and return objects with the volume performance info for the objects just in the specified cluster
+	.Example
 	Get-XIOVolumePerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get volume peformance info every 5 seconds for 30 seconds
 	.Outputs
@@ -2572,6 +2606,8 @@ function Get-XIOVolumePerformance {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("Name")][string[]]$Name_arr,
 		## Duration for which to refresh performance info, in seconds
