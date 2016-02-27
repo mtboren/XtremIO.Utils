@@ -248,10 +248,11 @@ doing:
 				Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
 			-WORKING ON: not addressed yet (requires further investigation):  add -Cluster support plus .Example for these cmdlets:
 				-when adding these, be sure to update tests for them to test -Cluster param, too
-					Get-XIOPerformanceCounter (need to deal with ?cluster-name="blahh" for this cmdlet, as it currently builds URI with AddlParams, and Get-XIOItemInfo cmdlet does not then use -Cluster param in that section right now)
+					Get-XIOPerformanceCounter (need to deal with ?cluster-name="blahh" for this cmdlet, as it currently builds URI with AddlParams, and Get-XIOItemInfo cmdlet does not then use -Cluster param in that section right now) -- ADDED, but need to complete the testing
 					not valid on Get-XIOClusterPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance
 				updated, but need to add to multi-cluster tests:
 					Get-XIOPerformanceInfo, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumePerformance
+					Get-XIOPerformanceCounter (needed to deal with ?cluster-name="blahh" for this cmdlet, as it currently builds URI with AddlParams, and Get-XIOItemInfo cmdlet did not then use -Cluster param in that section, previously)
 
 		-add tests that do -Cluster on the 21 object-specific Get-XIO* cmdlets
 		-added multi-cluster support to New-XIO* cmdlets

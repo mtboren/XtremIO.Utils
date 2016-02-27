@@ -39,7 +39,7 @@ function Get-XIOItemInfo {
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Additional parameters to use in the REST call (like those used to return a subset of events instead of all)
-		[ValidateScript({$_ -match "^/\?.+"})][string]$AdditionalURIParam,
+		[string]$AdditionalURIParam,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Switch: Use the API v2 feature of "full=1", which returns full object details, instead of just name and HREF for the given XIO object?
@@ -106,15 +106,36 @@ function Get-XIOItemInfo {
 
 					## if the item type is "event" or "performance", add a bit more to the URI
 					if ("event","performance" -contains $ItemType_str) {
-						## REST command to use (with URIParams added, if any)
-						$strRestCommandWithAnyAddlParams = if ($PSBoundParameters.ContainsKey("AdditionalURIParam")) {"$strRestCmd_base$AdditionalURIParam"} else {$strRestCmd_base}
+						## make REST commands (with any add'l params) to use for making new XioApiURIs for eventual object getting
+						$arrRestCommandWithAnyAddlParams = @(
+							## if either $AdditionalURIParam or $Cluster, append appropriate things to URI
+							if ($PSBoundParameters.ContainsKey("AdditionalURIParam") -or $PSBoundParameters.ContainsKey("Cluster")) {
+								## if $Cluster is specified, cycle through each value
+								if ($PSBoundParameters.ContainsKey("Cluster")) {
+									$Cluster | Foreach-Object {
+										## make a tidbit to append that is either just "cluster-name=<blah>", or is "<addlParam>&cluster-name=<blah>"
+										$strUriTidbitToAppend = ($AdditionalURIParam, "cluster-name=$_" | Where-Object {-not [string]::IsNullOrEmpty($_)}) -join "&"
+										## emit this updated REST cmd (with params) as one of the elements in the array of REST commands to use
+										"${strRestCmd_base}/?${strUriTidbitToAppend}"
+									} ## end foreach-object
+								} ## end if
+								## else, it's AdditionalURIParam only, append just AdditionalURIParam to URI
+								else {"${strRestCmd_base}/?${AdditionalURIParam}"}
+							} ## end if
+							## else, just use $strRestCmd_base
+							else {$strRestCmd_base}
+						) ## end array
+
 						## grab the entity type from the AdditionalURIParam if this is a "performance" item
 						$strPerformanceCounterEntityType = if ("performance" -eq $ItemType_str) {($AdditionalURIParam.Split("&") | Where-Object {$_ -like "entity=*"}).Split("=")[1]}
 						## populate the array of hashtables for getting XIO info with just one computername/HREF hashtable
-						$arrDataHashtablesForGettingXioInfo += @{
-							ComputerName = $strThisXmsName
-							arrHrefsToGetItemsInfo = New-XioApiURI -ComputerName $strThisXmsName -RestCommand $strRestCommandWithAnyAddlParams
-						} ## end hashtable
+						$arrRestCommandWithAnyAddlParams | Foreach-Object {
+							$strRestCommandWithAnyAddlParams = $_
+							$arrDataHashtablesForGettingXioInfo += @{
+								ComputerName = $strThisXmsName
+								arrHrefsToGetItemsInfo = New-XioApiURI -ComputerName $strThisXmsName -RestCommand $strRestCommandWithAnyAddlParams
+							} ## end hashtable
+						} ## end foreach-object
 					} ## end if
 					## do all the necessary things to populate $arrDataHashtablesForGettingXioInfo with individual XIO item's HREFs
 					else { ## making arrDataHashtablesForGettingXioInfo from "default" view via API, or array of objets with "full" properties, as is supported in XIOS API v2
@@ -1197,7 +1218,7 @@ function Get-XIOEvent {
 		## if any of these params were passed, add them to the hashtable of params to pass along
 		"ComputerName","ReturnFullResponse_sw" | Foreach-Object {if ($PSBoundParameters.ContainsKey($_)) {$hshParamsForGetXIOItemInfo[$_] = $PSBoundParameters[$_]}}
 		## if any of the filtering params were passed (and, so, $strURIFilter is non-null), add param to hashtable
-		if (-not [System.String]::IsNullOrEmpty($strURIFilter)) {$hshParamsForGetXioItemInfo["AdditionalURIParam"] = "/?${strURIFilter}"}
+		if (-not [System.String]::IsNullOrEmpty($strURIFilter)) {$hshParamsForGetXioItemInfo["AdditionalURIParam"] = "${strURIFilter}"}
 		#Write-Debug ("${strLogEntry_ToAdd}: string for URI filter: '$strURIFilter'")
 		## call the base function to get the given events
 		Get-XIOItemInfo @hshParamsForGetXioItemInfo
@@ -1680,6 +1701,9 @@ function Get-XIOLocalDisk {
 	Get-XIOPerformanceCounter -EntityType Volume -TimeFrame real_time
 	Request info from current XMS connection and return realtime (most recent sample in the last five seconds) PerformanceCounter info for entities of type Volume
 	.Example
+	Get-XIOPerformanceCounter -EntityType Volume -TimeFrame real_time -Cluster myCluster0
+	Request info from current XMS connection and return realtime (most recent sample in the last five seconds) PerformanceCounter info for entities of type Volume, and only for the given XIO Cluster
+	.Example
 	Get-XIOPerformanceCounter -EntityType InitiatorGroup -TimeFrame last_hour -EntityName myInitGroup0 | ConvertTo-Json
 	Get the realtime (most recent sample in the last five seconds) PerformanceCounter info for the InitiatorGroup entity myInitGroup0, and then convert it to JSON for later consumption by <some awesome data visualization app>
 	.Outputs
@@ -1691,6 +1715,8 @@ function Get-XIOPerformanceCounter {
 	param(
 		## XMS address to use; if none, use default connections
 		[string[]]$ComputerName,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[string[]]$Cluster,
 		## Maximum number of performance facts to retrieve per XMS connection. Default is 50
 		[int]$Limit = 50,
 		## Datetime of earliest performance sample to return. Can be an actual System.DateTime object, or a string that can be cast to a DateTime, like "27 Dec 1943 11am".   Can either use -Start and -End parameters, or use -TimeFrame parameter.
@@ -1754,9 +1780,9 @@ function Get-XIOPerformanceCounter {
 		## start of params for Get-XIOItemInfo call
 		$hshParamsForGetXioItemInfo = @{ItemType_str = $ItemType_str} ## end hash
 		## if any of these params were passed, add them to the hashtable of params to pass along
-		"ComputerName","ReturnFullResponse" | Foreach-Object {if ($PSBoundParameters.ContainsKey($_)) {$hshParamsForGetXIOItemInfo[$_] = $PSBoundParameters[$_]}}
+		"ComputerName","ReturnFullResponse","Cluster" | Foreach-Object {if ($PSBoundParameters.ContainsKey($_)) {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}}
 		## if any of the filtering params were passed (and, so, $strURIFilter is non-null), add param to hashtable
-		if (-not [System.String]::IsNullOrEmpty($strURIFilter)) {$hshParamsForGetXioItemInfo["AdditionalURIParam"] = "/?${strURIFilter}"}
+		if (-not [System.String]::IsNullOrEmpty($strURIFilter)) {$hshParamsForGetXioItemInfo["AdditionalURIParam"] = "${strURIFilter}"}
 		#Write-Debug ("${strLogEntry_ToAdd}: string for URI filter: '$strURIFilter'")
 		## call the base function to get the given performance counters
 		Get-XIOItemInfo @hshParamsForGetXioItemInfo
