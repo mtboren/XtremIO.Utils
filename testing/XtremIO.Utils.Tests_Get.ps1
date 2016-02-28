@@ -4,26 +4,8 @@
 	1) a connection to at least one XMS is in place (but, will prompt for XMS to which to connect if not)
 #>
 
-$strXioModuleName = "XtremIO.Utils"
-## if module not already loaded, try to load it (assumes that module is in PSModulePath)
-if (-not ($oModuleInfo = Get-Module $strXioModuleName)) {
-	$oModuleInfo = Import-Module $strXioModuleName -PassThru
-	if (-not ($oModuleInfo -is [System.Management.Automation.PSModuleInfo])) {Throw "Could not load module '$strXioModuleName' -- is it available in the PSModulePath? You can manually load the module and start tests again"}
-} ## end if
-Write-Verbose -Verbose ("Starting testing of module '{0}' (version '{1}' from '{2}')" -f $oModuleInfo.Name, $oModuleInfo.Version, $oModuleInfo.Path)
-
-## get the XIO connection to use
-$oXioConnectionToUse = if (-not (($DefaultXmsServers | Measure-Object).Count -gt 0)) {
-	$hshParamForConnectXioServer = @{ComputerName = $(Read-Host -Prompt "XMS computer name to which to connect for testing"); TrustAllCert = $true}
-	Connect-XIOServer @hshParamForConnectXioServer
-} ## end if
-else {$DefaultXmsServers[0]}
-$strXmsComputerName = $oXioConnectionToUse.ComputerName
-Write-Verbose -Verbose "Testing using all XMS connections, generally, but single-XMS tests are using computer name of '$strXmsComputerName'"
-
-## get the XIO cluster name to use for -Cluster param testing -- use the first cluster available in the oXioConnectionToUse
-$strClusterNameToUse = (Get-XIOCluster -ComputerName $strXmsComputerName | Select-Object -First 1).Name
-Write-Verbose -Verbose "Testing using all XIO clusters, generally, but single-cluster tests are using cluster name of '$strClusterNameToUse'"
+## initialize things, preparing for tests
+. $PSScriptRoot\XtremIO.Utils.TestingInit.ps1
 
 
 ## for each of the object types whose typenames match the object name in the cmdlet noun, test getting such an object
@@ -95,7 +77,7 @@ Describe -Tags "Get" -Name "Get-XIOItemInfo" {
 }
 
 ## for each cmdlet that supports -Cluster param, test getting such an object, specifying -Cluster for each test (the object types' typenames happen to match the object name in the cmdlet noun)
-$arrXioCmdletsSupportingClusterParam = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv
+$arrXioCmdletsSupportingClusterParam = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv, DataProtectionGroupPerformance, InitiatorGroupPerformance, InitiatorPerformance, SsdPerformance, TargetPerformance, VolumePerformance, PerformanceCounter
 $arrXioCmdletsSupportingClusterParam | Foreach-Object {
 	Describe -Tags "Get","ClusterSpecific" -Name "Get-XIO$_ (Cluster-specific)" {
 	    It "Gets an XIO $_ object, uses -Cluster param" {

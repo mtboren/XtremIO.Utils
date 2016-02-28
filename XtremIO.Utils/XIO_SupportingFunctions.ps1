@@ -1863,7 +1863,7 @@ function _New-Object_fromItemTypeAndContent {
 						Name = $oContent."snapped-object-id"[1]
 						Type = $oContent."snapped-object-type"
 					}) ## end new-object
-					SnapshotSchedulerId = $oContent.oid[0]
+					SnapshotSchedulerId = $oContent.guid
 					SnapType = $oContent."snapshot-type"
 					State = $oContent."scheduler-state"
 					Suffix = $oContent.suffix
@@ -1964,7 +1964,7 @@ function _New-Object_fromItemTypeAndContent {
 					Guid = $oContent.guid
 					Index = $oContent.index
 					Severity = $oContent."obj-severity"
-					SyslogNotifierId = $oContent.oid[0]
+					SyslogNotifierId = $oContent.guid
 					Target = $oContent.targets
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1989,7 +1989,7 @@ function _New-Object_fromItemTypeAndContent {
 					ParentTag = _New-ObjListFromProperty -IdPropertyPrefix "Tag" (,$oContent."parent-id")
 					## Tags do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
 					Severity = $oContent."obj-severity"
-					TagId = $oContent.oid[0]
+					TagId = $oContent.guid
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case

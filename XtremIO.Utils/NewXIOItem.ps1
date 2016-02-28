@@ -188,10 +188,11 @@ function New-XIOInitiatorGroup {
 	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 0x100000000000ab56
 	Create a new initiator in the initiator group "myserver0"
 	.Example
-	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54
-	Create a new initiator in the initiator group "myserver0"
-	New-XIOInitiator -Name myserver0-hba3 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
-	Create a new initiator in the initiator group "myserver0"
+	New-XIOInitiator -Name myserver0-hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54
+	Create a new initiator in the initiator group "myserver0" on all XIO Clusters in the connected XMS
+	.Example
+	New-XIOInitiator -Name myserver0-hba4 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
+	Create a new initiator in the initiator group "myserver0", on specified XIO Cluster only
 	.Outputs
 	XioItemInfo.Initiator object for the newly created object if successful
 #>
@@ -510,7 +511,7 @@ function New-XIOVolumeFolder {
 <#	.Description
 	Create a new XtremIO snapshot
 	.Example
-	New-XIOSnapshot -Volume myVol0,myVol1 -SnapshotSuffix .snap.20151225-0800-5
+	New-XIOSnapshot -Volume myVol0,myVol1 -SnapshotSuffix snap.20151225-0800-5
 	Create new writable snapshots of the two volumes of these names, placing them in a single, new SnapshotSet, and the snapshots will have the specified suffix
 	.Example
 	New-XIOSnapshot -Volume myVol0_clu3,myVol1_clu3 -Cluster myCluster03
@@ -522,7 +523,7 @@ function New-XIOVolumeFolder {
 	Get-XIOConsistencyGroup someGrp[01] | New-XIOSnapshot -Type ReadOnly
 	Get these two consistency groups and create snapshots of each group's volumes. Note:  this makes separate SnapshotSets for each consistency group's volumes' new snapshots (that is, this does not create a single SnapshotSet with the snapshots of all of the volumes from both consistency groups)
 	.Example
-	New-XIOSnapshot -SnapshotSet SnapshotSet.1449941173 -SnapshotSuffix .addlSnap.now -Type Regular
+	New-XIOSnapshot -SnapshotSet SnapshotSet.1449941173 -SnapshotSuffix addlSnap.now -Type Regular
 	Create new writable snapshots for the volumes (snapshots) in the given SnapshotSet, and makes names new snapshots with given suffix
 	.Example
 	Get-XIOSnapshotSet | Where-Object {$_.CreationTime -gt (Get-Date).AddHours(-1)} | New-XIOSnapshot ReadOnly

@@ -244,17 +244,11 @@ doing:
 		-updated Get-XIOItemInfo to, if no -Cluster is passed and the item type is one that supports ?cluster-name=<something> input, do the given get calls for each cluster managed by this XMS (per this XIO connection)
 			-to give the behavior of, "if you specify no cluster, you get objects for all clusters managed by the XMS in this XIOConnection"
 		-added -Cluster param plus .Example to the Get-XIO* cmdlets that needed it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
-			-done:
-				Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
-			-WORKING ON: not addressed yet (requires further investigation):  add -Cluster support plus .Example for these cmdlets:
-				-when adding these, be sure to update tests for them to test -Cluster param, too
-					Get-XIOPerformanceCounter (need to deal with ?cluster-name="blahh" for this cmdlet, as it currently builds URI with AddlParams, and Get-XIOItemInfo cmdlet does not then use -Cluster param in that section right now) -- ADDED, but need to complete the testing
-					not valid on Get-XIOClusterPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance
-				updated, but need to add to multi-cluster tests:
-					Get-XIOPerformanceInfo, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumePerformance
-					Get-XIOPerformanceCounter (needed to deal with ?cluster-name="blahh" for this cmdlet, as it currently builds URI with AddlParams, and Get-XIOItemInfo cmdlet did not then use -Cluster param in that section, previously)
-
-		-add tests that do -Cluster on the 21 object-specific Get-XIO* cmdlets
+			-Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
+			-Get-XIOPerformanceInfo, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumePerformance
+			-Get-XIOPerformanceCounter (needed to deal with ?cluster-name="blahh" for this cmdlet, as it did previously build URI with AddlParams, and Get-XIOItemInfo cmdlet did not then use -Cluster param in that section)
+			-not valid on Get-XIOClusterPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance
+			-add tests that do -Cluster on the 21 object-specific Get-XIO* cmdlets, along with with six (6) object-specific performance cmdlets, and the general Get-XIOPerformanceCounter cmdlet
 		-added multi-cluster support to New-XIO* cmdlets
 			-added to New-XIOItem, first
 			-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
@@ -262,8 +256,6 @@ doing:
 			-New-XIOInitiator, New-XIOInitiatorGroup, New-XIOLunMap, New-XIOSnapshot, New-XIOVolume
 			-updated Get-XIOItemInfo cmdlet to fix bug that only returned items for the last XIO cluster managed by the XMS when using -Property parameter (which the New-XIOLunMap uses by default for when checking for existing LUN Maps before trying to create new LUN Map)
 			-this is _not_ relevant for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
-
-
 
 [impr_ProjectDirReorg]
 -reorg dir -- put module files into new subfolder, XtremIO.Utils
