@@ -1337,7 +1337,7 @@ function _New-Object_fromItemTypeAndContent {
 					LunMappingList = $oContent."lun-mapping-list"
 					Guid = $oContent.guid
 					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-					InitiatorGrpIdList = $(if ($null -ne $oContent."lun-mapping-list") {@($oContent."lun-mapping-list" | Foreach-Object {$_[0][0]})})
+					InitiatorGrpIdList = @($(if (($oContent."lun-mapping-list" | Measure-Object).Count -gt 0) {$oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}}))
 					## available in 2.4.0 and up
 					UsedLogicalTB = $(if ($null -ne $oContent."logical-space-in-use") {$oContent."logical-space-in-use" / 1GB})
 					IOPS = $oContent.iops

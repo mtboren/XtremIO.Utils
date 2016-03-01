@@ -114,10 +114,10 @@ namespace XioItemInfo {
 		public String FcPortSpeed;
 		public String FreespaceLevel;
 		public Double FreeSSDTB;
-		public Object[] InfinibandSwitch;
+		public Object InfinibandSwitch;
 		// InfinibandSwitch list info -- deprecated
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'InfinibandSwitch' instead", false)]
-		public Object[] InfiniBandSwitchList;
+		public Object InfiniBandSwitchList;
 		public Int64 IOPS;
 		public String LicenseId;
 		public String NaaSysId;

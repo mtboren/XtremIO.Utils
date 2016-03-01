@@ -256,6 +256,7 @@ doing:
 			-New-XIOInitiator, New-XIOInitiatorGroup, New-XIOLunMap, New-XIOSnapshot, New-XIOVolume
 			-updated Get-XIOItemInfo cmdlet to fix bug that only returned items for the last XIO cluster managed by the XMS when using -Property parameter (which the New-XIOLunMap uses by default for when checking for existing LUN Maps before trying to create new LUN Map)
 			-this is _not_ relevant for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
+		-DOING:  testing in PowerShell v5; partly done w/ testing Get-XIO*; still also need to do New-XIO*
 
 [impr_ProjectDirReorg]
 -reorg dir -- put module files into new subfolder, XtremIO.Utils
