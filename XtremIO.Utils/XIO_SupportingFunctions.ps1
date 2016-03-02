@@ -571,8 +571,8 @@ function _New-ObjectFromApiObject {
 		[parameter(Mandatory=$true)][String]$ItemType,
 		## The XMS Computer Name from which this object came, for populating that property on the return object
 		[parameter(Mandatory=$true)][String]$ComputerName,
-		## The base URI for this item's type, with which to generat a full item URI (base plus the item's index)
-		[String]$BaseItemTypeUri,
+		## The URI for this item
+		[parameter(Mandatory=$true)][String]$ItemUri,
 		## Switch:  is this object from the API call that returns a "full" object view, instead of from other subsequent calls to the API (such as calls to v1 API)?
 		[Switch]$UsingFullApiObjectView
 	)
@@ -580,8 +580,6 @@ function _New-ObjectFromApiObject {
 	##   for type Events, $ApiObject is one object with an Events property, which is an array of PSCustomObject
 	$ApiObject | Foreach-Object {
 		$oThisResponseObj = $_
-		## the URI of this item (or of all of the events, if this item type is "events", due to the difference in the way event objects are returned from API)
-		$strUriThisItem = if ($PSBoundParameters.ContainsKey("BaseItemTypeUri")) {"$BaseItemTypeUri{0}" -f $oThisResponseObj.Index} else {($oThisResponseObj.Links | Where-Object {$_.Rel -eq "Self"}).Href}
 		## FYI:  name of the property of the response object that holds the details about the XIO item is "content" for nearly all types, but "events" for event type
 		## if the item type is events, access the "events" property of the response object; else, if "performance", use whole object, else, access the "Content" property
 		$(if ($ItemType -eq "events") {$oThisResponseObj.$ItemType} elseif (($ItemType -eq "performance") -or $UsingFullApiObjectView) {$oThisResponseObj} else {$oThisResponseObj."Content"}) | Foreach-Object {
@@ -600,7 +598,7 @@ function _New-ObjectFromApiObject {
 				## set ComputerName property
 				$oObjToReturn.ComputerName = $ComputerName
 				## set URI property that uniquely identifies this object
-				$oObjToReturn.Uri = $strUriThisItem
+				$oObjToReturn.Uri = $ItemUri
 				## if this is a PerformanceCounter item, add the EntityType property
 				if ("performance" -eq $ItemType_str) {$oObjToReturn.EntityType = $strPerformanceCounterEntityType}
 				## return the object
@@ -1339,7 +1337,7 @@ function _New-Object_fromItemTypeAndContent {
 					LunMappingList = $oContent."lun-mapping-list"
 					Guid = $oContent.guid
 					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-					InitiatorGrpIdList = $(if ($null -ne $oContent."lun-mapping-list") {@($oContent."lun-mapping-list" | Foreach-Object {$_[0][0]})})
+					InitiatorGrpIdList = @($(if (($oContent."lun-mapping-list" | Measure-Object).Count -gt 0) {$oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}}))
 					## available in 2.4.0 and up
 					UsedLogicalTB = $(if ($null -ne $oContent."logical-space-in-use") {$oContent."logical-space-in-use" / 1GB})
 					IOPS = $oContent.iops
@@ -1865,7 +1863,7 @@ function _New-Object_fromItemTypeAndContent {
 						Name = $oContent."snapped-object-id"[1]
 						Type = $oContent."snapped-object-type"
 					}) ## end new-object
-					SnapshotSchedulerId = $oContent.oid[0]
+					SnapshotSchedulerId = $oContent.guid
 					SnapType = $oContent."snapshot-type"
 					State = $oContent."scheduler-state"
 					Suffix = $oContent.suffix
@@ -1966,7 +1964,7 @@ function _New-Object_fromItemTypeAndContent {
 					Guid = $oContent.guid
 					Index = $oContent.index
 					Severity = $oContent."obj-severity"
-					SyslogNotifierId = $oContent.oid[0]
+					SyslogNotifierId = $oContent.guid
 					Target = $oContent.targets
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1991,7 +1989,7 @@ function _New-Object_fromItemTypeAndContent {
 					ParentTag = _New-ObjListFromProperty -IdPropertyPrefix "Tag" (,$oContent."parent-id")
 					## Tags do not have this yet, apparently; adding here so class can still inherit from InfoBase object type
 					Severity = $oContent."obj-severity"
-					TagId = $oContent.oid[0]
+					TagId = $oContent.guid
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case

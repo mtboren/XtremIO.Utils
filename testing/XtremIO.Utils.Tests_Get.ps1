@@ -4,28 +4,14 @@
 	1) a connection to at least one XMS is in place (but, will prompt for XMS to which to connect if not)
 #>
 
-$strXioModuleName = "XtremIO.Utils"
-## if module not already loaded, try to load it (assumes that module is in PSModulePath)
-if (-not ($oModuleInfo = Get-Module $strXioModuleName)) {
-	$oModuleInfo = Import-Module $strXioModuleName -PassThru
-	if (-not ($oModuleInfo -is [System.Management.Automation.PSModuleInfo])) {Throw "Could not load module '$strXioModuleName' -- is it available in the PSModulePath? You can manually load the module and start tests again"}
-} ## end if
-Write-Verbose -Verbose ("Starting testing of module '{0}' (version '{1}' from '{2}')" -f $oModuleInfo.Name, $oModuleInfo.Version, $oModuleInfo.Path)
-
-## get the XIO connection to use
-$oXioConnectionToUse = if (-not (($DefaultXmsServers | Measure-Object).Count -gt 0)) {
-	$hshParamForConnectXioServer = @{ComputerName = $(Read-Host -Prompt "XMS computer name to which to connect for testing"); TrustAllCert = $true}
-	Connect-XIOServer @hshParamForConnectXioServer
-} ## end if
-else {$DefaultXmsServers[0]}
-$strXmsComputerName = $oXioConnectionToUse.ComputerName
-Write-Verbose -Verbose "Testing using all XMS connections, generally, but single-XMS tests are using computer name of '$strXmsComputerName'"
+## initialize things, preparing for tests
+. $PSScriptRoot\XtremIO.Utils.TestingInit.ps1
 
 
 ## for each of the object types whose typenames match the object name in the cmdlet noun, test getting such an object
 $arrXioObjectTypesToGet = Write-Output Alert, BBU, Brick, Cluster, ClusterPerformance, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, DataProtectionGroupPerformance, EmailNotifier, Event, InfinibandSwitch, Initiator, InitiatorGroup, InitiatorGroupPerformance, InitiatorPerformance, LdapConfig, LocalDisk, LunMap, PerformanceCounter, Slot, Snapshot, SnapshotScheduler, SnapshotSet, SnmpNotifier, Ssd, SsdPerformance, StorageController, StorageControllerPsu, SyslogNotifier, Tag, Target, TargetGroup, TargetPerformance, UserAccount, Volume, VolumeFolder, VolumeFolderPerformance, VolumePerformance, Xenv, XMS
 $arrXioObjectTypesToGet | Foreach-Object {
-	Describe "Get-XIO$_" {
+	Describe -Tags "Get" -Name "Get-XIO$_" {
 	    It "Gets an XIO $_ object" {
 	 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$_"}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
 	    	New-Variable -Name "bGetsOnly${_}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$_")
@@ -38,7 +24,7 @@ $arrXioObjectTypesToGet | Foreach-Object {
 @{AlertDefinition = "alert_def_dae_inaccessible"}.GetEnumerator() | Foreach-Object {
 	$strObjNounName = $_.Name
 	$strObjValue = $_.Value
-	Describe "Get-XIO$strObjNounName -Name " {
+	Describe -Tags "Get" -Name "Get-XIO$strObjNounName -Name " {
 	    It "Gets an XIO $strObjNounName object" {
 	 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$strObjNounName" -Name $strObjValue}) {$arrTmpObj | Get-Member | Select-Object -Unique -ExpandProperty TypeName} else {$null}
 	    	New-Variable -Name "bGetsOnly${strObjNounName}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strObjNounName")
@@ -52,7 +38,7 @@ $arrXioObjectTypesToGet | Foreach-Object {
   InitiatorGroupFolderPerformance = "XioItemInfo.IgFolderPerformance";
   StoredCred = "System.Management.Automation.PSCredential"}.GetEnumerator() | Foreach-Object {
 	$strObjNounName = $_.Name
-	Describe "Get-XIO$strObjNounName" {
+	Describe -Tags "Get" -Name "Get-XIO$strObjNounName" {
 	    It "Gets object of type $($_.Value)" {
 	 		$arrReturnTypes = Invoke-Command -ScriptBlock {& "Get-XIO$strObjNounName"} | Get-Member | Select-Object -Unique -ExpandProperty TypeName
 	    	New-Variable -Name "bGetsOnly${strObjNounName}Type" -Value ($arrReturnTypes -eq $_.Value)
@@ -61,7 +47,7 @@ $arrXioObjectTypesToGet | Foreach-Object {
 	}
 }
 
-Describe "Get-XIOItemInfo" {
+Describe -Tags "Get" -Name "Get-XIOItemInfo" {
 	It "Gets XIO initiator objects as directed, and from specified computername" {
 		$arrReturnTypes = Get-XIOItemInfo -ComputerName $strXmsComputerName -ItemType initiator | Get-Member | Select-Object -Unique -ExpandProperty TypeName
 		$bGetsOnlyInitiatorType = $arrReturnTypes -eq "XioItemInfo.Initiator"
@@ -90,3 +76,27 @@ Describe "Get-XIOItemInfo" {
 	}
 }
 
+Describe -Tags "Get" -Name "Get-XIOLunMap (choice properties)" {
+	It "Gets XIO LUN Map objects as directed, retrieving just the given properties" {
+		$arrReturnTypes = Get-XIOLunMap -ComputerName $strXmsComputerName -Property VolumeName,LunId | Get-Member | Select-Object -Unique -ExpandProperty TypeName
+		$bGetsOnlyLunMapType = $arrReturnTypes -eq "XioItemInfo.LunMap"
+		$bGetsOnlyLunMapType | Should Be $true
+	}
+	It "Gets XIO LUN Map objects as directed, retrieving just the given properties (another version of the test)" {
+		$arrReturnTypes = Get-XIOLunMap -ComputerName $strXmsComputerName -Property guid,vol-name,ig-name,tg-name | Get-Member | Select-Object -Unique -ExpandProperty TypeName
+		$bGetsOnlyLunMapType = $arrReturnTypes -eq "XioItemInfo.LunMap"
+		$bGetsOnlyLunMapType | Should Be $true
+	}
+}
+
+## for each cmdlet that supports -Cluster param, test getting such an object, specifying -Cluster for each test (the object types' typenames happen to match the object name in the cmdlet noun)
+$arrXioCmdletsSupportingClusterParam = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv, DataProtectionGroupPerformance, InitiatorGroupPerformance, InitiatorPerformance, SsdPerformance, TargetPerformance, VolumePerformance, PerformanceCounter
+$arrXioCmdletsSupportingClusterParam | Foreach-Object {
+	Describe -Tags "Get","ClusterSpecific" -Name "Get-XIO$_ (Cluster-specific)" {
+	    It "Gets an XIO $_ object, uses -Cluster param" {
+	 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$_" -Cluster $strClusterNameToUse}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
+	    	New-Variable -Name "bGetsOnly${_}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$_")
+	    	(Get-Variable -ValueOnly -Name "bGetsOnly${_}Type") | Should Be $true
+	    }
+	}
+}

@@ -16,7 +16,9 @@ function New-XIOItem {
 		## Item name being made (for checking if such item already exists)
 		[parameter(Mandatory=$true)][string]$Name,
 		## XtremIO REST API version to use
-		[System.Version]$XiosRestApiVersion
+		[System.Version]$XiosRestApiVersion,
+		## Cluster for which to create new item
+		[string[]]$Cluster
 	) ## end param
 
 	Begin {
@@ -42,35 +44,57 @@ function New-XIOItem {
 		else {
 			$arrXioConnectionsToUse | Foreach-Object {
 				$oThisXioConnection = $_
-				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, "Create new '$ItemType_str' object named '$Name'")) {
-					## make params hashtable for new WebRequest
-					$hshParamsToCreateNewXIOItem = @{
-						## make URI
-						Uri = $(
-							$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
-							if ($PSBoundParameters.ContainsKey("XiosRestApiVersion")) {$hshParamsForNewXioApiURI["RestApiVersion"] = $XiosRestApiVersion}
-							New-XioApiURI @hshParamsForNewXioApiURI)
-						## JSON contents for body, for the params for creating the new XIO object
-						Body = $SpecForNewItem_str
-						## set method to Post
-						Method = "Post"
-						## do something w/ creds to make Headers
-						Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
-					} ## end hashtable
-
-					## try request
-					try {
-						$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem -ErrorAction:Stop
-					} ## end try
-					## catch, write info, throw
-					catch {_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToCreateNewXIOItem['Uri'] -ErrorRecord $_}
-					## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
-					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
-						Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
-						## use the return's links' hrefs to return the XIO item(s)
-						($oWebReturn.Content | ConvertFrom-Json).links | Foreach-Object {Get-XIOItemInfo -URI $_.href}
+				## for each value for $Cluster, if cluster is specified, else, just one time (as indicated by the empty string -- that is there just to have the Foreach-Object process scriptblock run at least once)
+				$(if ($PSBoundParameters.ContainsKey("Cluster")) {$Cluster} else {""}) | Foreach-Object {
+					## the cluster name (if any -- might be empty string, but, in that case, will not be used, as code checks PSBoundParameters for Cluster param before using this variable)
+					$strThisXioClusterName = $_
+					## if the -CLuster param is given, add to the WhatIf msg, and add the "cluster-id" param piece to the JSON body specification
+					if ($PSBoundParameters.ContainsKey("Cluster")) {
+						$strClusterTidbitForWhatIfMsg = " in cluster '$strThisXioClusterName'"
+						$strJsonSpecForNewItem = $SpecForNewItem_str | ConvertFrom-Json | Select-Object *, @{n="cluster-id"; e={$strThisXioClusterName}} | ConvertTo-Json
 					} ## end if
-				} ## end if ShouldProcess
+					else {
+						$strClusterTidbitForWhatIfMsg = $null
+						$strJsonSpecForNewItem = $SpecForNewItem_str
+					} ## end else
+					$strMsgForWhatIf = "Create new '$ItemType_str' object named '$Name'{0}" -f $strClusterTidbitForWhatIfMsg
+					if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strMsgForWhatIf)) {
+						## make params hashtable for new WebRequest
+						$hshParamsToCreateNewXIOItem = @{
+							## make URI
+							Uri = $(
+								$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
+								if ($PSBoundParameters.ContainsKey("XiosRestApiVersion")) {$hshParamsForNewXioApiURI["RestApiVersion"] = $XiosRestApiVersion}
+								New-XioApiURI @hshParamsForNewXioApiURI)
+							## JSON contents for body, for the params for creating the new XIO object
+							Body = $strJsonSpecForNewItem
+							## set method to Post
+							Method = "Post"
+							## do something w/ creds to make Headers
+							Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
+						} ## end hashtable
+
+						## try request
+						try {
+							$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem -ErrorAction:Stop
+						} ## end try
+						## catch, write info, throw
+						catch {_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToCreateNewXIOItem['Uri'] -ErrorRecord $_}
+						## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
+						if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
+							Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
+							## use the return's links' hrefs to return the XIO item(s)
+							($oWebReturn.Content | ConvertFrom-Json).links | Foreach-Object {
+								## add "?cluster-name=blahh" here to HREF, if using -Cluster param
+								$strHrefForNewObjToRetrieve = if ($PSBoundParameters.ContainsKey("Cluster")) {
+										"{0}?cluster-name={1}" -f $_.href, $strThisXioClusterName
+									} ## end if
+									else {$_.href}
+								Get-XIOItemInfo -URI $strHrefForNewObjToRetrieve
+							} ## end foreach-object
+						} ## end if
+					} ## end if ShouldProcess
+				} ## end foreach-object
 			} ## end foreach-object
 		} ## end else
 	} ## end process
@@ -83,8 +107,14 @@ function New-XIOItem {
 	One cannot create a new initiator group with a port address that is already used in another initiator on the XMS -- this will fail.
 	Similarly, attempting to create an initiator group that contains an initiator name already defined on the XMS will fail.
 	.Example
-	New-XIOInitiatorGroup -Name testIG0 -ParentFolder "/testIGs" -InitiatorList @{"myserver-hba2" = "10:00:00:00:00:00:00:F4"; "myserver-hba3" = "10:00:00:00:00:00:00:F5"}
-	Create an initiator-group named testIG0 with two initiators defined therein
+	New-XIOInitiatorGroup -Name testIG0
+	Create an initiator-group named testIG0 with no initiators defined therein
+	.Example
+	New-XIOInitiatorGroup -Name testIG1 -ParentFolder "/testIGs" -InitiatorList @{'"myserver-hba2"' = '"10:00:00:00:00:00:00:F4"'; '"myserver-hba3"' = '"10:00:00:00:00:00:00:F5"'}
+	Create an initiator-group named testIG1 with two initiators defined therein (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0). And, notice the keys/values in the InitatorList hashtable:  they are made to include quotes in them by wrapping the double-quoted value in single quotes. This is a "feature" of XIOS REST API v1.0 -- these values need to reach the REST API with quotes around them
+	.Example
+	New-XIOInitiatorGroup -Name testIG2 -Cluster myCluster0 -InitiatorList @{"myserver2-hba2" = "10:00:00:00:00:00:00:F6"; "myserver2-hba3" = "10:00:00:00:00:00:00:F7"}
+	Create an initiator-group named testIG3 with two initiators defined therein, and for XIO Cluster "myCluster0" (-Cluster being handy/necessary for connection to XMS that manages multiple XIO Clusters).  Notice, no additional quoting needed for InitiatorList hashtable keys/values -- the XIOS REST API v2 does not have the "feature" described in the previous example
 	.Outputs
 	XioItemInfo.InitiatorGroup object for the newly created object if successful
 #>
@@ -96,6 +126,8 @@ function New-XIOInitiatorGroup {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator-group being made
 		[parameter(Mandatory=$true)][string]$Name_str,
+		## The name of the XIO Cluster on which to make new initiator group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## The initiator-name and port-address for each initiator you want to add to the group, if any (why not, though?). Each key/value pair shall use initiator-name as the key, and the corresponding port-address for the value.
 		#For the port addresses, valid values are colon-separated hex numbers, non-separated hex numbers, or non-separated hex numbers prefixed with "0x".  That is, the following formats are acceptable for port-address values:  XX:XX:XX:XX:XX:XX:XX:XX, XXXXXXXXXXXXXXXX, or 0xXXXXXXXXXXXXXXXX
 		#Example hashtable for two initiators named "myserver-hba2" and "myserver-hba3":
@@ -110,6 +142,7 @@ function New-XIOInitiatorGroup {
 		$strThisItemType = "initiator-group"
 		## string to add to messages written by this function; function name in square brackets
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		if ($PSBoundParameters.ContainsKey("ParentFolder_str")) {Write-Warning "Parameter ParentFolder is obsolete in XIOS API v2.0.  Parameter will be removed from this cmdlet in a future release."}
 	} ## end begin
 
 	Process {
@@ -121,11 +154,12 @@ function New-XIOInitiatorGroup {
 		## make array of new hashtables, add to NewItemSpec hashtable; these new hashtables have backslash-escaped double-quoted values (using key/value pairs from parameter value)
 		if ($PSBoundParameters.ContainsKey("InitiatorList_hsh")) {
 			## for each key in the hashtable, make a new hashtable for the array that holds the initiators info (this is an array of hashtables); Values will have escaped double-quotes added by the function, as this is the current format expected by the XtremIO API
-			$InitiatorList_hsh.Keys | Foreach-Object -begin {$arrInitiatorsInfo = @()} -process {
+			$arrInitiatorsInfo = @($InitiatorList_hsh.Keys | Foreach-Object {
 				$strKey = $_
 				## add a hash to the array of initiator definitions
-				$arrInitiatorsInfo += @{"initiator-name" = ('\"{0}\"' -f $strKey); "port-address" = ('\"{0}\"' -f $InitiatorList_hsh[$strKey])}
+				@{"initiator-name" = $strKey; "port-address" = $InitiatorList_hsh[$strKey]}
 			} ## end foreach-object
+			)
 			$hshNewItemSpec["initiator-list"] = $arrInitiatorsInfo
 		} ## end if
 		if ($PSBoundParameters.ContainsKey("ParentFolder_str")) {$hshNewItemSpec["parent-folder-id"] = $ParentFolder_str}
@@ -134,11 +168,11 @@ function New-XIOInitiatorGroup {
 			ComputerName = $ComputerName_arr
 			ItemType_str = $strThisItemType
 			Name = $Name_str
-			## need to replace triple backslash with single backslash where there is a backslash in the literal value of some field (as req'd by new initiator group call); triple-backslashes come about due to ConvertTo-Json escaping backslashes with backslashes, but causes issue w/ the format expected by XIO API
-			SpecForNewItem_str = ($hshNewItemSpec | ConvertTo-Json).Replace("\\\","\")
+			SpecForNewItem_str = ($hshNewItemSpec | ConvertTo-Json)
 		} ## end hashtable
 
-		Write-Debug "$strLogEntry_ToAdd SpecForNewItem_str:`n$($hshParamsForNewItem["SpecForNewItem_str"])"
+		## if the user specified a cluster to use, include that param, and set the XIOS REST API param to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO initiator groups with this cmdlet
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster; $hshParamsForNewItem["XiosRestApiVersion"] = "2.0"}
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
@@ -154,8 +188,11 @@ function New-XIOInitiatorGroup {
 	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 0x100000000000ab56
 	Create a new initiator in the initiator group "myserver0"
 	.Example
-	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54
-	Create a new initiator in the initiator group "myserver0"
+	New-XIOInitiator -Name myserver0-hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54
+	Create a new initiator in the initiator group "myserver0" on all XIO Clusters in the connected XMS
+	.Example
+	New-XIOInitiator -Name myserver0-hba4 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
+	Create a new initiator in the initiator group "myserver0", on specified XIO Cluster only
 	.Outputs
 	XioItemInfo.Initiator object for the newly created object if successful
 #>
@@ -167,6 +204,8 @@ function New-XIOInitiator {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator being made
 		[parameter(Mandatory=$true)][string]$Name_str,
+		## The name of the XIO Cluster on which to make new initiator. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## The existing initiator group name to which associate the initiator
 		[parameter(Mandatory=$true)][string]$InitiatorGroup,
 		## The initiator's port address.  The following rules apply:
@@ -204,7 +243,8 @@ function New-XIOInitiator {
 			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 		} ## end hashtable
 
-		Write-Debug "$strLogEntry_ToAdd SpecForNewItem_str:`n$($hshParamsForNewItem["SpecForNewItem_str"])"
+		## if the user specified a cluster to use, include that param, and set the XIOS REST API param to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO initiator with this cmdlet
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster; $hshParamsForNewItem["XiosRestApiVersion"] = "2.0"}
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
@@ -263,6 +303,9 @@ function New-XIOInitiatorGroupFolder {
 	.Example
 	New-XIOLunMap -Volume someVolume02 -InitiatorGroup myIG0,myIG1 -HostLunId 21
 	Create a new LUN mapping for volume "someVolume02" to the two given initiator groups, using host LUN ID of 21
+	.Example
+	New-XIOLunMap -Volume someVolume03 -Cluster myCluster0 -InitiatorGroup myIG0,myIG1 -HostLunId 22
+	Create a new LUN mapping specific to myCluster0, for this cluster's volume "someVolume03" to the two given initiator groups in this cluster, using host LUN ID of 22
 	.Outputs
 	XioItemInfo.LunMap object for the newly created object if successful
 #>
@@ -272,6 +315,8 @@ function New-XIOLunMap {
 	param(
 		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
+		## The name of the XIO Cluster on which to make new lun mapping. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## The name of the volume to map
 		[parameter(Mandatory=$true)][string]$Volume,
 		## The names of one or more initiator groups to which to map volume
@@ -290,8 +335,10 @@ function New-XIOLunMap {
 	} ## end begin
 
 	Process {
+		$hshParamForGetXioLunMap = @{Volume = $Volume; InitiatorGroup = $InitiatorGroup; ComputerName = $ComputerName_arr}
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamForGetXioLunMap["Cluster"] = $Cluster}
 		## if a mapping with these properties already exists, do not proceed; retrieve just the given properties, so as to keep the response JSON as small as possible (for speed, plus to stay under the current 2MB hard max length for ConvertFrom-JSON cmdlet)
-		$arrExistingLUNMaps = Get-XIOLunMap -Property lun,vol-name,ig-name -Volume $Volume -InitiatorGroup $InitiatorGroup -ComputerName $ComputerName_arr
+		$arrExistingLUNMaps = Get-XIOLunMap -Property lun,vol-name,ig-name @hshParamForGetXioLunMap
 		if ($null -ne $arrExistingLUNMaps) {Write-Warning "LUN mapping already exists for this volume/LUNID/initiator group combination:`n$(dWrite-ObjectToTableString -ObjectToStringify ($arrExistingLUNMaps | Select-Object VolumeName, LunId, InitiatorGroup, tg-name, ComputerName))`nNot continuing."}
 		## else, go ahead an try to make the new LUN mappings
 		else {
@@ -312,6 +359,9 @@ function New-XIOLunMap {
 					SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 				} ## end hashtable
 
+				## if the user specified a cluster to use, include that param, and set the XIOS REST API param to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO lun mappings with this cmdlet
+				if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster; $hshParamsForNewItem["XiosRestApiVersion"] = "2.0"}
+
 				## call the function to actually make this new item
 				New-XIOItem @hshParamsForNewItem
 			} ## end foreach-object
@@ -323,14 +373,17 @@ function New-XIOLunMap {
 <#	.Description
 	Create a new XtremIO volume
 	.Example
-	New-XIOVolume -Name testvol03 -SizeGB 2KB -ParentFolder "/testVols"
-	Create a 2TB volume named testvol03
+	New-XIOVolume -Name testvol03 -SizeGB 2KB
+	Create a 2TB (which is 2048GB, as represented by the "2KB" value for the -SizeGB param) volume named testvol0
 	.Example
 	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol04 -SizeGB 5120 -ParentFolder "/testVols"
-	Create a 5TB volume named testvol04
+	Create a 5TB volume named testvol04 in the given parent folder (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0)
 	.Example
-	New-XIOVolume -Name testvol05 -SizeGB 5KB -ParentFolder "/testVols" -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert
+	New-XIOVolume -Name testvol05 -SizeGB 5KB -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert
 	Create a 5TB volume named testvol05 with all three alert types enabled
+	.Example
+	New-XIOVolume -Name testvol10 -Cluster myxio05,myxio06 -SizeGB 1024
+	Create two 1TB volumes named "testvol10", one on each of the two given XIO clusters (expects that the XMS is using at least v2.0 of the REST API, which is available as of XIOS v4.0)
 	.Outputs
 	XioItemInfo.Volume object for the newly created object if successful
 #>
@@ -346,12 +399,13 @@ function New-XIOVolume {
 		[ValidateRange(0,7)][int]$AlignmentOffset_int,
 		## The volume's Logical Block size, either 512 (default) or 4096.  Once defined, the size cannot be modified.  If defined as 4096, AlignmentOffset will be ignored
 		[ValidateSet(512,4096)][int]$LogicalBlockSize_int = 512,
-		## The cluster's name or index number. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
-		[string]$ClusterSysId_str,
+		## The name of the XIO Cluster on which to make new volume. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## The disk space size of the volume in GB. This parameter reflects the size of the volume available to the initiators. It does not indicate the actual SSD space this volume may consume
 		#   Must be an integer greater than 0 and a multiple of 1 MB.
 		[parameter(Mandatory=$true)][ValidateScript({$_ -gt 0})][int]$SizeGB_int,
 		## Identifies the volume folder to which this volume will initially belong. The folder's Folder Type must be Volume. If omitted, the volume will be added to the root volume folder. Example value: "/myBigVolumesFolder"
+		##   Note:  parameter is obsolete, no longer supported in XIOS API v2.0
 		[ValidateScript({$_.StartsWith("/")})][string]$ParentFolder_str,
 		## Switch:  Enable small IO alerts for this volume?  They are disabled by default
 		[Switch]$EnableSmallIOAlert,
@@ -364,8 +418,9 @@ function New-XIOVolume {
 	Begin {
 		## this item type (singular)
 		$strThisItemType = "volume"
-		## the string value to pass for enabling Alert config on new volume
+		## the string value to pass for enabling Alert config on new volume if doing so
 		$strEnableAlertValue = "enabled"
+		if ($PSBoundParameters.ContainsKey("ParentFolder_str")) {Write-Warning "Parameter ParentFolder is obsolete in XIOS API v2.0.  Parameter will be removed from this cmdlet in a future release."}
 	} ## end begin
 
 	Process {
@@ -379,7 +434,6 @@ function New-XIOVolume {
 		## add these if bound
 		if ($PSBoundParameters.ContainsKey("LogicalBlockSize_int")) {$hshNewItemSpec["lb-size"] = $LogicalBlockSize_int}
 		if ($PSBoundParameters.ContainsKey("ParentFolder_str")) {$hshNewItemSpec["parent-folder-id"] = $ParentFolder_str}
-		if ($PSBoundParameters.ContainsKey("ClusterSysId_str")) {$hshNewItemSpec["sys-id"] = $ClusterSysId_str}
 		## only add this if lb-size is (not bound) or (bound and -ne 4096); "Volumes of lb-size 4096 must not be defined with an offset"
 		if ($PSBoundParameters.ContainsKey("AlignmentOffset_int")) {
 			if ((-not $PSBoundParameters.ContainsKey("LogicalBlockSize_int")) -or ($LogicalBlockSize_int -ne 4096)) {$hshNewItemSpec["alignment-offset"] = $AlignmentOffset_int}
@@ -398,6 +452,9 @@ function New-XIOVolume {
 			Name = $Name_str
 			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param, and set the XIOS REST API param to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO volumes with this cmdlet
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster; $hshParamsForNewItem["XiosRestApiVersion"] = "2.0"}
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
@@ -454,8 +511,11 @@ function New-XIOVolumeFolder {
 <#	.Description
 	Create a new XtremIO snapshot
 	.Example
-	New-XIOSnapshot -Volume myVol0,myVol1 -SnapshotSuffix .snap.20151225-0800-5
+	New-XIOSnapshot -Volume myVol0,myVol1 -SnapshotSuffix snap.20151225-0800-5
 	Create new writable snapshots of the two volumes of these names, placing them in a single, new SnapshotSet, and the snapshots will have the specified suffix
+	.Example
+	New-XIOSnapshot -Volume myVol0_clu3,myVol1_clu3 -Cluster myCluster03
+	Create new writable snapshots of the two volumes of these names that are defined in XIO cluster "myCluster03"
 	.Example
 	Get-XIOVolume -Name myVol[01] | New-XIOSnapshot -Type ReadOnly
 	Create new ReadOnly snapshots of the two volumes of these names, placing them each in their own new SnapshotSet, and the snapshots will have the default suffix in their name
@@ -463,7 +523,7 @@ function New-XIOVolumeFolder {
 	Get-XIOConsistencyGroup someGrp[01] | New-XIOSnapshot -Type ReadOnly
 	Get these two consistency groups and create snapshots of each group's volumes. Note:  this makes separate SnapshotSets for each consistency group's volumes' new snapshots (that is, this does not create a single SnapshotSet with the snapshots of all of the volumes from both consistency groups)
 	.Example
-	New-XIOSnapshot -SnapshotSet SnapshotSet.1449941173 -SnapshotSuffix .addlSnap.now -Type Regular
+	New-XIOSnapshot -SnapshotSet SnapshotSet.1449941173 -SnapshotSuffix addlSnap.now -Type Regular
 	Create new writable snapshots for the volumes (snapshots) in the given SnapshotSet, and makes names new snapshots with given suffix
 	.Example
 	Get-XIOSnapshotSet | Where-Object {$_.CreationTime -gt (Get-Date).AddHours(-1)} | New-XIOSnapshot ReadOnly
@@ -483,8 +543,8 @@ function New-XIOSnapshot {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## XIO Cluster to target for new snapshot activities
-		[XioItemInfo.Cluster]$Cluster,
+		## The name of the XIO Cluster on which to make new snapshot. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
 		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
 		[parameter(Mandatory=$true,ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
 		## XtremIO Consistency Group whose volumes from which to create new snapshot. Accepts either ConsistencyGroup name or object
@@ -493,7 +553,7 @@ function New-XIOSnapshot {
 		[parameter(Mandatory=$true, ParameterSetName="BySnapshotSet")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.SnapshotSet])})][PSObject]$SnapshotSet,
 		## XtremIO Tag whose volumes/snapshots from which to create new snapshot. Accepts either Tag names or objects. These should be Tags for Volume object types, of course.
 		[parameter(Mandatory=$true, ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag,
-		## Suffix to append to name of source volume/snapshot, making the resultant name to use for the new snapshot. Defaults to ".<numberOfSecondsSinceUnixEpoch>"
+		## Suffix to append to name of source volume/snapshot, making the resultant name to use for the new snapshot. Defaults to "<numberOfSecondsSinceUnixEpoch>"
 		[string]$SnapshotSuffix,
 		## Name to use for new SnapshotSet that will hold the new snapshot. Defaults to "SnapshotSet.<numberOfSecondsSinceUnixEpoch>"
 		[string]$NewSnapshotSetName,
@@ -521,7 +581,7 @@ function New-XIOSnapshot {
 			$int64NumSecSinceUnixEpoch = if ($intI -eq 0) {$int64NumSecSinceUnixEpoch_atStart} else {_Get-NumSecondSinceUnixEpoch}
 			## make a string to append to SnapshotSuffix and and NewSnapshotName if this is not the first time through the process scriptblock _and_ it's the same number of seconds since the Unix Epoch as when this function was in the begin scriptblock
 			$strIncrementerSuffix = if (($intI -gt 0) -and ($int64NumSecSinceUnixEpoch -eq $int64NumSecSinceUnixEpoch_atStart)) {"_$intI"}
-			if (-not $PSBoundParameters.ContainsKey("SnapshotSuffix")) {$SnapshotSuffix = ".snapshot.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
+			if (-not $PSBoundParameters.ContainsKey("SnapshotSuffix")) {$SnapshotSuffix = "snapshot.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
 			if (-not $PSBoundParameters.ContainsKey("NewSnapshotSetName")) {$NewSnapshotSetName = "SnapshotSet.${int64NumSecSinceUnixEpoch}$strIncrementerSuffix"}
 		} ## end if
 
@@ -531,8 +591,6 @@ function New-XIOSnapshot {
 			"snapshot-set-name" = $NewSnapshotSetName
 			"snapshot-type" = $Type.ToLower()
 		} ## end hashtable
-
-		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshNewItemSpec["cluster-id"] = $Cluster.Name}
 
 		Switch ($PsCmdlet.ParameterSetName) {
 			## if this is ByVolume, or ByRelatedObject where the object is a Volume
@@ -597,6 +655,9 @@ function New-XIOSnapshot {
 			SpecForNewItem = $hshNewItemSpec | ConvertTo-Json
 			XiosRestApiVersion = "2.0"
 		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param (the XIOS REST API param is already set to 2.0; this excludes XIOS REST API v1 with multicluster from being a target for new XIO snapshots with this cmdlet)
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster}
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
