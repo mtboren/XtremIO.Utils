@@ -227,6 +227,7 @@ todo:
 
 
 doing:
+update changelog.md, about_help (with multi-cluster behavior info), makeModule and *psd1
 [feat_MultiCluster]
 -add support for multi-cluster XMS situations
 	-need to pass "cluster-name" or "cluster-index" -- optional for Get-* for some object types, not for others (but, need to accept for all). Mandatory for:
@@ -240,7 +241,7 @@ doing:
 		-added -Cluster param to Get-XIOItemInfo and support passing it in the URI
 			-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
 			-make the URI on the return object include the ?cluster-name=blahh portion, so people can reuse that URI to directly get that object
-		-added Cluster property to XioConnection objects, that holds the XIOCluster objects for the clusters that this XMS appliance manages
+		-added Cluster property to XioConnection objects; this new property holds the XIOCluster objects for the clusters that the given XMS appliance manages
 		-updated Get-XIOItemInfo to, if no -Cluster is passed and the item type is one that supports ?cluster-name=<something> input, do the given get calls for each cluster managed by this XMS (per this XIO connection)
 			-to give the behavior of, "if you specify no cluster, you get objects for all clusters managed by the XMS in this XIOConnection"
 		-added -Cluster param plus .Example to the Get-XIO* cmdlets that needed it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
@@ -248,7 +249,7 @@ doing:
 			-Get-XIOPerformanceInfo, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumePerformance
 			-Get-XIOPerformanceCounter (needed to deal with ?cluster-name="blahh" for this cmdlet, as it did previously build URI with AddlParams, and Get-XIOItemInfo cmdlet did not then use -Cluster param in that section)
 			-not valid on Get-XIOClusterPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance
-			-add tests that do -Cluster on the 21 object-specific Get-XIO* cmdlets, along with with six (6) object-specific performance cmdlets, and the general Get-XIOPerformanceCounter cmdlet
+			-add tests that do -Cluster on the 21 object-specific Get-XIO* cmdlets, along with six (6) object-specific performance cmdlets, and the general Get-XIOPerformanceCounter cmdlet
 		-added multi-cluster support to New-XIO* cmdlets
 			-added to New-XIOItem, first
 			-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
