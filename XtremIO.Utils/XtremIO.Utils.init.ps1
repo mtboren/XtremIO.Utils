@@ -161,7 +161,7 @@ namespace XioItemInfo {
 		public Int32 NumVol;
 		public Object[] SysId;
 		public Object TagList;
-		public Object[] VolList;
+		public Object VolList;
 
 		// Implicit constructor
 		public ConsistencyGroup () {}

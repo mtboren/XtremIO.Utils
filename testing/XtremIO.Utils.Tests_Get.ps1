@@ -76,6 +76,19 @@ Describe -Tags "Get" -Name "Get-XIOItemInfo" {
 	}
 }
 
+Describe -Tags "Get" -Name "Get-XIOLunMap (choice properties)" {
+	It "Gets XIO LUN Map objects as directed, retrieving just the given properties" {
+		$arrReturnTypes = Get-XIOLunMap -ComputerName $strXmsComputerName -Property VolumeName,LunId | Get-Member | Select-Object -Unique -ExpandProperty TypeName
+		$bGetsOnlyLunMapType = $arrReturnTypes -eq "XioItemInfo.LunMap"
+		$bGetsOnlyLunMapType | Should Be $true
+	}
+	It "Gets XIO LUN Map objects as directed, retrieving just the given properties (another version of the test)" {
+		$arrReturnTypes = Get-XIOLunMap -ComputerName $strXmsComputerName -Property guid,vol-name,ig-name,tg-name | Get-Member | Select-Object -Unique -ExpandProperty TypeName
+		$bGetsOnlyLunMapType = $arrReturnTypes -eq "XioItemInfo.LunMap"
+		$bGetsOnlyLunMapType | Should Be $true
+	}
+}
+
 ## for each cmdlet that supports -Cluster param, test getting such an object, specifying -Cluster for each test (the object types' typenames happen to match the object name in the cmdlet noun)
 $arrXioCmdletsSupportingClusterParam = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv, DataProtectionGroupPerformance, InitiatorGroupPerformance, InitiatorPerformance, SsdPerformance, TargetPerformance, VolumePerformance, PerformanceCounter
 $arrXioCmdletsSupportingClusterParam | Foreach-Object {
