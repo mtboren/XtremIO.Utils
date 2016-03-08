@@ -3,7 +3,7 @@
 #   1) make the PowerShell Data (.psd1) file (the Module Manifest) by calling New-ModuleManifest as shown below
 
 ## PowerShell v4 version:
-$strFilespecForPsd1 = "$PSScriptRoot\XtremIO.Utils.psd1"
+$strFilespecForPsd1 = "$PSScriptRoot\XtremIO.Utils\XtremIO.Utils.psd1"
 
 $hshModManifestParams = @{
 	Path = $strFilespecForPsd1
@@ -12,7 +12,7 @@ $hshModManifestParams = @{
 	Copyright = "None"
 	FormatsToProcess = "XioInfo.format.ps1xml"
 	ModuleToProcess = "XtremIO_UtilsMod.psm1"
-	ModuleVersion = "0.9.5"
+	ModuleVersion = "0.10.0"
 	## scripts (.ps1) that are listed in the NestedModules key are run in the module's session state, not in the caller's session state. To run a script in the caller's session state, list the script file name in the value of the ScriptsToProcess key in the manifest
 	NestedModules = "XIO_SupportingFunctions.ps1"
 	PowerShellVersion = "4.0"

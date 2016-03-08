@@ -114,10 +114,10 @@ namespace XioItemInfo {
 		public String FcPortSpeed;
 		public String FreespaceLevel;
 		public Double FreeSSDTB;
-		public Object[] InfinibandSwitch;
+		public Object InfinibandSwitch;
 		// InfinibandSwitch list info -- deprecated
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'InfinibandSwitch' instead", false)]
-		public Object[] InfiniBandSwitchList;
+		public Object InfiniBandSwitchList;
 		public Int64 IOPS;
 		public String LicenseId;
 		public String NaaSysId;
@@ -161,7 +161,7 @@ namespace XioItemInfo {
 		public Int32 NumVol;
 		public Object[] SysId;
 		public Object TagList;
-		public Object[] VolList;
+		public Object VolList;
 
 		// Implicit constructor
 		public ConsistencyGroup () {}
@@ -882,6 +882,7 @@ namespace XioItemInfo {
 
 	// connection to XMS appliance
 	public class XioConnection {
+		public String[] Cluster;
 		public String ComputerName;
 		public DateTime ConnectDatetime;
 		public System.Management.Automation.PSCredential Credential;
