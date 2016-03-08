@@ -215,11 +215,16 @@ todo:
 	-take -RelatedObject from pipeline that is only cluster?  Or, just add -Cluster to e'erything?
 		-?add Cluster-Id or Cluster-Name type of property to output objects, for multi-cluster XMS situations
 -for Get-XIO*Performance returns, include the GUID or URI or so of the given XIO object, for clarification (return of Get-XIODataProtectionGroupPerformance for multi-cluster does not give distinguishable objects -- can't tell the cluster of each DPG)
--add Pester tests for New-XIO*
-	-for new LunMap:
-		-InitiatorGroup blah -volume blahvol -cluster xio04,xio05
-		-InitiatorGroup blah -volume blahvol ## with no -Cluster and on 4.0 single-cluster
-	-?need to use GUIDs in the names of new objs, so as to be able to remove them, and need to remove the items, too? Or, report on the objects created and generate the code to remove them, so whomever can remove at will?
+-update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.
+-add Pester tests for:
+	Integration testing (tests for pipelining between cmdlets)
+	New-XIO*
+		-for new LunMap:
+			-InitiatorGroup blah -volume blahvol -cluster xio04,xio05
+			-InitiatorGroup blah -volume blahvol ## with no -Cluster and on 4.0 single-cluster
+		-?need to use GUIDs in the names of new objs, so as to be able to remove them, and need to remove the items, too? Or, report on the objects created and generate the code to remove them, so whomever can remove at will?
+	-include snippet somewhere that following is expected return for older XIOS versions when querying types that appeared in API in newer XIOS versions (and this behavior is there as a courtesy):
+		WARNING: Type 'bbus' does not exist in xms0.dom.lilly.com's XIOS version. This is possibly an object type that was introduced in a later XIOS version
 
 
 
@@ -227,45 +232,8 @@ todo:
 
 
 doing:
-update changelog.md, about_help (with multi-cluster behavior info), makeModule and *psd1
-[feat_MultiCluster]
--add support for multi-cluster XMS situations
-	-need to pass "cluster-name" or "cluster-index" -- optional for Get-* for some object types, not for others (but, need to accept for all). Mandatory for:
-		Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIODataProtectionGroupPerformance, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOXenv
-		-make config item that holds these types that require "cluster-name" when the XMS has more than one cluster?
-	-for these types where -Cluster is mandatory, need to handle that gracefully
-		-added to the XIOConnection object a, "cluster" property.  And, then, if ($oThisXIOConnection.Cluster | Measure).Count -gt 1, and if -Cluster not passed, code will iterate through all clusters managed by the XMS for that XIOConnection
-	-for ReturnFullResponse, not altering the object in this module, and the URIs returned on objects by the API do not generally (ever) have the ?cluster-name=<blahh> portion on them
 
-	so, to do this:
-		-added -Cluster param to Get-XIOItemInfo and support passing it in the URI
-			-this seems to work on XIOS v2.x line (API there seems to ignore the query string portion of the URI)
-			-make the URI on the return object include the ?cluster-name=blahh portion, so people can reuse that URI to directly get that object
-		-added Cluster property to XioConnection objects; this new property holds the XIOCluster objects for the clusters that the given XMS appliance manages
-		-updated Get-XIOItemInfo to, if no -Cluster is passed and the item type is one that supports ?cluster-name=<something> input, do the given get calls for each cluster managed by this XMS (per this XIO connection)
-			-to give the behavior of, "if you specify no cluster, you get objects for all clusters managed by the XMS in this XIOConnection"
-		-added -Cluster param plus .Example to the Get-XIO* cmdlets that needed it (the ones that get objects types noted in $hshCfg["ItemTypesSupportingClusterNameInput"]):
-			-Get-XIOBBU, Get-XIOBrick, Get-XIOConsistencyGroup, Get-XIODAE, Get-XIODAEController, Get-XIODAEPsu, Get-XIODataProtectionGroup, Get-XIOInitiator, Get-XIOInitiatorGroup, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOXenv
-			-Get-XIOPerformanceInfo, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumePerformance
-			-Get-XIOPerformanceCounter (needed to deal with ?cluster-name="blahh" for this cmdlet, as it did previously build URI with AddlParams, and Get-XIOItemInfo cmdlet did not then use -Cluster param in that section)
-			-not valid on Get-XIOClusterPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance
-			-add tests that do -Cluster on the 21 object-specific Get-XIO* cmdlets, along with six (6) object-specific performance cmdlets, and the general Get-XIOPerformanceCounter cmdlet
-		-added multi-cluster support to New-XIO* cmdlets
-			-added to New-XIOItem, first
-			-updated for multi-cluster support for New-XIOVolume targets XIOS v2 of the REST API (XIOS v4+) -- this removed the previously supported -ClusterSysId_str param, replacing it with -Cluster
-			-for New-XIOInitiatorGroup, syntax changed for aging XIOS REST API v1.0 for when specifying new Initiators to make at New-XIOInitiatorGroup time:  need to add extra quoting to keys/values in InitiatorList paramer hashtable, due to quirk in REST API v1.0 around which the New-XIOInitiatorGroup code no longer works, to focus on current/forward compatibility
-			-New-XIOInitiator, New-XIOInitiatorGroup, New-XIOLunMap, New-XIOSnapshot, New-XIOVolume
-			-updated Get-XIOItemInfo cmdlet to fix bug that only returned items for the last XIO cluster managed by the XMS when using -Property parameter (which the New-XIOLunMap uses by default for when checking for existing LUN Maps before trying to create new LUN Map)
-			-this is _not_ relevant for New-XIOInitiatorGroupFolder, New-XIOVolumeFolder, as those are "translated" as Tags on newer XIOS, and are not cluster-specific
-		-tested in PowerShell v5 against several XMS versions/configs (single/multi-cluster)
-
-[impr_ProjectDirReorg]
--reorg dir -- put module files into new subfolder, XtremIO.Utils
-	-include license file
-	-include testing subdir in overall folder root
-
-
-done for version 0.next (after v0.9.5):
+done for version 0.next (after v0.10.0):
 
 ## things below here are in changelog/readme
 
@@ -275,6 +243,8 @@ done for version 0.next (after v0.9.5):
 
 
 done for previous versions:  moved to done.txt
+
+
 
 
 

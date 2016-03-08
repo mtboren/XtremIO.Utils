@@ -2,7 +2,7 @@
 
 ### Changelog ###
 ### v0.10.0
-Mar 2016
+08 Mar 2016
 
 This release took on the task of adding support for multi-cluster XMS situations to `Get-XIO*` and `New-XIO*` cmdlets.  Another great add was the formalization and integration of the [Pester](https://github.com/pester/Pester "Pester GitHub repo") unit testing.  While there were some tests before, the actual test code was external to this project -- no longer.
 
@@ -13,7 +13,7 @@ The behavior for multi-cluster scenarios is:
 	- if no `-Cluster` parameter/value specified, the `Get-XIO*` cmdlet will return any matching XIO object from all clusters managed by the XMS devices to which current session is connected
 - For `New-XIO*` cmdlets:  you must specify one or more values for `-Cluster` for `New-XIO*` cmdlets for objects that are cluster-specific; otherwise, the cmdlets return an error (though, as the `-Cluster` parameter is not necessary for single-cluster scenarios, the parameter itself is not made proper "Mandatory" from a PowerShell standpoint) 
 
-And, `-Cluster` is now valid for all of the cmdlets that deal with XtremIO objects that are cluster-specific (like, Volumes, LunMaps, etc. -- not XMS-specific things like Alerts and SnmpNotifiers).  This consists of 22 object-specific `Get-XIO*` cmdlets, six (6) object-specific performance cmdlets, the general `Get-XIOPerformanceCounter` cmdlet, and five (5) `New-XIO*` cmdlets.  You can see which cmdlets support the -Cluster parameter like:
+And, `-Cluster` is now valid for all of the cmdlets that deal with XtremIO objects that are cluster-specific (like, `Volumes`, `LunMaps`, etc. -- not XMS-specific things like `Alerts` and `SnmpNotifiers`).  This consists of 22 object-specific `Get-XIO*` cmdlets, six (6) object-specific performance cmdlets, the general `Get-XIOPerformanceCounter` cmdlet, and five (5) `New-XIO*` cmdlets.  You can see which cmdlets support the `-Cluster` parameter like:
 
 	Get-Command -Module XtremIO.Utils -ParameterName Cluster
 
@@ -21,6 +21,9 @@ Some further details about this release:
 
 
 - \[improvement] added `Cluster` property to `XioConnection` objects; this new property holds the `XIOCluster` objects for the clusters that the given XMS appliance manages
+- \[improvement] added oodles of Pester tests for verifying functioning module/cmdlets
+- \[improvement] restructured/cleaned-up project directory:  segregated module-specific files into new subdirectory
+- \[bugfixes] fixed issues with using the module in PowerShell v5 (WMF 5 RTM re-release from 24 Feb 2016)
 
 
 ### v0.9.5

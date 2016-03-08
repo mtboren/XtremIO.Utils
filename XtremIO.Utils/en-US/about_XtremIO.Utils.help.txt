@@ -54,9 +54,38 @@ LONG DESCRIPTION
       API just 'cause.  While full coverage is ideal, development time has not
       yet been able to meet that goal, yet.
 
+  SUPPORT FOR MULTI-CLUSTER XMS ENVIRONMENTS
+      As of v0.10.0 of the module, all modules that can be cluster-specific
+      support the -Cluster parameter.  This is valuable (and, necessary in some
+      of the use cases) for when dealing with an XMS that is managing multiple
+      XIO clusters.
+
+      The behavior for multi-cluster scenarios is:
+      For Get-XIO* cmdlets:
+          -if -Cluster parameter/value specified, the Get-XIO* cmdlet will only
+              consider the given cluster(s) when querying for XIO objects
+          -if no -Cluster parameter/value specified, the Get-XIO* cmdlet will
+              return any matching XIO object from all clusters managed by the
+              XMS devices to which current session is connected
+      For New-XIO* cmdlets:
+          you must specify one or more values for -Cluster for New-XIO* cmdlets
+          for objects that are cluster-specific; otherwise, the cmdlets return
+          an error (though, as the -Cluster parameter is not necessary for
+          single-cluster scenarios, the parameter itself is not made proper
+          "Mandatory" from a PowerShell standpoint)
+
+      And, -Cluster is now valid for all of the cmdlets that deal with XtremIO
+      objects that are cluster-specific (like, Volumes, LunMaps, etc. -- not
+      XMS-specific things like Alerts and SnmpNotifiers).  You can see which
+      cmdlets support the -Cluster parameter like:
+
+          Get-Command -Module XtremIO.Utils -ParameterName Cluster
+
 EXAMPLES
   All of the cmdlets have help and examples built in.  For help on a specific
-  cmdlet, use the normal route of "Get-Help -Full Get-XIO<someCmdlet>".
+  cmdlet, use the normal route of "Get-Help -Full Get-XIO<someCmdlet>".  There
+  are additional examples on the GitHub Pages page for this module (the GitHub
+  project for this module has a link to the GitHub Pages page).
 
   Object URI
     To see what is the API URI of a particular object, you can just select the
