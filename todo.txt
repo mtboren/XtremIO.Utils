@@ -1,6 +1,4 @@
 todo:
--add other New-XIO* cmdlets:
-	New-XIOConsistencyGroup, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator (ESX, Windows, Other, etc); available in XIOS v4
 -add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv, Volume, Snapshot
 	-once added to Volume, update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
@@ -230,6 +228,16 @@ todo:
 
 
 doing:
+[feat_NewNewCmdlets]
+-add other New-XIO* cmdlets:
+	New-XIOConsistencyGroup, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount
+	New-XIOTag:
+		tag entity type can be:
+			for URI:  BatteryBackupUnit, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, Scheduler, SnapshotSet, SSD, StorageController, Target, Volume, X-Brick
+			(type names in this PSModule:  BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SSD, SnapshotScheduler, SnapshotSet, StorageController, Target, Volume)
+		need a hsh to correlate these
+		need to check that XMS API has this object type
+
 
 done for version 0.next (after v0.10.0):
 

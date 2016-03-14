@@ -10,7 +10,8 @@ function New-XIOItem {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Item type to create; currently supported types:
 		##   for all API versions:  "ig-folder", "initiator, "initiator-group", "lun-map", "volume", "volume-folder"
-		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","snapshot","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
+		##   starting in API v2:  "tag"
+		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","snapshot","tag","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
 		## JSON for the body of the POST WebRequest, for specifying the properties for the new XIO object
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForNewItem_str,
 		## Item name being made (for checking if such item already exists)
@@ -44,57 +45,64 @@ function New-XIOItem {
 		else {
 			$arrXioConnectionsToUse | Foreach-Object {
 				$oThisXioConnection = $_
-				## for each value for $Cluster, if cluster is specified, else, just one time (as indicated by the empty string -- that is there just to have the Foreach-Object process scriptblock run at least once)
-				$(if ($PSBoundParameters.ContainsKey("Cluster")) {$Cluster} else {""}) | Foreach-Object {
-					## the cluster name (if any -- might be empty string, but, in that case, will not be used, as code checks PSBoundParameters for Cluster param before using this variable)
-					$strThisXioClusterName = $_
-					## if the -CLuster param is given, add to the WhatIf msg, and add the "cluster-id" param piece to the JSON body specification
-					if ($PSBoundParameters.ContainsKey("Cluster")) {
-						$strClusterTidbitForWhatIfMsg = " in cluster '$strThisXioClusterName'"
-						$strJsonSpecForNewItem = $SpecForNewItem_str | ConvertFrom-Json | Select-Object *, @{n="cluster-id"; e={$strThisXioClusterName}} | ConvertTo-Json
-					} ## end if
-					else {
-						$strClusterTidbitForWhatIfMsg = $null
-						$strJsonSpecForNewItem = $SpecForNewItem_str
-					} ## end else
-					$strMsgForWhatIf = "Create new '$ItemType_str' object named '$Name'{0}" -f $strClusterTidbitForWhatIfMsg
-					if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strMsgForWhatIf)) {
-						## make params hashtable for new WebRequest
-						$hshParamsToCreateNewXIOItem = @{
-							## make URI
-							Uri = $(
-								$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
-								if ($PSBoundParameters.ContainsKey("XiosRestApiVersion")) {$hshParamsForNewXioApiURI["RestApiVersion"] = $XiosRestApiVersion}
-								New-XioApiURI @hshParamsForNewXioApiURI)
-							## JSON contents for body, for the params for creating the new XIO object
-							Body = $strJsonSpecForNewItem
-							## set method to Post
-							Method = "Post"
-							## do something w/ creds to make Headers
-							Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
-						} ## end hashtable
-
-						## try request
-						try {
-							$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem -ErrorAction:Stop
-						} ## end try
-						## catch, write info, throw
-						catch {_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToCreateNewXIOItem['Uri'] -ErrorRecord $_}
-						## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
-						if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
-							Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
-							## use the return's links' hrefs to return the XIO item(s)
-							($oWebReturn.Content | ConvertFrom-Json).links | Foreach-Object {
-								## add "?cluster-name=blahh" here to HREF, if using -Cluster param
-								$strHrefForNewObjToRetrieve = if ($PSBoundParameters.ContainsKey("Cluster")) {
-										"{0}?cluster-name={1}" -f $_.href, $strThisXioClusterName
-									} ## end if
-									else {$_.href}
-								Get-XIOItemInfo -URI $strHrefForNewObjToRetrieve
-							} ## end foreach-object
+				## is this a type that is supported in this XioConnection's XIOS version?
+				if (-not (_Test-XIOObjectIsInThisXIOSVersion -XiosVersion $oThisXioConnection.XmsVersion -ApiItemType $strItemType_plural)) {
+					Write-Verbose $("As should have been already warned, the type '$strItemType_plural' does not exist in $($oThisXioConnection.ComputerName)'s XIOS version{0}. This is possibly an object type that was introduced in a later XIOS version" -f $(if (-not [String]::IsNullOrEmpty($_.XmsSWVersion)) {" ($($_.XmsSWVersion))"}))
+				} ## end if
+				## else, the Item type _does_ exist in this XIOS version -- try to create a new item of this type
+				else {
+					## for each value for $Cluster, if cluster is specified, else, just one time (as indicated by the empty string -- that is there just to have the Foreach-Object process scriptblock run at least once)
+					$(if ($PSBoundParameters.ContainsKey("Cluster")) {$Cluster} else {""}) | Foreach-Object {
+						## the cluster name (if any -- might be empty string, but, in that case, will not be used, as code checks PSBoundParameters for Cluster param before using this variable)
+						$strThisXioClusterName = $_
+						## if the -CLuster param is given, add to the WhatIf msg, and add the "cluster-id" param piece to the JSON body specification
+						if ($PSBoundParameters.ContainsKey("Cluster")) {
+							$strClusterTidbitForWhatIfMsg = " in cluster '$strThisXioClusterName'"
+							$strJsonSpecForNewItem = $SpecForNewItem_str | ConvertFrom-Json | Select-Object *, @{n="cluster-id"; e={$strThisXioClusterName}} | ConvertTo-Json
 						} ## end if
-					} ## end if ShouldProcess
-				} ## end foreach-object
+						else {
+							$strClusterTidbitForWhatIfMsg = $null
+							$strJsonSpecForNewItem = $SpecForNewItem_str
+						} ## end else
+						$strMsgForWhatIf = "Create new '$ItemType_str' object named '$Name'{0}" -f $strClusterTidbitForWhatIfMsg
+						if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strMsgForWhatIf)) {
+							## make params hashtable for new WebRequest
+							$hshParamsToCreateNewXIOItem = @{
+								## make URI
+								Uri = $(
+									$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
+									if ($PSBoundParameters.ContainsKey("XiosRestApiVersion")) {$hshParamsForNewXioApiURI["RestApiVersion"] = $XiosRestApiVersion}
+									New-XioApiURI @hshParamsForNewXioApiURI)
+								## JSON contents for body, for the params for creating the new XIO object
+								Body = $strJsonSpecForNewItem
+								## set method to Post
+								Method = "Post"
+								## do something w/ creds to make Headers
+								Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
+							} ## end hashtable
+
+							## try request
+							try {
+								$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem -ErrorAction:Stop
+							} ## end try
+							## catch, write info, throw
+							catch {_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToCreateNewXIOItem['Uri'] -ErrorRecord $_}
+							## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
+							if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
+								Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
+								## use the return's links' hrefs to return the XIO item(s)
+								($oWebReturn.Content | ConvertFrom-Json).links | Foreach-Object {
+									## add "?cluster-name=blahh" here to HREF, if using -Cluster param
+									$strHrefForNewObjToRetrieve = if ($PSBoundParameters.ContainsKey("Cluster")) {
+											"{0}?cluster-name={1}" -f $_.href, $strThisXioClusterName
+										} ## end if
+										else {$_.href}
+									Get-XIOItemInfo -URI $strHrefForNewObjToRetrieve
+								} ## end foreach-object
+							} ## end if
+						} ## end if ShouldProcess
+					} ## end foreach-object
+				} ## end else (item type _does_ exist in this XIOS API version)
 			} ## end foreach-object
 		} ## end else
 	} ## end process
@@ -366,6 +374,64 @@ function New-XIOLunMap {
 				New-XIOItem @hshParamsForNewItem
 			} ## end foreach-object
 		} ## end else
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new XtremIO Tag. Note:  As of XIOS v4.0.2, this cmdlet can make Tags for the fifteen entity types supported by the API.  However, the XMS management interface only displays Tags for six of these entity types (ConsistencyGroup, Initiator, InitatorGroup, SnapshotScheduler, SnapshotSet, and Volume).  The Get-XIOTag cmdlet _will_ show all tags, not just for these six entity types.
+
+	To see the entity types supported for Tag objects, get the values of the XioItemInfo.Enums.Tag.EntityType enumeration, via:  [System.Enum]::GetNames([XioItemInfo.Enums.Tag.EntityType])
+	.Example
+	New-XIOTag -Name MyVols -EntityType Volume
+	Create a new tag "MyVols", nested in the "/Volume" parent tag, to be used for Volume entities. This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
+	.Example
+	New-XIOTag -Name /Volume/MyVols2/someOtherTag/superImportantVols -EntityType Volume
+	Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.
+	.Example
+	New-XIOTag -Name /X-Brick/MyTestXBrickTag -EntityType Brick
+	Create a new tag "/X-Brick/MyTestXBrickTag", to be used for XtremIO Brick entities
+	.Outputs
+	XioItemInfo.Tag object for the newly created object if successful
+#>
+function New-XIOTag {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Tag])]
+	param(
+		## XMS address to use
+		[parameter(Position=0)][string[]]$ComputerName,
+		## Name for new tag being made
+		[parameter(Mandatory=$true)][string]$Name,
+		## Type of entity to which this tag can be applied
+		[parameter(Mandatory=$true)][XioItemInfo.Enums.Tag.EntityType]$EntityType
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "tag"
+	} ## end begin
+
+	Process {
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			"tag-name" = $Name
+			## get the URI entity type value to use for this PSModule entity typename (need to do .ToString() to get the typename string, as it is a XioItemInfo.Enums.Tag.EntityType enum value)
+			"entity" = $hshCfg.TagEntityTypeMapping[$EntityType.ToString()]
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = $Name
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
 	} ## end process
 } ## end function
 

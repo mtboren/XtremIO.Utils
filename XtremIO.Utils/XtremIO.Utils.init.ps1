@@ -906,4 +906,8 @@ namespace XioItemInfo.Enums.PerfCounter {
 	public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
 	public enum TimeFrame {real_time, last_hour, last_day, last_week, last_year}
 } // end namespace
+namespace XioItemInfo.Enums.Tag {
+	// Entity type names that are valid for values as new Tag entity types
+	public enum EntityType {BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SSD, SnapshotScheduler, SnapshotSet, StorageController, Target, Volume}
+} // end namespace
 "@

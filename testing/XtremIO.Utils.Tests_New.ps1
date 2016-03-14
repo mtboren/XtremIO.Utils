@@ -45,4 +45,10 @@ Get-XIOVolume -Name $oNewVol3.Name,$oNewVol5.Name | New-XIOSnapshot -Type ReadOn
 #New-XIOSnapshot -SnapshotSet SnapshotSet.1449941173 -SnapshotSuffix addlSnap.now -Type Regular
 #New-XIOSnapshot -Tag /Volume/myCoolVolTag0
 #Get-XIOTag /Volume/myCoolVolTag* | New-XIOSnapshot -Type ReadOnly
+## Create a new tag "MyVols", nested in the "/Volume" parent tag, to be used for Volume entities. This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
+New-XIOTag -Name MyVols$strNameToAppend -EntityType Volume
+## Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.
+New-XIOTag -Name /Volume/MyVols2/someOtherTag/superImportantVols$strNameToAppend -EntityType Volume
+New-XIOTag -Name /X-Brick/MyTestXBrickTag$strNameToAppend -EntityType Brick
+
 #>
