@@ -5,6 +5,7 @@ todo:
 -add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv, Volume, Snapshot
 	-once added to Volume, update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 	-this is also in prep for better pipelining, which will need to take Cluster from pipeline property of object coming through
+	-once added to Volume and Tag, update New-XIOConsistencyGroup to take it from Volume/Tag objects if those were passed as values to -Volume or -Tag?  Else, user has to specify the vol/tag _and_ the cluster, when that should be gleanable from the vol/tag objects themselves (right?)
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
@@ -258,15 +259,14 @@ doing:
 
 		## example JSON for SnapshotScheduler:  {"cluster-id":2,"scheduler-type":"interval","snapshot-objectid": 344,"snapshot-object-type":"Volume","snapshots-to-keepnumber": 2,"time":"10:20:15"}
 
+	done:
 	New-XIOConsistencyGroup:
 		[string]cluster-id
 		[parameter(Mandatory=$true)]consistency-group-name
 		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
 		[parameter(ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume   ("vol-list" for JSON)
 		## XtremIO Tag whose volumes/snapshots from which to create new snapshot. Accepts either Tag names or objects. These should be Tags for Volume object types, of course.
-		[parameter(ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag   ("tag-list" for JSON)
-
-	done:
+		[parameter(ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag   ("tag-list" for JSON, must be array value, even if just one value in it)
 	New-XIOTag:
 		tag entity type can be:
 			for URI:  BatteryBackupUnit, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, Scheduler, SnapshotSet, SSD, StorageController, Target, Volume, X-Brick

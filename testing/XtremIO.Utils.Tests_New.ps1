@@ -55,4 +55,12 @@ New-XIOTag -Name /X-Brick/MyTestXBrickTag$strNameToAppend -EntityType Brick
 New-XIOUserAccount -Credential (Get-Credential test_RoUser) -Role read_only
 ## Create a new UserAccount with the read_only role, and with the given username/password. Sets "no timeout"
 New-XIOUserAccount -UserName test_CfgUser -Role configuration -UserPublicKey $strThisPubKey -InactivityTimeout 0
+## 	Create a new, empty ConsistencyGroup
+New-XIOConsistencyGroup -Name myConsGrp0
+## Create a new, ConsistencyGroup that contains the volumes specified
+New-XIOConsistencyGroup -Name myConsGrp1 -Volume coolVol0,coolVol1
+## Create a new, ConsistencyGroup that contains the volumes specified
+New-XIOConsistencyGroup -Name myConsGrp2 -Volume (Get-XIOVolume coolVol*2016,coolVol[01])
+## Create a new, ConsistencyGroup that contains the volumes on XIO cluster "myCluster0" that are tagged with either "someImportantVolsTag" or "someImportantVolsTag2"
+New-XIOConsistencyGroup -Name myConsGrp3 -Tag (Get-XIOTag /Volume/someImportantVolsTag,/Volume/someImportantVolsTag2) -Cluster myCluster0
 #>

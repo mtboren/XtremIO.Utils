@@ -10,8 +10,8 @@ function New-XIOItem {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Item type to create; currently supported types:
 		##   for all API versions:  "ig-folder", "initiator, "initiator-group", "lun-map", "volume", "volume-folder"
-		##   starting in API v2:  "tag"
-		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","snapshot","tag","user-account","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
+		##   starting in API v2:  "consistency-group", "user-account", "tag"
+		[ValidateSet("consistency-group","ig-folder","initiator","initiator-group","lun-map","snapshot","tag","user-account","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
 		## JSON for the body of the POST WebRequest, for specifying the properties for the new XIO object
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForNewItem_str,
 		## Item name being made (for checking if such item already exists)
@@ -105,6 +105,85 @@ function New-XIOItem {
 				} ## end else (item type _does_ exist in this XIOS API version)
 			} ## end foreach-object
 		} ## end else
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new XtremIO ConsistencyGroup
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp0
+	Create a new, empty ConsistencyGroup
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp1 -Volume coolVol0,coolVol1
+	Create a new, ConsistencyGroup that contains the volumes specified
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp2 -Volume (Get-XIOVolume coolVol*2016,coolVol[01])
+	Create a new, ConsistencyGroup that contains the volumes specified
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp3 -Tag (Get-XIOTag /Volume/someImportantVolsTag,/Volume/someImportantVolsTag2) -Cluster myCluster0
+	Create a new, ConsistencyGroup that contains the volumes on XIO cluster "myCluster0" that are tagged with either "someImportantVolsTag" or "someImportantVolsTag2"
+	.Outputs
+	XioItemInfo.ConsistencyGroup object for the newly created object if successful
+#>
+function New-XIOConsistencyGroup {
+	[CmdletBinding(SupportsShouldProcess=$true,DefaultParameterSetName="DefaultUnnamedPSet")]
+	[OutputType([XioItemInfo.ConsistencyGroup])]
+	param(
+		## XMS address to use
+		[string[]]$ComputerName,
+		## The name of the XIO Cluster on which to make new consitency group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
+		## Name of the new consistency group
+		[parameter(Mandatory=$true, Position=0)]$Name,
+		## XtremIO Volume(s) or Snapshot(s) from which to create new consistency group. Accepts either Volume/Snapshot names or objects
+		[parameter(ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
+		## XtremIO Tag whose volumes/snapshots from which to create new consistency group. Accepts either Tag names or objects. These should be Tags for Volume object types, of course. And, when specifying tag names, use "full" tag name, like "/Volume/myVolsTag0"
+		[parameter(ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "consistency-group"
+	} ## end begin
+
+	Process {
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			"consistency-group-name" = $Name
+		} ## end hashtable
+
+		Switch($PsCmdlet.ParameterSetName) {
+			## for ByVolume, populate "vol-list"
+			"ByVolume" {
+				## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
+				$arrSrcVolumeNames = @(if (($Volume | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$Volume.Name} else {$Volume})
+				$hshNewItemSpec["vol-list"] = $arrSrcVolumeNames
+				break
+			} ## end case
+			## for ByTag, populate "tag-list"
+			"ByTag" {
+				## value needs to be an array, so that the JSON will be correct for the API call, which expects an array of values
+				$arrSrcTagNames = if (($Tag | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Tag") {$Tag.Name} else {$arrSrcTagNames = $Tag} ## end else
+				$hshNewItemSpec["tag-list"] = @($arrSrcTagNames)
+			} ## end case
+		} ## end switch
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = $Name
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster}
+		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
 	} ## end process
 } ## end function
 
@@ -770,7 +849,7 @@ function New-XIOSnapshot {
 				} else {
 					$arrSrcTagNames = @($oParamOfInterest)
 				} ## end else
-				## needs to be an array, so that the JSON will be correct for the API call, which expects an array values
+				## needs to be an array, so that the JSON will be correct for the API call, which expects an array of values
 				$hshNewItemSpec["tag-list"] = $arrSrcTagNames
 				## set the name for checking; may need updated for when receiving Tag value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
 				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$($arrSrcTagNames | Select-Object -First 1)$SnapshotSuffix"}
