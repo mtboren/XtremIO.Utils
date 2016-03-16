@@ -1,5 +1,6 @@
 todo:
 -New-XIOInitiator:  add support for specifying "Operating System" value for initiator (ESX, Windows, Other, etc); available in XIOS v4
+	-values are Linux, Windows, ESX, Solaris, AIX, HP-UX, Other (maybe "HPUX", and maybe all of these are lowercase -- need to test)
 -add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv, Volume, Snapshot
 	-once added to Volume, update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 	-this is also in prep for better pipelining, which will need to take Cluster from pipeline property of object coming through
@@ -230,13 +231,54 @@ todo:
 doing:
 [feat_NewNewCmdlets]
 -add other New-XIO* cmdlets:
-	New-XIOConsistencyGroup, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount
+	need to add the "useApiV2" stuff for these, as they will need to use at least the v2 API URI
+	New-XIOSnapshotScheduler:
+		[string]cluster-id
+		## Scheduler's time. Can be intervaled [h:m:s] or an explicit time [d:h:m]
+		[parameter(Mandatory=$true)]schedule
+		## Schedule is specified explicitly or by intervals; 'interval' or 'explicit'
+		[parameter(Mandatory=$true)]scheduler-type
+		## Snapped Object ID
+		[parameter(Mandatory=$true)]snapshot-object-id
+		## Volume, Snapshot Set, Tag List, ConsistencyGroup
+		[parameter(Mandatory=$true)]snapshot-objecttype
+		## Number of Snapshots to be saved
+		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapNum")]snapshots-to-keepnumber
+		## The time period, in seconds, for which a Snapshot should be saved. When the defined time has passed the cluster automatically removes the Snapshot.
+		#    The minimum value is 60 seconds (1 minute)
+		#    The maximum value is 31536000 seconds (5 Years)
+		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapAge")][System.TimeSpan]snapshots-to-keeptime
+		## Scheduler enable state; 'enabled' or 'user-disabled'
+		enabled-state
+		## Write (default) or Read
+		snapshot-type
+		## Text adjoined to the scheduler's stem name
+		suffix
+
+		## example JSON for SnapshotScheduler:  {"cluster-id":2,"scheduler-type":"interval","snapshot-objectid": 344,"snapshot-object-type":"Volume","snapshots-to-keepnumber": 2,"time":"10:20:15"}
+
+	New-XIOConsistencyGroup:
+		[string]cluster-id
+		[parameter(Mandatory=$true)]consistency-group-name
+		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
+		[parameter(ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume   ("vol-list" for JSON)
+		## XtremIO Tag whose volumes/snapshots from which to create new snapshot. Accepts either Tag names or objects. These should be Tags for Volume object types, of course.
+		[parameter(ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag   ("tag-list" for JSON)
+	New-XIOUserAccount:
+		[parameter(Mandatory=$true)]role ('read_only', 'admin', 'configuration', 'technician')
+		[parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")]credential (which populates "usr-name" and "password" URI items)
+		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")]usr-name
+		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")]public-key
+		[int]inactivity-timeout
+
+	done:
 	New-XIOTag:
 		tag entity type can be:
 			for URI:  BatteryBackupUnit, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, Scheduler, SnapshotSet, SSD, StorageController, Target, Volume, X-Brick
 			(type names in this PSModule:  BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SSD, SnapshotScheduler, SnapshotSet, StorageController, Target, Volume)
-		need a hsh to correlate these
-		need to check that XMS API has this object type
+			-made a new enum for these
+		made a config hshtable to correlate these
+		added check in New-XIOItem that XMS API has the given object type (only attempt to create new object if this API version _does_ have the given type)
 
 
 done for version 0.next (after v0.10.0):
