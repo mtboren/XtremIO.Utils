@@ -11,7 +11,7 @@ function New-XIOItem {
 		## Item type to create; currently supported types:
 		##   for all API versions:  "ig-folder", "initiator, "initiator-group", "lun-map", "volume", "volume-folder"
 		##   starting in API v2:  "tag"
-		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","snapshot","tag","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
+		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","snapshot","tag","user-account","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
 		## JSON for the body of the POST WebRequest, for specifying the properties for the new XIO object
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForNewItem_str,
 		## Item name being made (for checking if such item already exists)
@@ -380,7 +380,6 @@ function New-XIOLunMap {
 
 <#	.Description
 	Create a new XtremIO Tag. Note:  As of XIOS v4.0.2, this cmdlet can make Tags for the fifteen entity types supported by the API.  However, the XMS management interface only displays Tags for six of these entity types (ConsistencyGroup, Initiator, InitatorGroup, SnapshotScheduler, SnapshotSet, and Volume).  The Get-XIOTag cmdlet _will_ show all tags, not just for these six entity types.
-
 	To see the entity types supported for Tag objects, get the values of the XioItemInfo.Enums.Tag.EntityType enumeration, via:  [System.Enum]::GetNames([XioItemInfo.Enums.Tag.EntityType])
 	.Example
 	New-XIOTag -Name MyVols -EntityType Volume
@@ -424,6 +423,72 @@ function New-XIOTag {
 			ComputerName = $ComputerName
 			ItemType_str = $strThisItemType
 			Name = $Name
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new, "internal" XtremIO user account
+	.Example
+	New-XIOUserAccount -Credential (Get-Credential test_RoUser) -Role read_only
+	Create a new UserAccount with the read_only role, and with the given username/password. Uses default inactivity timeout configured on the XMS
+	.Example
+	New-XIOUserAccount -UserName test_CfgUser -Role configuration -UserPublicKey $strThisPubKey -InactivityTimeout 45
+	Create a new UserAccount with the read_only role, and with the given username/password. Sets inactivity timeout of 45 minutes for this new user
+	.Outputs
+	XioItemInfo.UserAccount object for the newly created object if successful
+#>
+function New-XIOUserAccount {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.UserAccount])]
+	param(
+		## XMS address to use
+		[string[]]$ComputerName,
+		## Credentials from which to make new user account (from the credential's username and password)
+		[parameter(Position=0)][parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")]$Credential,
+		## If specifying a public key for a user, instead of a credential, this is the username for the new user; use either -Credential or (-UserName and -UserPublicKey)
+		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")][string]$UserName,
+		## If specifying a public key for a user, instead of a credential, this is the public key for the new user; use either -Credential or (-UserName and -UserPublicKey)
+		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")][string]$UserPublicKey,
+		## User role.  One of 'read_only', 'configuration', 'admin', or 'technician'. To succeed in adding a user with "technician" role, seems that you may need to authenticated to the XMS _as_ a technician first (as administrator does not succeed)
+		[parameter(Mandatory=$true)][ValidateSet('read_only', 'configuration', 'admin', 'technician')]$Role,
+		## Inactivity timeout in minutes. Provide value of zero ("0") to specify "no timeout" for this user
+		[int]$InactivityTimeout
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "user-account"
+	} ## end begin
+
+	Process {
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			role = $Role
+		} ## end hashtable
+
+		Switch($PsCmdlet.ParameterSetName) {
+			## for SpecifyCredential, populate "usr-name" and "password"
+			"SpecifyCredential" {$hshNewItemSpec["usr-name"] = $Credential.UserName; $hshNewItemSpec["password"] = $Credential.GetNetworkCredential().Password; break}
+			## for SpecifyPublicKey, populate "usr-name" and "public-key"
+			"SpecifyPublicKey" {$hshNewItemSpec["usr-name"] = $UserName; $hshNewItemSpec["public-key"] = $UserPublicKey}
+		} ## end switch
+
+		if ($PSBoundParameters.ContainsKey("InactivityTimeout")) {$hshNewItemSpec["inactivity-timeout"] = $InactivityTimeout}
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = $hshNewItemSpec["usr-name"]
 			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 		} ## end hashtable
 

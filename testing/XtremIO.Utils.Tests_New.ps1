@@ -50,5 +50,9 @@ New-XIOTag -Name MyVols$strNameToAppend -EntityType Volume
 ## Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.
 New-XIOTag -Name /Volume/MyVols2/someOtherTag/superImportantVols$strNameToAppend -EntityType Volume
 New-XIOTag -Name /X-Brick/MyTestXBrickTag$strNameToAppend -EntityType Brick
-
+## create new users
+## Create a new UserAccount with the read_only role, and with the given username/password. Uses default inactivity timeout configured on the XMS
+New-XIOUserAccount -Credential (Get-Credential test_RoUser) -Role read_only
+## Create a new UserAccount with the read_only role, and with the given username/password. Sets "no timeout"
+New-XIOUserAccount -UserName test_CfgUser -Role configuration -UserPublicKey $strThisPubKey -InactivityTimeout 0
 #>
