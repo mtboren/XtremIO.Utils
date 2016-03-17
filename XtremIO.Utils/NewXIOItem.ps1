@@ -132,7 +132,7 @@ function New-XIOConsistencyGroup {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## The name of the XIO Cluster on which to make new consitency group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new consistency group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## Name of the new consistency group
 		[parameter(Mandatory=$true, Position=0)]$Name,

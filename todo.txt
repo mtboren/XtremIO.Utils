@@ -256,6 +256,103 @@ doing:
 		snapshot-type
 		## Text adjoined to the scheduler's stem name
 		suffix
+So far:
+<#	.Description
+	Create a new XtremIO SnapshotScheduler
+	.Example
+	New-XIOSnapshotScheduler -Name
+	Create a new SnapshotScheduler
+	-Interval (new-timespan -Days 3)
+	-ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm
+	-ExplicitDay Everyday -ExplicitTimeOfDay 12am
+	.Outputs
+	XioItemInfo.SnapshotScheduler object for the newly created object if successful
+#>
+function New-XIOSnapshotScheduler {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SnapshotScheduler])]
+	param(
+		## XMS address to use
+		[string[]]$ComputerName,
+		## The name of the XIO Cluster on which to make new snapshot scheduler. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
+		## The timespan to wait between each run of the scheduled snapshot action. Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval")][System.TimeSpan]$Interval,
+		## The day of the week on which to take the scheduled snapshot (or, every day).  Expects the name of the day of the week, or "Everyday". Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule")][ValidateSet('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Everyday')][string]$ExplicitDay,
+		## The hour and minute to use for the explicit schedule, along with the explicit day of the week. Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule")][System.DateTime]$ExplicitTimeOfDay,
+
+
+
+
+## Snapped Object ID
+[parameter(Mandatory=$true)]snapshot-object-id
+## Volume, Snapshot Set, Tag List, ConsistencyGroup
+[parameter(Mandatory=$true)]snapshot-objecttype
+## Number of Snapshots to be saved
+[parameter(Mandatory=$true,ParameterSetName="SpecifySnapNum")]snapshots-to-keepnumber
+## The time period, in seconds, for which a Snapshot should be saved. When the defined time has passed the cluster automatically removes the Snapshot.
+#    The minimum value is 60 seconds (1 minute)
+#    The maximum value is 31536000 seconds (5 Years)
+[parameter(Mandatory=$true,ParameterSetName="SpecifySnapAge")][System.TimeSpan]snapshots-to-keeptime
+## Scheduler enable state; 'enabled' or 'user-disabled'
+enabled-state
+## Type of snapshot to create:  "Regular" (readable/writable) or "ReadOnly". Defaults to "Regular"
+[ValidateSet("Regular","ReadOnly")][string]$SnapshotType = "Regular" ("snapshot-type" for the JSON)
+
+## Text adjoined to the scheduler's stem name
+suffix
+
+
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "scheduler"
+	} ## end begin
+
+	Process {
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+# "schedule" = ## based on whether this is an timespan or an explicit day(s) of the week plus time; either (Hours:Minutes:Seconds) for interval or (DayOfTheWeek:Hour:Minute) for explicit
+# "scheduler-type" = ## based on whether this is an timespan or an explicit day(s) of the week plus time; either "interval" or "explicit"
+#"snapshot-type" = $SnapshotType.ToLower()
+		} ## end hashtable
+
+		Switch($PsCmdlet.ParameterSetName) {
+## for ByVolume, populate "vol-list"
+"ByVolume" {
+	## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
+	$arrSrcVolumeNames = @(if (($Volume | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$Volume.Name} else {$Volume})
+	$hshNewItemSpec["vol-list"] = $arrSrcVolumeNames
+	break
+} ## end case
+## for ByTag, populate "tag-list"
+"ByTag" {
+	## value needs to be an array, so that the JSON will be correct for the API call, which expects an array of values
+	$arrSrcTagNames = if (($Tag | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Tag") {$Tag.Name} else {$arrSrcTagNames = $Tag} ## end else
+	$hshNewItemSpec["tag-list"] = @($arrSrcTagNames)
+} ## end case
+		} ## end switch
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = $Name
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster}
+		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
+	} ## end process
+} ## end function
 
 		## example JSON for SnapshotScheduler:  {"cluster-id":2,"scheduler-type":"interval","snapshot-objectid": 344,"snapshot-object-type":"Volume","snapshots-to-keepnumber": 2,"time":"10:20:15"}
 
