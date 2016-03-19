@@ -50,17 +50,37 @@ New-XIOTag -Name MyVols$strNameToAppend -EntityType Volume
 ## Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.
 New-XIOTag -Name /Volume/MyVols2/someOtherTag/superImportantVols$strNameToAppend -EntityType Volume
 New-XIOTag -Name /X-Brick/MyTestXBrickTag$strNameToAppend -EntityType Brick
+
 ## create new users
 ## Create a new UserAccount with the read_only role, and with the given username/password. Uses default inactivity timeout configured on the XMS
 New-XIOUserAccount -Credential (Get-Credential test_RoUser) -Role read_only
 ## Create a new UserAccount with the read_only role, and with the given username/password. Sets "no timeout"
 New-XIOUserAccount -UserName test_CfgUser -Role configuration -UserPublicKey $strThisPubKey -InactivityTimeout 0
+
 ## 	Create a new, empty ConsistencyGroup
 New-XIOConsistencyGroup -Name myConsGrp0
-## Create a new, ConsistencyGroup that contains the volumes specified
+## Create a new ConsistencyGroup that contains the volumes specified
 New-XIOConsistencyGroup -Name myConsGrp1 -Volume coolVol0,coolVol1
-## Create a new, ConsistencyGroup that contains the volumes specified
+## Create a new ConsistencyGroup that contains the volumes specified
 New-XIOConsistencyGroup -Name myConsGrp2 -Volume (Get-XIOVolume coolVol*2016,coolVol[01])
-## Create a new, ConsistencyGroup that contains the volumes on XIO cluster "myCluster0" that are tagged with either "someImportantVolsTag" or "someImportantVolsTag2"
+## Create a new ConsistencyGroup that contains the volumes on XIO cluster "myCluster0" that are tagged with either "someImportantVolsTag" or "someImportantVolsTag2"
 New-XIOConsistencyGroup -Name myConsGrp3 -Tag (Get-XIOTag /Volume/someImportantVolsTag,/Volume/someImportantVolsTag2) -Cluster myCluster0
+
+
+
+## new XIO Snapshot Schedulers (cannot yet specify new scheduler name via the API -- no way to do so, or, no documented way, at least)
+## from Volume, using interval between snapshots, specifying particular number of Snapshots to retain
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOVolume mattTestVol1_toDel) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20 -WhatIf
+## from a ConsistencyGroup, with an explict schedule, specifying duration for which to keep Snapshots
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -WhatIf
+
+## from a SnapshotSet
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-SnapshotSet -Name testSnapshotSet0.1455845074) -ExplicitDay EveryDay -ExplicitTimeOfDay 3am -SnapshotRetentionCount 500 -WhatIf
+## from a Tag (several types)
+#  from a Volume tag, using interval between snapshots
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-Tag testVolTag) -Interval (New-Timespan -Days 1) -SnapshotRetentionCount 100 -WhatIf
+#  from a SnapshotSet tag, scheduled everyday at midnight
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-Tag testSnapshotSetTag) -ExplicitDay Everyday -ExplicitTimeOfDay 12am -SnapshotRetentionDuration (New-Timespan -Days 31 -Hours 5) -WhatIf
+#  from a ConsistencyGroup tag, on given day, with suffix
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-Tag testCGTag) -ExplicitDay Thursday -ExplicitTimeOfDay 19:30 -SnapshotRetentionCount 5 -Suffix myImportantSnap -WhatIf
 #>

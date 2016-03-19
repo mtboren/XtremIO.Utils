@@ -215,9 +215,19 @@ function _Invoke-WebExceptionErrorCatchHandling {
 		if ($null -ne $ErrorRecord.Exception.InnerException.Response) {
 			Write-Verbose -Verbose "(exception status of '$($ErrorRecord.Exception.InnerException.Status)', message of '$($ErrorRecord.Exception.InnerException.Message)')"
 			## get the Response from the InnerException if available
-			Write-Verbose -Verbose ("WebException response:`n{0}" -f ([System.IO.StreamReader]($ErrorRecord.Exception.InnerException.Response.GetResponseStream())).ReadToEnd())
+			Write-Verbose -Verbose ("Inner WebException response:`n{0}" -f ([System.IO.StreamReader]($ErrorRecord.Exception.InnerException.Response.GetResponseStream())).ReadToEnd())
 		} ## end if
-		else {Write-Verbose -Verbose "no additional web exception response value to report"}
+		if ($null -ne $ErrorRecord.Exception.Response) {
+			## how to get the rest of the exception response; based on a stackoverflow.com thread, of course
+			$oStreamReader = New-Object System.IO.StreamReader($ErrorRecord.Exception.Response.GetResponseStream())
+			$oStreamReader.BaseStream.Position = 0; $oStreamReader.DiscardBufferedData()
+			$strExceptionResponseBody = $oStreamReader.ReadToEnd()
+			Write-Verbose -Verbose "(exception status of '$($ErrorRecord.Exception.Status)', message of '$($ErrorRecord.Exception.Message)')"
+			## get the Response from the Exception if available
+			Write-Verbose -Verbose ("WebException response:`n{0}" -f $strExceptionResponseBody)
+		} ## end else if
+		## if both of those were $null, say that there was no additional web exception response
+		if ($null -eq $ErrorRecord.Exception.InnerException.Response -and $null -eq $ErrorRecord.Exception.Response) {Write-Verbose -Verbose "no additional web exception response value to report"}
 		## throw the caught error (instead of breaking, which adversely affects subsequent calls; say, if in a try/catch statement in a Foreach-Object loop, "break" breaks all the way out of the foreach-object, vs. using Throw to just throw the error for this attempt, and then letting the calling item continue in the Foreach-Object
 		Throw $ErrorRecord
 		#Write-Error $ErrorRecord -Category ConnectionError -RecommendedAction "Check creds, URL ('$($hshParamsForRequest["Uri"])') -- valid?"; break;

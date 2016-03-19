@@ -258,6 +258,7 @@ doing:
 		suffix
 
 		## example JSON for SnapshotScheduler:  {"cluster-id":2,"scheduler-type":"interval","snapshot-objectid": 344,"snapshot-object-type":"Volume","snapshots-to-keepnumber": 2,"time":"10:20:15"}
+		## enabled better web exception reporting for easier issue identification/troubleshooting
 
 		to test:
 			cmdlet at all

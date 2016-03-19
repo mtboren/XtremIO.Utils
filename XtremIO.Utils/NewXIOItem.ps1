@@ -10,8 +10,8 @@ function New-XIOItem {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Item type to create; currently supported types:
 		##   for all API versions:  "ig-folder", "initiator, "initiator-group", "lun-map", "volume", "volume-folder"
-		##   starting in API v2:  "consistency-group", "user-account", "tag"
-		[ValidateSet("consistency-group","ig-folder","initiator","initiator-group","lun-map","snapshot","tag","user-account","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
+		##   starting in API v2:  "consistency-group", "scheduler", "user-account", "tag"
+		[ValidateSet("consistency-group","ig-folder","initiator","initiator-group","lun-map","scheduler","snapshot","tag","user-account","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
 		## JSON for the body of the POST WebRequest, for specifying the properties for the new XIO object
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForNewItem_str,
 		## Item name being made (for checking if such item already exists)
@@ -878,19 +878,7 @@ function New-XIOSnapshot {
 
 
 <#	.Description
-	Create a new XtremIO SnapshotScheduler
-	.Example
-	New-XIOSnapshotScheduler -Name
-	Create a new SnapshotScheduler
-	-RelatedObject <some CG tag>?
-	-RelatedObject <some vol tag>?
-	-RelatedObject <some snapshotset tag>?
-	-Interval (New-Timespan -Days 3 -Hours 6 -Minutes 9)
-	-ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm
-	-ExplicitDay Everyday -ExplicitTimeOfDay 12am
-	-SnapshotRetentionCount 20
-	-SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12)
-	-Enabled:$false
+	Create a new XtremIO SnapshotScheduler. Note: XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
 	.Outputs
 	XioItemInfo.SnapshotScheduler object for the newly created object if successful
 #>
@@ -905,9 +893,9 @@ function New-XIOSnapshotScheduler {
 		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, Tag, or ConsistencyGroup
 		[parameter(Mandatory=$true)][ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet]) -or ($_ -is [XioItemInfo.Tag])})]
 		[PSObject]$RelatedObject,
-		## The timespan to wait between each run of the scheduled snapshot action. Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		## The timespan to wait between each run of the scheduled snapshot action (maximum is 72 hours). Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
 		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapNum")]
-		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapAge")][System.TimeSpan]$Interval,
+		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapAge")][ValidateScript({$_ -le (New-TimeSpan -Hours 72)})][System.TimeSpan]$Interval,
 		## The day of the week on which to take the scheduled snapshot (or, every day).  Expects the name of the day of the week, or "Everyday". Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
 		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapNum")]
 		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapAge")]
@@ -922,7 +910,7 @@ function New-XIOSnapshotScheduler {
 		##   The minimum value is 1 minute, and the maximum value is 5 years
 		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapAge")]
 		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapAge")]
-		[ValidateScript({($_ -ge (New-TimeSpan -Seconds 60)) -and ($_ -le (New-TimeSpan -Seconds 5*365*24*60*60))})][System.TimeSpan]$SnapshotRetentionDuration,
+		[ValidateScript({($_ -ge (New-TimeSpan -Minutes 1)) -and ($_ -le (New-TimeSpan -Days (5*365)))})][System.TimeSpan]$SnapshotRetentionDuration,
 		## Switch:  Snapshot Scheduler enabled-state. Defaults to $true (scheduler enabled)
 		[Switch]$Enabled = $true,
 		## Type of snapshot to create:  "Regular" (readable/writable) or "ReadOnly". Defaults to "Regular"
@@ -950,23 +938,23 @@ function New-XIOSnapshotScheduler {
 			"snapshot-type" = $SnapshotType.ToLower()
 			## name of snapsource; need to be single item array if taglist?; could use index, too, it seems, but why would we?
 			"snapshot-object-id" = $RelatedObject.Name
-			"snapshot-objecttype" = $strSnapshotSourceObjectTypeAPIValue
+			"snapshot-object-type" = $strSnapshotSourceObjectTypeAPIValue
 			"enabled-state" = $(if ($Enabled) {'enabled'} else {'user_disabled'})
 		} ## end hashtable
 
 		## set the snapshots-to-keep values based on ParameterSetName (either Number to keep or Duration for which to keep)
 		Switch($PsCmdlet.ParameterSetName) {
-			{"ByTimespanInterval_SpecifySnapNum", "ByExplicitSchedule_SpecifySnapNum" -contains $_} {$hshNewItemSpec["snapshots-to-keepnumber"] = $SnapshotRetentionCount; break}
-			{"ByTimespanInterval_SpecifySnapAge", "ByExplicitSchedule_SpecifySnapAge" -contains $_} {$hshNewItemSpec["snapshots-to-keeptime"] = $SnapshotRetentionDuration.TotalSeconds}
+			{"ByTimespanInterval_SpecifySnapNum", "ByExplicitSchedule_SpecifySnapNum" -contains $_} {$hshNewItemSpec["snapshots-to-keep-number"] = $SnapshotRetentionCount; break}
+			{"ByTimespanInterval_SpecifySnapAge", "ByExplicitSchedule_SpecifySnapAge" -contains $_} {$hshNewItemSpec["snapshots-to-keep-time"] = [System.Math]::Floor($SnapshotRetentionDuration.TotalMinutes)}
 		} ## end switch
 
-		## set the scheduler type and schedule string, based on the ParameterSetName
-		#    schedule is either (Hours:Minutes:Seconds) for interval or (NumberOfDayOfTheWeek:Hour:Minute) for explicit
+		## set the scheduler type and schedule (time) string, based on the ParameterSetName
+		#    time is either (Hours:Minutes:Seconds) for interval or (NumberOfDayOfTheWeek:Hour:Minute) for explicit
 		Switch($PsCmdlet.ParameterSetName) {
 			{"ByTimespanInterval_SpecifySnapNum", "ByTimespanInterval_SpecifySnapAge" -contains $_} {
 					$hshNewItemSpec["scheduler-type"] = "interval"
 					## (Hours:Minutes:Seconds)
-					$hshNewItemSpec["schedule"] = $("{0}:{1}:{2}" -f [System.Math]::Floor($Interval.TotalHours), $Interval.Minutes, $Interval.Seconds)
+					$hshNewItemSpec["time"] = $("{0}:{1}:{2}" -f [System.Math]::Floor($Interval.TotalHours), $Interval.Minutes, $Interval.Seconds)
 					break
 				} ## end case
 			{"ByExplicitSchedule_SpecifySnapNum", "ByExplicitSchedule_SpecifySnapAge" -contains $_} {
@@ -975,7 +963,7 @@ function New-XIOSnapshotScheduler {
 					$intNumberOfDayOfTheWeek = if ($ExplicitDay -eq "Everyday") {0}
 						## else, get the value__ for this name in the DayOfWeek enum, and add one (DayOfWeek is zero-based index, this XIO construct is 1-based for day names, with "0" being used as "everyday")
 						else {([System.Enum]::GetValues([System.DayOfWeek]) | Where-Object {$_.ToString() -eq $ExplicitDay}).value__ + 1}
-					$hshNewItemSpec["schedule"] = $("{0}:{1}:{2}" -f $intNumberOfDayOfTheWeek, $ExplicitTimeOfDay.Hour, $ExplicitTimeOfDay.Minute)
+					$hshNewItemSpec["time"] = $("{0}:{1}:{2}" -f $intNumberOfDayOfTheWeek, $ExplicitTimeOfDay.Hour, $ExplicitTimeOfDay.Minute)
 				} ## end case
 		} ## end switch
 		## if Suffix was specified, add it to the config spec
@@ -985,7 +973,7 @@ function New-XIOSnapshotScheduler {
 		$hshParamsForNewItem = @{
 			ComputerName = $ComputerName
 			ItemType_str = $strThisItemType
-			Name = $Name
+			Name = "new no-name scheduler (XIO API does not yet support name for new scheduler)"
 			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 		} ## end hashtable
 
