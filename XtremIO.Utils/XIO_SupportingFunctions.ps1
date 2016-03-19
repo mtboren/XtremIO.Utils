@@ -734,6 +734,7 @@ function _New-Object_fromItemTypeAndContent {
 					InitiatorGrpId = $oContent."ig-id"[0]
 					InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$oContent."ig-id")
 					InitiatorId = $oContent."initiator-id"[0]
+					OperatingSystem = $oContent."operating-system"
 					PortType = $oContent."port-type"
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{

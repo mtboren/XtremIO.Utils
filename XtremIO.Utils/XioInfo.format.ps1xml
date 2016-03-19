@@ -701,12 +701,22 @@
 			<Name>XioItem_initiators</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Initiator</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>25</Width></TableColumnHeader>
+					<TableColumnHeader><Width>10</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>PortAddress</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>PortType</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>ConnectionState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>OperatingSystem</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>

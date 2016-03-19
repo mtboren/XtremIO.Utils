@@ -381,6 +381,7 @@ namespace XioItemInfo {
 		public Object InitiatorGroup;
 		public String InitiatorId;
 		public Int64 IOPS;
+		public System.Nullable<XioItemInfo.Enums.General.OSType> OperatingSystem;
 		public Object PerformanceInfo;
 		public String PortAddress;
 		public String PortType;
@@ -909,5 +910,9 @@ namespace XioItemInfo.Enums.PerfCounter {
 namespace XioItemInfo.Enums.Tag {
 	// Entity type names that are valid for values as new Tag entity types
 	public enum EntityType {BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SSD, SnapshotScheduler, SnapshotSet, StorageController, Target, Volume}
+} // end namespace
+namespace XioItemInfo.Enums.General {
+	// Operating System "types", as used by Initiator objects
+	public enum OSType {Linux, Windows, ESX, Solaris, AIX, HPUX, Other}
 } // end namespace
 "@

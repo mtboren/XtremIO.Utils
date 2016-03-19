@@ -275,8 +275,8 @@ function New-XIOInitiatorGroup {
 	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 0x100000000000ab56
 	Create a new initiator in the initiator group "myserver0"
 	.Example
-	New-XIOInitiator -Name myserver0-hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54
-	Create a new initiator in the initiator group "myserver0" on all XIO Clusters in the connected XMS
+	New-XIOInitiator -Name myserver0-hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54 -OperatingSystem ESX
+	Create a new initiator in the initiator group "myserver0" on all XIO Clusters in the connected XMS, and specifies "ESX" for the Operating System type
 	.Example
 	New-XIOInitiator -Name myserver0-hba4 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
 	Create a new initiator in the initiator group "myserver0", on specified XIO Cluster only
@@ -303,7 +303,9 @@ function New-XIOInitiator {
 		#-For iSCSI initiators, IQN and EUI formats are allowed
 		#-Two initiators cannot share the same port address
 		#-You cannot specify an FC address for an iSCSI target and vice-versa
-		[parameter(Mandatory=$true)][ValidateScript({$_ -match "^((0x)?[0-9a-f]{16}|(([0-9a-f]{2}:){7}[0-9a-f]{2}))$"})][string]$PortAddress
+		[parameter(Mandatory=$true)][ValidateScript({$_ -match "^((0x)?[0-9a-f]{16}|(([0-9a-f]{2}:){7}[0-9a-f]{2}))$"})][string]$PortAddress,
+		## The operating system of the host whose HBA this Initiator involves. One of Linux, Windows, ESX, Solaris, AIX, HPUX, or Other
+		[XioItemInfo.Enums.General.OSType]$OperatingSystem
 	) ## end param
 
 	Begin {
@@ -321,6 +323,8 @@ function New-XIOInitiator {
 			"port-address" = $PortAddress
 		} ## end hashtable
 		## add these if bound
+		if ($PSBoundParameters.ContainsKey("OperatingSystem")) {$hshNewItemSpec["operating-system"] = $OperatingSystem.ToString().ToLower()}
+
 		## the params to use in calling the helper function to actually create the new object
 		$hshParamsForNewItem = @{
 			ComputerName = $ComputerName_arr
@@ -879,7 +883,8 @@ function New-XIOSnapshot {
 
 <#	.Description
 	Create a new XtremIO SnapshotScheduler. Can schedule on given time interval, or on explicit day of the week (or everyday), and can specify the number of snapshots to keep or the duration for which to keep snapshots.  The maximums are 511 snapshots or an age of 5 years, whichever is lower. That is, if specifying a "Friday" schedule and "500" for the number of snapshots to keep, the system will keep the last 260 snapshots, since 5 years is the max, 5years * 52snaps/year = 260 snaps.
-	Note: XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
+	.Notes
+	XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
 	.Example
 	New-XIOSnapshotScheduler -RelatedObject (Get-XIOVolume someVolume0) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20
 	Create new SnapshotScheduler from a Volume, using an interval between snapshots, and specifying a particular number of Snapshots to retain

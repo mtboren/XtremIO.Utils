@@ -1,7 +1,4 @@
 todo:
--New-XIOInitiator:  add support for specifying "Operating System" value for initiator (ESX, Windows, Other, etc); available in XIOS v4
-	-values are Linux, Windows, ESX, Solaris, AIX, HP-UX, Other (maybe "HPUX", and maybe all of these are lowercase -- need to test)
--update table view of initiator to include ConnectionState
 -add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv, Volume, Snapshot
 	-once added to Volume, update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 	-this is also in prep for better pipelining, which will need to take Cluster from pipeline property of object coming through
@@ -207,6 +204,7 @@ todo:
 	-example:  New-XIOVolumeFolder -Name newDeepFolder -ParentFolder /someVolume/Folder/ThatDoes/NotYet/Exist
 	-needs to iterate through those parents from the root
 	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
+-need to exclude -OperatingSystem parameter option in New-XIOInitiator if API of XMS is v1 -- breaks things to send along in a request to API V1 XMS; lower priority
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
@@ -231,6 +229,12 @@ todo:
 
 
 doing:
+[feat_ImproveNewXIOInitiator]
+-New-XIOInitiator:  added support for specifying "Operating System" value for initiator (ESX, Windows, Other, etc); available in XIOS v4
+	-values are Linux, Windows, ESX, Solaris, AIX, HP-UX, Other (values for API are: linux, windows, esx, solaris, aix, hpux, other)
+-updated XioItemInfo.Initiator object to have OperatingSystem property (as available in API v2)
+-updated table view of initiator to include ConnectionState, OperatingSystem
+
 
 done for version 0.next (after v0.10.0):
 [feat_NewNewCmdlets]
