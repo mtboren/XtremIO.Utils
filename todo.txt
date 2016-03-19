@@ -233,45 +233,8 @@ todo:
 doing:
 [feat_NewNewCmdlets]
 -add other New-XIO* cmdlets:
-	need to add the "useApiV2" stuff for these, as they will need to use at least the v2 API URI
-	New-XIOSnapshotScheduler:
-		[string]cluster-id
-		## Scheduler's time. Can be intervaled [h:m:s] or an explicit time [d:h:m]
-		[parameter(Mandatory=$true)]schedule
-		## Schedule is specified explicitly or by intervals; 'interval' or 'explicit'
-		[parameter(Mandatory=$true)]scheduler-type
-		## Snapped Object ID
-		[parameter(Mandatory=$true)]snapshot-object-id
-		## Volume, Snapshot Set, Tag List, ConsistencyGroup
-		[parameter(Mandatory=$true)]snapshot-objecttype
-		## Number of Snapshots to be saved
-		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapNum")]snapshots-to-keepnumber
-		## The time period, in seconds, for which a Snapshot should be saved. When the defined time has passed the cluster automatically removes the Snapshot.
-		#    The minimum value is 60 seconds (1 minute)
-		#    The maximum value is 31536000 seconds (5 Years)
-		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapAge")][System.TimeSpan]snapshots-to-keeptime
-		## Scheduler enable state; 'enabled' or 'user-disabled'
-		enabled-state
-		## Write (default) or Read
-		snapshot-type
-		## Text adjoined to the scheduler's stem name
-		suffix
-
-		## example JSON for SnapshotScheduler:  {"cluster-id":2,"scheduler-type":"interval","snapshot-objectid": 344,"snapshot-object-type":"Volume","snapshots-to-keepnumber": 2,"time":"10:20:15"}
-		## enabled better web exception reporting for easier issue identification/troubleshooting
-
-		to test:
-			cmdlet at all
-			that all values for $strSnapshotSourceObjectTypeAPIValue are legit (Volume, SnapshotSet, Tag, ConsistencyGroup?)
-			that "user_disabled" is correct value for "enabled-state"
-			that -SnapshotRetentionCount with some high number (that would cause longer than 5 years' retention) just gets "ceiling'd" by XIO
-				-if no, may need to do math to ensure that -SnapshotRetentionCount will not cause longer than 5 years' retention, based on the interval/schedule
-			that interval and explicit schedules turn out as expected/desired
-			what happens if providing multiple values in -RelatedObject?  Is an array of things a [PSObject]?  (seems like, "no")
-			does Tag need to be in array format (tag "list"), as is the case elsewhere in the API when sending Tag things?
-
-
 	done:
+	need to add the "useApiV2" stuff for these, as they will need to use at least the v2 API URI
 	New-XIOConsistencyGroup:
 		[string]cluster-id
 		[parameter(Mandatory=$true)]consistency-group-name
@@ -294,7 +257,39 @@ doing:
 		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")]public-key
 		## Inactivity timeout in minutes
 		[int]inactivity-timeout
+	New-XIOSnapshotScheduler:
+		[string]cluster-id
+		## Scheduler's time. Can be intervaled [h:m:s] or an explicit time [d:h:m]
+		[parameter(Mandatory=$true)]schedule
+		## Schedule is specified explicitly or by intervals; 'interval' or 'explicit'
+		[parameter(Mandatory=$true)]scheduler-type
+		## Snapped Object ID
+		[parameter(Mandatory=$true)]snapshot-object-id
+		## Volume, Snapshot Set, ConsistencyGroup
+		[parameter(Mandatory=$true)]snapshot-object-type
+		## Number of Snapshots to be saved
+		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapNum")]snapshots-to-keep-number
+		## The time period, in minutes, for which a Snapshot should be saved. When the defined time has passed the cluster automatically removes the Snapshot.
+		#    The minimum value is 1 minute
+		#    The maximum value is 2628000 minutes (5 years)
+		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapAge")][System.TimeSpan]snapshots-to-keep-time
+		## Scheduler enable state; 'enabled' or 'user-disabled'
+		enabled-state
+		## Write (default) or Read
+		snapshot-type
+		## Text adjoined to the scheduler's stem name
+		suffix
 
+		tested:
+			cmdlet at all
+			that interval and explicit schedules turn out as expected/desired
+			that all values for $strSnapshotSourceObjectTypeAPIValue are legit (Volume, SnapSet, ConsistencyGroup)
+			that "user_disabled" is correct value for "enabled-state"
+			that -Cluster works as desired
+			that no -Enabled param creates new sched that is enabled
+			what happens if providing multiple values in -RelatedObject?  A:  As expected/desired, API errors, as it does not accept array of object names
+			that -SnapshotRetentionCount with some high number (that would cause longer than 5 years' retention) just gets "ceiling'd" by XIO
+		enabled better web exception reporting for easier issue identification/troubleshooting
 
 done for version 0.next (after v0.10.0):
 

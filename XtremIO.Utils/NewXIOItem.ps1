@@ -132,7 +132,7 @@ function New-XIOConsistencyGroup {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## The name of the XIO Cluster on which to make new consistency group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new consistency group. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## Name of the new consistency group
 		[parameter(Mandatory=$true, Position=0)]$Name,
@@ -213,7 +213,7 @@ function New-XIOInitiatorGroup {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator-group being made
 		[parameter(Mandatory=$true)][string]$Name_str,
-		## The name of the XIO Cluster on which to make new initiator group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new initiator group. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The initiator-name and port-address for each initiator you want to add to the group, if any (why not, though?). Each key/value pair shall use initiator-name as the key, and the corresponding port-address for the value.
 		#For the port addresses, valid values are colon-separated hex numbers, non-separated hex numbers, or non-separated hex numbers prefixed with "0x".  That is, the following formats are acceptable for port-address values:  XX:XX:XX:XX:XX:XX:XX:XX, XXXXXXXXXXXXXXXX, or 0xXXXXXXXXXXXXXXXX
@@ -291,7 +291,7 @@ function New-XIOInitiator {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator being made
 		[parameter(Mandatory=$true)][string]$Name_str,
-		## The name of the XIO Cluster on which to make new initiator. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new initiator. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The existing initiator group name to which associate the initiator
 		[parameter(Mandatory=$true)][string]$InitiatorGroup,
@@ -402,7 +402,7 @@ function New-XIOLunMap {
 	param(
 		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
-		## The name of the XIO Cluster on which to make new lun mapping. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new lun mapping. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The name of the volume to map
 		[parameter(Mandatory=$true)][string]$Volume,
@@ -609,7 +609,7 @@ function New-XIOVolume {
 		[ValidateRange(0,7)][int]$AlignmentOffset_int,
 		## The volume's Logical Block size, either 512 (default) or 4096.  Once defined, the size cannot be modified.  If defined as 4096, AlignmentOffset will be ignored
 		[ValidateSet(512,4096)][int]$LogicalBlockSize_int = 512,
-		## The name of the XIO Cluster on which to make new volume. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new volume. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The disk space size of the volume in GB. This parameter reflects the size of the volume available to the initiators. It does not indicate the actual SSD space this volume may consume
 		#   Must be an integer greater than 0 and a multiple of 1 MB.
@@ -753,7 +753,7 @@ function New-XIOSnapshot {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## The name of the XIO Cluster on which to make new snapshot. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new snapshot. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
 		[parameter(Mandatory=$true,ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
@@ -878,7 +878,17 @@ function New-XIOSnapshot {
 
 
 <#	.Description
-	Create a new XtremIO SnapshotScheduler. Note: XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
+	Create a new XtremIO SnapshotScheduler. Can schedule on given time interval, or on explicit day of the week (or everyday), and can specify the number of snapshots to keep or the duration for which to keep snapshots.  The maximums are 511 snapshots or an age of 5 years, whichever is lower. That is, if specifying a "Friday" schedule and "500" for the number of snapshots to keep, the system will keep the last 260 snapshots, since 5 years is the max, 5years * 52snaps/year = 260 snaps.
+	Note: XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
+	.Example
+	New-XIOSnapshotScheduler -RelatedObject (Get-XIOVolume someVolume0) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20
+	Create new SnapshotScheduler from a Volume, using an interval between snapshots, and specifying a particular number of Snapshots to retain
+	.Example
+	New-XIOSnapshotScheduler -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -Cluster myCluster0 -Enabled:$false
+	Create new SnapshotScheduler from a ConsistencyGroup, with an explict schedule, specifying duration for which to keep Snapshots, on the given XIO cluster, and set the scheduler as user-disabled
+	.Example
+	Get-XIOSnapshotSet -Name testSnapshotSet0.1455845074 | New-XIOSnapshotScheduler -ExplicitDay EveryDay -ExplicitTimeOfDay 3am -SnapshotRetentionCount 500 -Suffix myScheduler0
+	Create new SnapshotScheduler from a SnapshotSet, from pipeline, scheduled for every day of the week at 3am, keeping the last 500 snapshots, and with the given "suffix" that is inserted in each new snapshot's name
 	.Outputs
 	XioItemInfo.SnapshotScheduler object for the newly created object if successful
 #>
@@ -888,10 +898,10 @@ function New-XIOSnapshotScheduler {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## The name of the XIO Cluster on which to make new snapshot scheduler. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new snapshot scheduler. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
-		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, Tag, or ConsistencyGroup
-		[parameter(Mandatory=$true)][ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet]) -or ($_ -is [XioItemInfo.Tag])})]
+		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, or ConsistencyGroup
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet])})]
 		[PSObject]$RelatedObject,
 		## The timespan to wait between each run of the scheduled snapshot action (maximum is 72 hours). Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
 		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapNum")]
@@ -903,7 +913,7 @@ function New-XIOSnapshotScheduler {
 		## The hour and minute to use for the explicit schedule, along with the explicit day of the week. Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
 		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapNum")]
 		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapAge")][System.DateTime]$ExplicitTimeOfDay,
-		## Number of Snapshots to be saved. Use either this parameter or -SnapshotRetentionDuration. With either retention Count or Duration, the oldest snapshot age to be kept is 5 years. So, the (number of snapshots to keep) * (amount of time between snapshots) must be less than or equal to 5 years.  And, the maximum count is 511 snapshots
+		## Number of Snapshots to be saved. Use either this parameter or -SnapshotRetentionDuration. With either retention Count or Duration, the oldest snapshot age to be kept is 5 years. And, the maximum count is 511 snapshots
 		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapNum")]
 		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapNum")][ValidateRange(1,511)][int]$SnapshotRetentionCount,
 		## The timespan for which a Snapshot should be saved. When the defined timespan has elapsed, the XtremIO cluster automatically removes the Snapshot.  Use either this parameter or -SnapshotRetentionCount
@@ -925,18 +935,20 @@ function New-XIOSnapshotScheduler {
 	} ## end begin
 
 	Process {
-		## type of snapsource:  Volume, Snapshot Set, Tag List, ConsistencyGroup
+		## type of snapsource:  Volume, SnapshotSet, ConsistencyGroup
 		$strSnapshotSourceObjectTypeAPIValue = Switch ($RelatedObject.GetType().FullName) {
 			"XioItemInfo.Volume" {"Volume"; break}
-			"XioItemInfo.SnapshotSet" {"SnapshotSet"; break}
-			"XioItemInfo.Tag" {"Tag"; break}
+			## API requires "SnapSet" string for this
+			"XioItemInfo.SnapshotSet" {"SnapSet"; break}
+			## not yet supported by API per API error (even though API reference says "Tag List", too)
+			# "XioItemInfo.Tag" {"Tag"; break}
 			"XioItemInfo.ConsistencyGroup" {"ConsistencyGroup"}
 		} ## end switch
 
 		## the API-specific pieces that define the new XIO object's properties
 		$hshNewItemSpec = @{
 			"snapshot-type" = $SnapshotType.ToLower()
-			## name of snapsource; need to be single item array if taglist?; could use index, too, it seems, but why would we?
+			## name of snaphot source; need to be single item array if taglist?; could use index, too, it seems, but why would we?
 			"snapshot-object-id" = $RelatedObject.Name
 			"snapshot-object-type" = $strSnapshotSourceObjectTypeAPIValue
 			"enabled-state" = $(if ($Enabled) {'enabled'} else {'user_disabled'})
@@ -979,7 +991,7 @@ function New-XIOSnapshotScheduler {
 
 		## if the user specified a cluster to use, include that param
 		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster}
-		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		## set the XIOS REST API param to 2.0; the scheduler object type is only available in XIOS v4 and up (and, so, API v2 and newer)
 		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
 
 		## call the function to actually make this new item

@@ -66,21 +66,18 @@ New-XIOConsistencyGroup -Name myConsGrp2 -Volume (Get-XIOVolume coolVol*2016,coo
 ## Create a new ConsistencyGroup that contains the volumes on XIO cluster "myCluster0" that are tagged with either "someImportantVolsTag" or "someImportantVolsTag2"
 New-XIOConsistencyGroup -Name myConsGrp3 -Tag (Get-XIOTag /Volume/someImportantVolsTag,/Volume/someImportantVolsTag2) -Cluster myCluster0
 
-
-
 ## new XIO Snapshot Schedulers (cannot yet specify new scheduler name via the API -- no way to do so, or, no documented way, at least)
 ## from Volume, using interval between snapshots, specifying particular number of Snapshots to retain
-New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOVolume mattTestVol1_toDel) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20 -WhatIf
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOVolume someVolume0) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20
 ## from a ConsistencyGroup, with an explict schedule, specifying duration for which to keep Snapshots
-New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -WhatIf
-
+New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12)
 ## from a SnapshotSet
-New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-SnapshotSet -Name testSnapshotSet0.1455845074) -ExplicitDay EveryDay -ExplicitTimeOfDay 3am -SnapshotRetentionCount 500 -WhatIf
-## from a Tag (several types)
+Get-XIOSnapshotSet -Name testSnapshotSet0.1455845074 | New-XIOSnapshotScheduler -Enabled:$false -ExplicitDay EveryDay -ExplicitTimeOfDay 3am -SnapshotRetentionCount 500 -Suffix myScheduler0
+## from a Tag (several types) -- NOT YET SUPPORTED by API; API reference says that Tag List is a source object, but the API returns error that only Volume, ConsistencyGroup, SnapshotSet are valid (XIOS 4.0.2-80)
 #  from a Volume tag, using interval between snapshots
-New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-Tag testVolTag) -Interval (New-Timespan -Days 1) -SnapshotRetentionCount 100 -WhatIf
+#New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOTag /Volume/testVolTag) -Interval (New-Timespan -Days 1) -SnapshotRetentionCount 100
 #  from a SnapshotSet tag, scheduled everyday at midnight
-New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-Tag testSnapshotSetTag) -ExplicitDay Everyday -ExplicitTimeOfDay 12am -SnapshotRetentionDuration (New-Timespan -Days 31 -Hours 5) -WhatIf
+#New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOTag /SnapshotSet/testSnapshotSetTag) -ExplicitDay Everyday -ExplicitTimeOfDay 12am -SnapshotRetentionDuration (New-Timespan -Days 31 -Hours 5)
 #  from a ConsistencyGroup tag, on given day, with suffix
-New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-Tag testCGTag) -ExplicitDay Thursday -ExplicitTimeOfDay 19:30 -SnapshotRetentionCount 5 -Suffix myImportantSnap -WhatIf
+#New-XIOSnapshotScheduler -Enabled:$false -RelatedObject (Get-XIOTag /ConsistencyGroup/testCGTag) -ExplicitDay Thursday -ExplicitTimeOfDay 19:30 -SnapshotRetentionCount 5 -Suffix myImportantSnap
 #>

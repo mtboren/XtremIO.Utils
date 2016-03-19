@@ -427,9 +427,10 @@
 				<TableHeaders>
 					<TableColumnHeader><Width>22</Width></TableColumnHeader>
 					<TableColumnHeader><Width>10</Width></TableColumnHeader>
-					<TableColumnHeader><Width>9</Width></TableColumnHeader>
-					<TableColumnHeader><Width>13</Width></TableColumnHeader>
-					<TableColumnHeader><Width>24</Width></TableColumnHeader>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>22</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 				</TableHeaders>
 				<TableRowEntries>
@@ -438,6 +439,7 @@
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>SnapType</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Enabled</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumSnapToKeep</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Retain</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>LastActivated</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>LastActivationResult</PropertyName></TableColumnItem>
