@@ -24,6 +24,7 @@ $oNewIG2 = New-XIOInitiatorGroup -Name "testIG2$strNameToAppend" -Cluster $strCl
 New-XIOInitiator -Name "mysvr0-hba2$strNameToAppend" -InitiatorGroup $oNewIG2.name -PortAddress 0x100000000000ab56
 New-XIOInitiator -Name "mysvr0-hba3$strNameToAppend" -InitiatorGroup $oNewIG2.name -PortAddress 10:00:00:00:00:00:00:54
 New-XIOInitiator -Name "mysvr0-hba4$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG2.name -PortAddress 10:00:00:00:00:00:00:55
+New-XIOInitiator -Name "mysvr0-hba5$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG2.name -PortAddress 10:00:00:00:00:00:00:56 -OperatingSystem ESX
 New-XIOInitiatorGroupFolder -Name "myIGFolder$strNameToAppend" -ParentFolder /
 $oNewVolFolder0 = New-XIOVolumeFolder -Name "myVolFolder$strNameToAppend" -ParentFolder /
 ## for single-cluster XMS connections
