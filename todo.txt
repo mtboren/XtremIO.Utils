@@ -231,6 +231,8 @@ todo:
 
 
 doing:
+
+done for version 0.next (after v0.10.0):
 [feat_NewNewCmdlets]
 -add other New-XIO* cmdlets:
 	done:
@@ -290,8 +292,6 @@ doing:
 			what happens if providing multiple values in -RelatedObject?  A:  As expected/desired, API errors, as it does not accept array of object names
 			that -SnapshotRetentionCount with some high number (that would cause longer than 5 years' retention) just gets "ceiling'd" by XIO
 		enabled better web exception reporting for easier issue identification/troubleshooting
-
-done for version 0.next (after v0.10.0):
 
 ## things below here are in changelog/readme
 
