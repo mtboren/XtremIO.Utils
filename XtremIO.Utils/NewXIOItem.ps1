@@ -10,7 +10,8 @@ function New-XIOItem {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Item type to create; currently supported types:
 		##   for all API versions:  "ig-folder", "initiator, "initiator-group", "lun-map", "volume", "volume-folder"
-		[ValidateSet("ig-folder","initiator","initiator-group","lun-map","snapshot","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
+		##   starting in API v2:  "consistency-group", "scheduler", "user-account", "tag"
+		[ValidateSet("consistency-group","ig-folder","initiator","initiator-group","lun-map","scheduler","snapshot","tag","user-account","volume","volume-folder")][parameter(Mandatory=$true)][string]$ItemType_str,
 		## JSON for the body of the POST WebRequest, for specifying the properties for the new XIO object
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForNewItem_str,
 		## Item name being made (for checking if such item already exists)
@@ -44,59 +45,145 @@ function New-XIOItem {
 		else {
 			$arrXioConnectionsToUse | Foreach-Object {
 				$oThisXioConnection = $_
-				## for each value for $Cluster, if cluster is specified, else, just one time (as indicated by the empty string -- that is there just to have the Foreach-Object process scriptblock run at least once)
-				$(if ($PSBoundParameters.ContainsKey("Cluster")) {$Cluster} else {""}) | Foreach-Object {
-					## the cluster name (if any -- might be empty string, but, in that case, will not be used, as code checks PSBoundParameters for Cluster param before using this variable)
-					$strThisXioClusterName = $_
-					## if the -CLuster param is given, add to the WhatIf msg, and add the "cluster-id" param piece to the JSON body specification
-					if ($PSBoundParameters.ContainsKey("Cluster")) {
-						$strClusterTidbitForWhatIfMsg = " in cluster '$strThisXioClusterName'"
-						$strJsonSpecForNewItem = $SpecForNewItem_str | ConvertFrom-Json | Select-Object *, @{n="cluster-id"; e={$strThisXioClusterName}} | ConvertTo-Json
-					} ## end if
-					else {
-						$strClusterTidbitForWhatIfMsg = $null
-						$strJsonSpecForNewItem = $SpecForNewItem_str
-					} ## end else
-					$strMsgForWhatIf = "Create new '$ItemType_str' object named '$Name'{0}" -f $strClusterTidbitForWhatIfMsg
-					if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strMsgForWhatIf)) {
-						## make params hashtable for new WebRequest
-						$hshParamsToCreateNewXIOItem = @{
-							## make URI
-							Uri = $(
-								$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
-								if ($PSBoundParameters.ContainsKey("XiosRestApiVersion")) {$hshParamsForNewXioApiURI["RestApiVersion"] = $XiosRestApiVersion}
-								New-XioApiURI @hshParamsForNewXioApiURI)
-							## JSON contents for body, for the params for creating the new XIO object
-							Body = $strJsonSpecForNewItem
-							## set method to Post
-							Method = "Post"
-							## do something w/ creds to make Headers
-							Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
-						} ## end hashtable
-
-						## try request
-						try {
-							$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem -ErrorAction:Stop
-						} ## end try
-						## catch, write info, throw
-						catch {_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToCreateNewXIOItem['Uri'] -ErrorRecord $_}
-						## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
-						if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
-							Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
-							## use the return's links' hrefs to return the XIO item(s)
-							($oWebReturn.Content | ConvertFrom-Json).links | Foreach-Object {
-								## add "?cluster-name=blahh" here to HREF, if using -Cluster param
-								$strHrefForNewObjToRetrieve = if ($PSBoundParameters.ContainsKey("Cluster")) {
-										"{0}?cluster-name={1}" -f $_.href, $strThisXioClusterName
-									} ## end if
-									else {$_.href}
-								Get-XIOItemInfo -URI $strHrefForNewObjToRetrieve
-							} ## end foreach-object
+				## is this a type that is supported in this XioConnection's XIOS version?
+				if (-not (_Test-XIOObjectIsInThisXIOSVersion -XiosVersion $oThisXioConnection.XmsVersion -ApiItemType $strItemType_plural)) {
+					Write-Verbose $("As should have been already warned, the type '$strItemType_plural' does not exist in $($oThisXioConnection.ComputerName)'s XIOS version{0}. This is possibly an object type that was introduced in a later XIOS version" -f $(if (-not [String]::IsNullOrEmpty($_.XmsSWVersion)) {" ($($_.XmsSWVersion))"}))
+				} ## end if
+				## else, the Item type _does_ exist in this XIOS version -- try to create a new item of this type
+				else {
+					## for each value for $Cluster, if cluster is specified, else, just one time (as indicated by the empty string -- that is there just to have the Foreach-Object process scriptblock run at least once)
+					$(if ($PSBoundParameters.ContainsKey("Cluster")) {$Cluster} else {""}) | Foreach-Object {
+						## the cluster name (if any -- might be empty string, but, in that case, will not be used, as code checks PSBoundParameters for Cluster param before using this variable)
+						$strThisXioClusterName = $_
+						## if the -CLuster param is given, add to the WhatIf msg, and add the "cluster-id" param piece to the JSON body specification
+						if ($PSBoundParameters.ContainsKey("Cluster")) {
+							$strClusterTidbitForWhatIfMsg = " in cluster '$strThisXioClusterName'"
+							$strJsonSpecForNewItem = $SpecForNewItem_str | ConvertFrom-Json | Select-Object *, @{n="cluster-id"; e={$strThisXioClusterName}} | ConvertTo-Json
 						} ## end if
-					} ## end if ShouldProcess
-				} ## end foreach-object
+						else {
+							$strClusterTidbitForWhatIfMsg = $null
+							$strJsonSpecForNewItem = $SpecForNewItem_str
+						} ## end else
+						$strMsgForWhatIf = "Create new '$ItemType_str' object named '$Name'{0}" -f $strClusterTidbitForWhatIfMsg
+						if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strMsgForWhatIf)) {
+							## make params hashtable for new WebRequest
+							$hshParamsToCreateNewXIOItem = @{
+								## make URI
+								Uri = $(
+									$hshParamsForNewXioApiURI = @{ComputerName_str = $oThisXioConnection.ComputerName; RestCommand_str = $strRestCmd_base; Port_int = $oThisXioConnection.Port}
+									if ($PSBoundParameters.ContainsKey("XiosRestApiVersion")) {$hshParamsForNewXioApiURI["RestApiVersion"] = $XiosRestApiVersion}
+									New-XioApiURI @hshParamsForNewXioApiURI)
+								## JSON contents for body, for the params for creating the new XIO object
+								Body = $strJsonSpecForNewItem
+								## set method to Post
+								Method = "Post"
+								## do something w/ creds to make Headers
+								Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
+							} ## end hashtable
+
+							## try request
+							try {
+								$oWebReturn = Invoke-WebRequest @hshParamsToCreateNewXIOItem -ErrorAction:Stop
+							} ## end try
+							## catch, write info, throw
+							catch {_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToCreateNewXIOItem['Uri'] -ErrorRecord $_}
+							## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
+							if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Post"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Post"]["StatusDescription"])) {
+								Write-Verbose "$strLogEntry_ToAdd Item created successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
+								## use the return's links' hrefs to return the XIO item(s)
+								($oWebReturn.Content | ConvertFrom-Json).links | Foreach-Object {
+									## add "?cluster-name=blahh" here to HREF, if using -Cluster param
+									$strHrefForNewObjToRetrieve = if ($PSBoundParameters.ContainsKey("Cluster")) {
+											"{0}?cluster-name={1}" -f $_.href, $strThisXioClusterName
+										} ## end if
+										else {$_.href}
+									Get-XIOItemInfo -URI $strHrefForNewObjToRetrieve
+								} ## end foreach-object
+							} ## end if
+						} ## end if ShouldProcess
+					} ## end foreach-object
+				} ## end else (item type _does_ exist in this XIOS API version)
 			} ## end foreach-object
 		} ## end else
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new XtremIO ConsistencyGroup
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp0
+	Create a new, empty ConsistencyGroup
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp1 -Volume coolVol0,coolVol1
+	Create a new, ConsistencyGroup that contains the volumes specified
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp2 -Volume (Get-XIOVolume coolVol*2016,coolVol[01])
+	Create a new, ConsistencyGroup that contains the volumes specified
+	.Example
+	New-XIOConsistencyGroup -Name myConsGrp3 -Tag (Get-XIOTag /Volume/someImportantVolsTag,/Volume/someImportantVolsTag2) -Cluster myCluster0
+	Create a new, ConsistencyGroup that contains the volumes on XIO cluster "myCluster0" that are tagged with either "someImportantVolsTag" or "someImportantVolsTag2"
+	.Outputs
+	XioItemInfo.ConsistencyGroup object for the newly created object if successful
+#>
+function New-XIOConsistencyGroup {
+	[CmdletBinding(SupportsShouldProcess=$true,DefaultParameterSetName="DefaultUnnamedPSet")]
+	[OutputType([XioItemInfo.ConsistencyGroup])]
+	param(
+		## XMS address to use
+		[string[]]$ComputerName,
+		## The name of the XIO Cluster on which to make new consistency group. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
+		## Name of the new consistency group
+		[parameter(Mandatory=$true, Position=0)]$Name,
+		## XtremIO Volume(s) or Snapshot(s) from which to create new consistency group. Accepts either Volume/Snapshot names or objects
+		[parameter(ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
+		## XtremIO Tag whose volumes/snapshots from which to create new consistency group. Accepts either Tag names or objects. These should be Tags for Volume object types, of course. And, when specifying tag names, use "full" tag name, like "/Volume/myVolsTag0"
+		[parameter(ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "consistency-group"
+	} ## end begin
+
+	Process {
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			"consistency-group-name" = $Name
+		} ## end hashtable
+
+		Switch($PsCmdlet.ParameterSetName) {
+			## for ByVolume, populate "vol-list"
+			"ByVolume" {
+				## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
+				$arrSrcVolumeNames = @(if (($Volume | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$Volume.Name} else {$Volume})
+				$hshNewItemSpec["vol-list"] = $arrSrcVolumeNames
+				break
+			} ## end case
+			## for ByTag, populate "tag-list"
+			"ByTag" {
+				## value needs to be an array, so that the JSON will be correct for the API call, which expects an array of values
+				$arrSrcTagNames = if (($Tag | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Tag") {$Tag.Name} else {$arrSrcTagNames = $Tag} ## end else
+				$hshNewItemSpec["tag-list"] = @($arrSrcTagNames)
+			} ## end case
+		} ## end switch
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = $Name
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster}
+		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
 	} ## end process
 } ## end function
 
@@ -126,7 +213,7 @@ function New-XIOInitiatorGroup {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator-group being made
 		[parameter(Mandatory=$true)][string]$Name_str,
-		## The name of the XIO Cluster on which to make new initiator group. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new initiator group. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The initiator-name and port-address for each initiator you want to add to the group, if any (why not, though?). Each key/value pair shall use initiator-name as the key, and the corresponding port-address for the value.
 		#For the port addresses, valid values are colon-separated hex numbers, non-separated hex numbers, or non-separated hex numbers prefixed with "0x".  That is, the following formats are acceptable for port-address values:  XX:XX:XX:XX:XX:XX:XX:XX, XXXXXXXXXXXXXXXX, or 0xXXXXXXXXXXXXXXXX
@@ -204,7 +291,7 @@ function New-XIOInitiator {
 		[parameter(Position=0)][string[]]$ComputerName_arr,
 		## Name for new initiator being made
 		[parameter(Mandatory=$true)][string]$Name_str,
-		## The name of the XIO Cluster on which to make new initiator. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new initiator. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The existing initiator group name to which associate the initiator
 		[parameter(Mandatory=$true)][string]$InitiatorGroup,
@@ -315,7 +402,7 @@ function New-XIOLunMap {
 	param(
 		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName_arr,
-		## The name of the XIO Cluster on which to make new lun mapping. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new lun mapping. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The name of the volume to map
 		[parameter(Mandatory=$true)][string]$Volume,
@@ -371,6 +458,129 @@ function New-XIOLunMap {
 
 
 <#	.Description
+	Create a new XtremIO Tag. Note:  As of XIOS v4.0.2, this cmdlet can make Tags for the fifteen entity types supported by the API.  However, the XMS management interface only displays Tags for six of these entity types (ConsistencyGroup, Initiator, InitatorGroup, SnapshotScheduler, SnapshotSet, and Volume).  The Get-XIOTag cmdlet _will_ show all tags, not just for these six entity types.
+	To see the entity types supported for Tag objects, get the values of the XioItemInfo.Enums.Tag.EntityType enumeration, via:  [System.Enum]::GetNames([XioItemInfo.Enums.Tag.EntityType])
+	.Example
+	New-XIOTag -Name MyVols -EntityType Volume
+	Create a new tag "MyVols", nested in the "/Volume" parent tag, to be used for Volume entities. This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
+	.Example
+	New-XIOTag -Name /Volume/MyVols2/someOtherTag/superImportantVols -EntityType Volume
+	Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.
+	.Example
+	New-XIOTag -Name /X-Brick/MyTestXBrickTag -EntityType Brick
+	Create a new tag "/X-Brick/MyTestXBrickTag", to be used for XtremIO Brick entities
+	.Outputs
+	XioItemInfo.Tag object for the newly created object if successful
+#>
+function New-XIOTag {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Tag])]
+	param(
+		## XMS address to use
+		[parameter(Position=0)][string[]]$ComputerName,
+		## Name for new tag being made
+		[parameter(Mandatory=$true)][string]$Name,
+		## Type of entity to which this tag can be applied
+		[parameter(Mandatory=$true)][XioItemInfo.Enums.Tag.EntityType]$EntityType
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "tag"
+	} ## end begin
+
+	Process {
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			"tag-name" = $Name
+			## get the URI entity type value to use for this PSModule entity typename (need to do .ToString() to get the typename string, as it is a XioItemInfo.Enums.Tag.EntityType enum value)
+			"entity" = $hshCfg.TagEntityTypeMapping[$EntityType.ToString()]
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = $Name
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new, "internal" XtremIO user account
+	.Example
+	New-XIOUserAccount -Credential (Get-Credential test_RoUser) -Role read_only
+	Create a new UserAccount with the read_only role, and with the given username/password. Uses default inactivity timeout configured on the XMS
+	.Example
+	New-XIOUserAccount -UserName test_CfgUser -Role configuration -UserPublicKey $strThisPubKey -InactivityTimeout 45
+	Create a new UserAccount with the read_only role, and with the given username/password. Sets inactivity timeout of 45 minutes for this new user
+	.Outputs
+	XioItemInfo.UserAccount object for the newly created object if successful
+#>
+function New-XIOUserAccount {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.UserAccount])]
+	param(
+		## XMS address to use
+		[string[]]$ComputerName,
+		## Credentials from which to make new user account (from the credential's username and password)
+		[parameter(Position=0)][parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")]$Credential,
+		## If specifying a public key for a user, instead of a credential, this is the username for the new user; use either -Credential or (-UserName and -UserPublicKey)
+		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")][string]$UserName,
+		## If specifying a public key for a user, instead of a credential, this is the public key for the new user; use either -Credential or (-UserName and -UserPublicKey)
+		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")][string]$UserPublicKey,
+		## User role.  One of 'read_only', 'configuration', 'admin', or 'technician'. To succeed in adding a user with "technician" role, seems that you may need to authenticated to the XMS _as_ a technician first (as administrator does not succeed)
+		[parameter(Mandatory=$true)][ValidateSet('read_only', 'configuration', 'admin', 'technician')]$Role,
+		## Inactivity timeout in minutes. Provide value of zero ("0") to specify "no timeout" for this user
+		[int]$InactivityTimeout
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "user-account"
+	} ## end begin
+
+	Process {
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			role = $Role
+		} ## end hashtable
+
+		Switch($PsCmdlet.ParameterSetName) {
+			## for SpecifyCredential, populate "usr-name" and "password"
+			"SpecifyCredential" {$hshNewItemSpec["usr-name"] = $Credential.UserName; $hshNewItemSpec["password"] = $Credential.GetNetworkCredential().Password; break}
+			## for SpecifyPublicKey, populate "usr-name" and "public-key"
+			"SpecifyPublicKey" {$hshNewItemSpec["usr-name"] = $UserName; $hshNewItemSpec["public-key"] = $UserPublicKey}
+		} ## end switch
+
+		if ($PSBoundParameters.ContainsKey("InactivityTimeout")) {$hshNewItemSpec["inactivity-timeout"] = $InactivityTimeout}
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = $hshNewItemSpec["usr-name"]
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## set the XIOS REST API param to 2.0; the Tag object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Create a new XtremIO volume
 	.Example
 	New-XIOVolume -Name testvol03 -SizeGB 2KB
@@ -399,7 +609,7 @@ function New-XIOVolume {
 		[ValidateRange(0,7)][int]$AlignmentOffset_int,
 		## The volume's Logical Block size, either 512 (default) or 4096.  Once defined, the size cannot be modified.  If defined as 4096, AlignmentOffset will be ignored
 		[ValidateSet(512,4096)][int]$LogicalBlockSize_int = 512,
-		## The name of the XIO Cluster on which to make new volume. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new volume. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## The disk space size of the volume in GB. This parameter reflects the size of the volume available to the initiators. It does not indicate the actual SSD space this volume may consume
 		#   Must be an integer greater than 0 and a multiple of 1 MB.
@@ -543,7 +753,7 @@ function New-XIOSnapshot {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
-		## The name of the XIO Cluster on which to make new snapshot. This value may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		## The name of the XIO Cluster on which to make new snapshot. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
 		[parameter(Mandatory=$true,ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume,
@@ -639,7 +849,7 @@ function New-XIOSnapshot {
 				} else {
 					$arrSrcTagNames = @($oParamOfInterest)
 				} ## end else
-				## needs to be an array, so that the JSON will be correct for the API call, which expects an array values
+				## needs to be an array, so that the JSON will be correct for the API call, which expects an array of values
 				$hshNewItemSpec["tag-list"] = $arrSrcTagNames
 				## set the name for checking; may need updated for when receiving Tag value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
 				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$($arrSrcTagNames | Select-Object -First 1)$SnapshotSuffix"}
@@ -663,5 +873,128 @@ function New-XIOSnapshot {
 		New-XIOItem @hshParamsForNewItem
 
 		$intI++
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new XtremIO SnapshotScheduler. Can schedule on given time interval, or on explicit day of the week (or everyday), and can specify the number of snapshots to keep or the duration for which to keep snapshots.  The maximums are 511 snapshots or an age of 5 years, whichever is lower. That is, if specifying a "Friday" schedule and "500" for the number of snapshots to keep, the system will keep the last 260 snapshots, since 5 years is the max, 5years * 52snaps/year = 260 snaps.
+	Note: XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
+	.Example
+	New-XIOSnapshotScheduler -RelatedObject (Get-XIOVolume someVolume0) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20
+	Create new SnapshotScheduler from a Volume, using an interval between snapshots, and specifying a particular number of Snapshots to retain
+	.Example
+	New-XIOSnapshotScheduler -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -Cluster myCluster0 -Enabled:$false
+	Create new SnapshotScheduler from a ConsistencyGroup, with an explict schedule, specifying duration for which to keep Snapshots, on the given XIO cluster, and set the scheduler as user-disabled
+	.Example
+	Get-XIOSnapshotSet -Name testSnapshotSet0.1455845074 | New-XIOSnapshotScheduler -ExplicitDay EveryDay -ExplicitTimeOfDay 3am -SnapshotRetentionCount 500 -Suffix myScheduler0
+	Create new SnapshotScheduler from a SnapshotSet, from pipeline, scheduled for every day of the week at 3am, keeping the last 500 snapshots, and with the given "suffix" that is inserted in each new snapshot's name
+	.Outputs
+	XioItemInfo.SnapshotScheduler object for the newly created object if successful
+#>
+function New-XIOSnapshotScheduler {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SnapshotScheduler])]
+	param(
+		## XMS address to use
+		[string[]]$ComputerName,
+		## The name of the XIO Cluster on which to make new snapshot scheduler. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
+		[string[]]$Cluster,
+		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, or ConsistencyGroup
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet])})]
+		[PSObject]$RelatedObject,
+		## The timespan to wait between each run of the scheduled snapshot action (maximum is 72 hours). Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapNum")]
+		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapAge")][ValidateScript({$_ -le (New-TimeSpan -Hours 72)})][System.TimeSpan]$Interval,
+		## The day of the week on which to take the scheduled snapshot (or, every day).  Expects the name of the day of the week, or "Everyday". Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapNum")]
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapAge")]
+		[ValidateSet('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Everyday')][string]$ExplicitDay,
+		## The hour and minute to use for the explicit schedule, along with the explicit day of the week. Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapNum")]
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapAge")][System.DateTime]$ExplicitTimeOfDay,
+		## Number of Snapshots to be saved. Use either this parameter or -SnapshotRetentionDuration. With either retention Count or Duration, the oldest snapshot age to be kept is 5 years. And, the maximum count is 511 snapshots
+		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapNum")]
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapNum")][ValidateRange(1,511)][int]$SnapshotRetentionCount,
+		## The timespan for which a Snapshot should be saved. When the defined timespan has elapsed, the XtremIO cluster automatically removes the Snapshot.  Use either this parameter or -SnapshotRetentionCount
+		##   The minimum value is 1 minute, and the maximum value is 5 years
+		[parameter(Mandatory=$true,ParameterSetName="ByTimespanInterval_SpecifySnapAge")]
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule_SpecifySnapAge")]
+		[ValidateScript({($_ -ge (New-TimeSpan -Minutes 1)) -and ($_ -le (New-TimeSpan -Days (5*365)))})][System.TimeSpan]$SnapshotRetentionDuration,
+		## Switch:  Snapshot Scheduler enabled-state. Defaults to $true (scheduler enabled)
+		[Switch]$Enabled = $true,
+		## Type of snapshot to create:  "Regular" (readable/writable) or "ReadOnly". Defaults to "Regular"
+		[ValidateSet("Regular","ReadOnly")][string]$SnapshotType = "Regular",
+		## String to injected into the resulting snapshot's name. For example, a value of "mySuffix" will result in a snapshot named something like "<baseVolumeName>.mySuffix.<someTimestamp>"
+		[string]$Suffix
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		$strThisItemType = "scheduler"
+	} ## end begin
+
+	Process {
+		## type of snapsource:  Volume, SnapshotSet, ConsistencyGroup
+		$strSnapshotSourceObjectTypeAPIValue = Switch ($RelatedObject.GetType().FullName) {
+			"XioItemInfo.Volume" {"Volume"; break}
+			## API requires "SnapSet" string for this
+			"XioItemInfo.SnapshotSet" {"SnapSet"; break}
+			## not yet supported by API per API error (even though API reference says "Tag List", too)
+			# "XioItemInfo.Tag" {"Tag"; break}
+			"XioItemInfo.ConsistencyGroup" {"ConsistencyGroup"}
+		} ## end switch
+
+		## the API-specific pieces that define the new XIO object's properties
+		$hshNewItemSpec = @{
+			"snapshot-type" = $SnapshotType.ToLower()
+			## name of snaphot source; need to be single item array if taglist?; could use index, too, it seems, but why would we?
+			"snapshot-object-id" = $RelatedObject.Name
+			"snapshot-object-type" = $strSnapshotSourceObjectTypeAPIValue
+			"enabled-state" = $(if ($Enabled) {'enabled'} else {'user_disabled'})
+		} ## end hashtable
+
+		## set the snapshots-to-keep values based on ParameterSetName (either Number to keep or Duration for which to keep)
+		Switch($PsCmdlet.ParameterSetName) {
+			{"ByTimespanInterval_SpecifySnapNum", "ByExplicitSchedule_SpecifySnapNum" -contains $_} {$hshNewItemSpec["snapshots-to-keep-number"] = $SnapshotRetentionCount; break}
+			{"ByTimespanInterval_SpecifySnapAge", "ByExplicitSchedule_SpecifySnapAge" -contains $_} {$hshNewItemSpec["snapshots-to-keep-time"] = [System.Math]::Floor($SnapshotRetentionDuration.TotalMinutes)}
+		} ## end switch
+
+		## set the scheduler type and schedule (time) string, based on the ParameterSetName
+		#    time is either (Hours:Minutes:Seconds) for interval or (NumberOfDayOfTheWeek:Hour:Minute) for explicit
+		Switch($PsCmdlet.ParameterSetName) {
+			{"ByTimespanInterval_SpecifySnapNum", "ByTimespanInterval_SpecifySnapAge" -contains $_} {
+					$hshNewItemSpec["scheduler-type"] = "interval"
+					## (Hours:Minutes:Seconds)
+					$hshNewItemSpec["time"] = $("{0}:{1}:{2}" -f [System.Math]::Floor($Interval.TotalHours), $Interval.Minutes, $Interval.Seconds)
+					break
+				} ## end case
+			{"ByExplicitSchedule_SpecifySnapNum", "ByExplicitSchedule_SpecifySnapAge" -contains $_} {
+					$hshNewItemSpec["scheduler-type"] = "explicit"
+					## (NumberOfDayOfTheWeek:Hour:Minute), with 0-7 for NumberOfDayOfTheWeek, and 0 meaning "everyday"
+					$intNumberOfDayOfTheWeek = if ($ExplicitDay -eq "Everyday") {0}
+						## else, get the value__ for this name in the DayOfWeek enum, and add one (DayOfWeek is zero-based index, this XIO construct is 1-based for day names, with "0" being used as "everyday")
+						else {([System.Enum]::GetValues([System.DayOfWeek]) | Where-Object {$_.ToString() -eq $ExplicitDay}).value__ + 1}
+					$hshNewItemSpec["time"] = $("{0}:{1}:{2}" -f $intNumberOfDayOfTheWeek, $ExplicitTimeOfDay.Hour, $ExplicitTimeOfDay.Minute)
+				} ## end case
+		} ## end switch
+		## if Suffix was specified, add it to the config spec
+		if ($PSBoundParameters.ContainsKey("Suffix")) {$hshNewItemSpec["suffix"] = $Suffix}
+
+		## the params to use in calling the helper function to actually create the new object
+		$hshParamsForNewItem = @{
+			ComputerName = $ComputerName
+			ItemType_str = $strThisItemType
+			Name = "new no-name scheduler (XIO API does not yet support name for new scheduler)"
+			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
+		} ## end hashtable
+
+		## if the user specified a cluster to use, include that param
+		if ($PSBoundParameters.ContainsKey("Cluster")) {$hshParamsForNewItem["Cluster"] = $Cluster}
+		## set the XIOS REST API param to 2.0; the scheduler object type is only available in XIOS v4 and up (and, so, API v2 and newer)
+		$hshParamsForNewItem["XiosRestApiVersion"] = "2.0"
+
+		## call the function to actually make this new item
+		New-XIOItem @hshParamsForNewItem
 	} ## end process
 } ## end function

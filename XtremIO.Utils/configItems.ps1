@@ -49,4 +49,22 @@ $hshCfg = @{
 			VolumeIndex = "vol-index"
 		} ## end hsh
 	} ## end hsh
+	## mapping of PSModule types' names to the URI values expected for entity types for Tag objects
+	TagEntityTypeMapping = @{
+		BBU = "BatteryBackupUnit"
+		Brick = "X-Brick"
+		Cluster = "Cluster"
+		ConsistencyGroup = "ConsistencyGroup"
+		DAE = "DAE"
+		DataProtectionGroup = "DataProtectionGroup"
+		InfinibandSwitch = "InfinibandSwitch"
+		Initiator = "Initiator"
+		InitiatorGroup = "InitiatorGroup"
+		SSD = "SSD"
+		SnapshotScheduler = "Scheduler"
+		SnapshotSet = "SnapshotSet"
+		StorageController = "StorageController"
+		Target = "Target"
+		Volume = "Volume"
+	} ## end hash
 } ## end hashtable
