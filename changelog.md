@@ -1,6 +1,15 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.11.0
+20 Mar 2016
+
+This release brings four (4) new cmdlets for creating XtremIO configuration items.  Additionally, there is now support for the `OperatingSystem` property of `Initiator` objects.  The list:
+
+- \[new] New cmdlets: `New-XIOConsistencyGroup`, `New-XIOSnapshotScheduler`, `New-XIOTag`, and `New-XIOUserAccount`
+- \[improvement] the `New-XIOInitiator` cmdlet now provides the `-OperatingSystem` parameter for specifying the OS type of the host whose HBA is involved with the new `Initiator` object, and `Initiator` objects now have the `OperatingSystem` property
+- \[improvement] Better reporting for when a web exception does happen, for easier issue identification/troubleshooting (mostly useful/applicable during development and API exploration)
+
 ### v0.10.0
 08 Mar 2016
 
