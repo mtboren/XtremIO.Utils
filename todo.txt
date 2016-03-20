@@ -230,71 +230,7 @@ todo:
 
 doing:
 
-done for version 0.next (after v0.10.0):
-[feat_NewNewCmdlets]
--add other New-XIO* cmdlets:
-	done:
-	need to add the "useApiV2" stuff for these, as they will need to use at least the v2 API URI
-	New-XIOConsistencyGroup:
-		[string]cluster-id
-		[parameter(Mandatory=$true)]consistency-group-name
-		## XtremIO Volume or Snapshot from which to create new snapshot. Accepts either Volume/Snapshot names or objects
-		[parameter(ParameterSetName="ByVolume")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Volume])})][PSObject[]]$Volume   ("vol-list" for JSON)
-		## XtremIO Tag whose volumes/snapshots from which to create new snapshot. Accepts either Tag names or objects. These should be Tags for Volume object types, of course.
-		[parameter(ParameterSetName="ByTag")][ValidateScript({_Test-TypeOrString $_ -Type ([XioItemInfo.Tag])})][PSObject[]]$Tag   ("tag-list" for JSON, must be array value, even if just one value in it)
-	New-XIOTag:
-		tag entity type can be:
-			for URI:  BatteryBackupUnit, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, Scheduler, SnapshotSet, SSD, StorageController, Target, Volume, X-Brick
-			(type names in this PSModule:  BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SSD, SnapshotScheduler, SnapshotSet, StorageController, Target, Volume)
-			-made a new enum for these
-		made a config hshtable to correlate these
-		added check in New-XIOItem that XMS API has the given object type (only attempt to create new object if this API version _does_ have the given type)
-	New-XIOUserAccount:
-		## User role.  One of 'read_only', 'admin', 'configuration', or 'technician' per the documentation, but to succeed in adding a user with "technician", seems that you may need to auth _as_ a technician first (as administrator does not succeed)
-		[parameter(Mandatory=$true)]role ('read_only', 'admin', 'configuration', 'technician')
-		[parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")]credential (which populates "usr-name" and "password" items)
-		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")]usr-name
-		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")]public-key
-		## Inactivity timeout in minutes
-		[int]inactivity-timeout
-	New-XIOSnapshotScheduler:
-		[string]cluster-id
-		## Scheduler's time. Can be intervaled [h:m:s] or an explicit time [d:h:m]
-		[parameter(Mandatory=$true)]schedule
-		## Schedule is specified explicitly or by intervals; 'interval' or 'explicit'
-		[parameter(Mandatory=$true)]scheduler-type
-		## Snapped Object ID
-		[parameter(Mandatory=$true)]snapshot-object-id
-		## Volume, Snapshot Set, ConsistencyGroup
-		[parameter(Mandatory=$true)]snapshot-object-type
-		## Number of Snapshots to be saved
-		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapNum")]snapshots-to-keep-number
-		## The time period, in minutes, for which a Snapshot should be saved. When the defined time has passed the cluster automatically removes the Snapshot.
-		#    The minimum value is 1 minute
-		#    The maximum value is 2628000 minutes (5 years)
-		[parameter(Mandatory=$true,ParameterSetName="SpecifySnapAge")][System.TimeSpan]snapshots-to-keep-time
-		## Scheduler enable state; 'enabled' or 'user-disabled'
-		enabled-state
-		## Write (default) or Read
-		snapshot-type
-		## Text adjoined to the scheduler's stem name
-		suffix
-
-		tested:
-			cmdlet at all
-			that interval and explicit schedules turn out as expected/desired
-			that all values for $strSnapshotSourceObjectTypeAPIValue are legit (Volume, SnapSet, ConsistencyGroup)
-			that "user_disabled" is correct value for "enabled-state"
-			that -Cluster works as desired
-			that no -Enabled param creates new sched that is enabled
-			what happens if providing multiple values in -RelatedObject?  A:  As expected/desired, API errors, as it does not accept array of object names
-			that -SnapshotRetentionCount with some high number (that would cause longer than 5 years' retention) just gets "ceiling'd" by XIO
-		enabled better web exception reporting for easier issue identification/troubleshooting
-[feat_ImproveNewXIOInitiator]
--New-XIOInitiator:  added support for specifying "Operating System" value for initiator (ESX, Windows, Other, etc); available in XIOS v4
-	-values are Linux, Windows, ESX, Solaris, AIX, HP-UX, Other (values for API are: linux, windows, esx, solaris, aix, hpux, other)
--updated XioItemInfo.Initiator object to have OperatingSystem property (as available in API v2)
--updated table view of initiator to include ConnectionState, OperatingSystem
+done for version 0.next (after v0.11.0):
 
 ## things below here are in changelog/readme
 
