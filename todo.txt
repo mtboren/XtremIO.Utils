@@ -229,12 +229,6 @@ todo:
 
 
 doing:
-[feat_ImproveNewXIOInitiator]
--New-XIOInitiator:  added support for specifying "Operating System" value for initiator (ESX, Windows, Other, etc); available in XIOS v4
-	-values are Linux, Windows, ESX, Solaris, AIX, HP-UX, Other (values for API are: linux, windows, esx, solaris, aix, hpux, other)
--updated XioItemInfo.Initiator object to have OperatingSystem property (as available in API v2)
--updated table view of initiator to include ConnectionState, OperatingSystem
-
 
 done for version 0.next (after v0.10.0):
 [feat_NewNewCmdlets]
@@ -296,6 +290,11 @@ done for version 0.next (after v0.10.0):
 			what happens if providing multiple values in -RelatedObject?  A:  As expected/desired, API errors, as it does not accept array of object names
 			that -SnapshotRetentionCount with some high number (that would cause longer than 5 years' retention) just gets "ceiling'd" by XIO
 		enabled better web exception reporting for easier issue identification/troubleshooting
+[feat_ImproveNewXIOInitiator]
+-New-XIOInitiator:  added support for specifying "Operating System" value for initiator (ESX, Windows, Other, etc); available in XIOS v4
+	-values are Linux, Windows, ESX, Solaris, AIX, HP-UX, Other (values for API are: linux, windows, esx, solaris, aix, hpux, other)
+-updated XioItemInfo.Initiator object to have OperatingSystem property (as available in API v2)
+-updated table view of initiator to include ConnectionState, OperatingSystem
 
 ## things below here are in changelog/readme
 
