@@ -43,7 +43,12 @@ namespace XioItemInfo {
 		public Object[] BrickId;
 		public Boolean BypassActive;
 		public Boolean ConnectedToSC;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public Boolean Enabled;
 		public String FWVersionError;
@@ -66,6 +71,8 @@ namespace XioItemInfo {
 		public Object TagList;
 		public String UPSAlarm;
 		public Boolean UPSOverloaded;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 
 		// Implicit constructor
@@ -76,17 +83,20 @@ namespace XioItemInfo {
 	public class Brick : InfoBase {
 		public Object[] BrickId;
 		public string BrickGuid;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public string ClusterName;
 		public Object[] DataProtectionGroup;
-		// Storage Controller info -- deprecated
+		// Storage Controller info -- deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'StorageController' instead", false)]
 		public Object[] NodeList { get; set; }
-		// Num Storage Controller -- deprecated
+		// Num Storage Controller -- deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumStorageController' instead", false)]
 		public Int32 NumNode { get; set; }
 		public Int32 NumSSD;
 		public Int32 NumStorageController;
-		// Data Protection Group info -- deprecated
+		// Data Protection Group info -- deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGroup' instead", false)]
 		public Object[] RGrpId;
 		// array of SSD Slot info items
@@ -100,51 +110,53 @@ namespace XioItemInfo {
 
 	public class Cluster : InfoBase {
 		public Object[] Brick;
-		// Brick list info -- deprecated
+		// Brick list info -- deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickList;
 		public String ClusterId;
-		public Decimal CompressionFactor;
+		public System.Nullable<Decimal> CompressionFactor;
 		public String CompressionMode;
 		public String ConsistencyState;
-		public Decimal DataReduction;
-		public Decimal DedupeRatio;
+		public System.Nullable<Decimal> DataReduction;
+		public System.Nullable<Decimal> DedupeRatio;
 		public String EncryptionMode;
-		public Boolean EncryptionSupported;
+		public System.Nullable<Boolean> EncryptionSupported;
 		public String FcPortSpeed;
 		public String FreespaceLevel;
-		public Double FreeSSDTB;
+		public System.Nullable<Double> FreeSSDTB;
 		public Object InfinibandSwitch;
-		// InfinibandSwitch list info -- deprecated
+		// InfinibandSwitch list info -- deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'InfinibandSwitch' instead", false)]
 		public Object InfiniBandSwitchList;
-		public Int64 IOPS;
+		public System.Nullable<Int64> IOPS;
 		public String LicenseId;
 		public String NaaSysId;
-		public Int32 NumBrick;
-		public Int32 NumInfiniBandSwitch;
-		public Int32 NumSSD;
-		public Int32 NumVol;
-		public Int32 NumXenv;
+		public System.Nullable<Int32> NumBrick;
+		public System.Nullable<Int32> NumInfiniBandSwitch;
+		public System.Nullable<Int32> NumSSD;
+		public System.Nullable<Int32> NumVol;
+		public System.Nullable<Int32> NumXenv;
 		public String OverallEfficiency;
 		public Object PerformanceInfo;
 		public String SharedMemEfficiencyLevel;
 		public String SharedMemInUseRatioLevel;
 		public String SizeAndCapacity;
 		public String SWVersion;
-		public DateTime SystemActivationDateTime;
-		public Int32 SystemActivationTimestamp;
+		public System.Nullable<DateTime> SystemActivationDateTime;
+		public System.Nullable<Int32> SystemActivationTimestamp;
 		public String SystemSN;
 		public String SystemState;
 		public String SystemStopType;
-		public Decimal ThinProvSavingsPct;
-		public Double TotProvTB;
-		public Double TotSSDTB;
-		public Double UsedLogicalTB;
-		public Double UsedSSDTB;
+		public System.Nullable<Decimal> ThinProvSavingsPct;
+		public System.Nullable<Double> TotProvTB;
+		public System.Nullable<Double> TotSSDTB;
+		public System.Nullable<Double> UsedLogicalTB;
+		public System.Nullable<Double> UsedSSDTB;
 
 		// Implicit constructor
 		public Cluster() {}
+
+		public override string ToString() {return Name;}
 	}
 
 	// ClusterPerformance (inherits from class PerformanceTotal)
@@ -153,12 +165,19 @@ namespace XioItemInfo {
 	// ConsistencyGroup (inherits from InfoBase)
 	public class ConsistencyGroup : InfoBase {
 		public String Certainty;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public String ConsistencyGrpId;
 		public String ConsistencyGrpShortId;
 		public String CreatedByApp;
 		public Int32 NumVol;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 		public Object TagList;
 		public Object VolList;
@@ -170,13 +189,20 @@ namespace XioItemInfo {
 	// XIO DAE (Disk Array Enclosure) (inherits from class HardwareBase)
 	public class DAE : HardwareBase {
 		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public String DAEId;
 		public Int32 NumDAEController;
 		public Int32 NumDAEPSU;
 		public String ReplacementReason;
 		public Object TagList;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 
 		// Implicit constructor
@@ -186,6 +212,7 @@ namespace XioItemInfo {
 	// XIO DAE (Disk Array Enclosure) PSU (inherits from class HardwareBase)
 	public class DAEPsu : HardwareBase {
 		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
 		public Object[] DAE;
 		public String DAEPSUId;
 		public Boolean Enabled;
@@ -196,6 +223,8 @@ namespace XioItemInfo {
 		public String PowerFailure;
 		public String PowerFeed;
 		public String ReplacementReason;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 
 		// Implicit constructor
@@ -206,7 +235,12 @@ namespace XioItemInfo {
 	public class DAEController : HardwareBase {
 		public Object[] BrickId;
 		public String ConnectivityState;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public String DAEId;
 		public String DAEControllerId;
@@ -218,6 +252,8 @@ namespace XioItemInfo {
 		public String Location;
 		public String ReplacementReason;
 		public Object[] SAS;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 
 		// Implicit constructor
@@ -227,14 +263,17 @@ namespace XioItemInfo {
 	public class DataProtectionGroup : InfoBase {
 		public Int32 AvailableRebuild;
 		public Object Brick;
-		// Brick info -- deprecated
+		// Brick info -- deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Int32 BrickIndex;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public String BrickName;
-		public Object Cluster;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Int32 ClusterIndex;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public String DataProtectionGrpId;
@@ -247,6 +286,7 @@ namespace XioItemInfo {
 		public Boolean RebuildInProg;
 		public String RebuildPreventionReason;
 		public Int32 RebuildProgress;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGrpId' instead", false)]
 		public Object[] RGrpId;
 		public Boolean SSDPrepInProg;
@@ -376,6 +416,7 @@ namespace XioItemInfo {
 	public class IgFolderPerformance : PerformanceTotal {}
 
 	public class Initiator : InfoBase {
+		public XioItemInfo.Cluster Cluster;
 		public String ConnectionState;
 		public String InitiatorGrpId;
 		public Object InitiatorGroup;
@@ -391,6 +432,7 @@ namespace XioItemInfo {
 	}
 
 	public class InitiatorGroup : InfoBase {
+		public XioItemInfo.Cluster Cluster;
 		public String InitiatorGrpId;
 		public Int64 IOPS;
 		public Int32 NumInitiator;
@@ -428,7 +470,12 @@ namespace XioItemInfo {
 	// XIO LocalDisk in StorageControllers (inherits from class HardwareBase)
 	public class LocalDisk : HardwareBase {
 		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public Boolean Enabled;
 		public String EncryptionStatus;
@@ -442,6 +489,8 @@ namespace XioItemInfo {
 		public Int32 SlotNum;
 		public String StorageControllerId;
 		public String StorageControllerName;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 		public Object TagList;
 		public String Type;
@@ -452,12 +501,15 @@ namespace XioItemInfo {
 	}
 
 	public class LunMap : InfoBase {
+		public XioItemInfo.Cluster Cluster;
 		public String InitiatorGroup;
 		public System.Nullable<Int32> InitiatorGrpIndex;
 		public System.Nullable<Int32> LunId;
 		public String LunMapId;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapId' instead", false)]
 		public Object[] MappingId;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Index' instead", false)]
 		public System.Nullable<Int32> MappingIndex;
 		public System.Nullable<Int32> TargetGrpIndex;
@@ -536,7 +588,12 @@ namespace XioItemInfo {
 
 	// SnapshotSet (inherits from InfoBase)
 	public class SnapshotSet : InfoBase {
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public String ConsistencyGrpId;
 		public String ConsistencyGrpName;
@@ -544,6 +601,8 @@ namespace XioItemInfo {
 		public Int32 NumVol;
 		public String SnapshotSetId;
 		public String SnapshotSetShortId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 		public Object TagList;
 		public Object[] VolList;
@@ -571,6 +630,7 @@ namespace XioItemInfo {
 	// Slot (inherits from class InfoBase)
 	public class Slot : InfoBase {
 		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
 		public String ErrorReason;
 		public String FailureReason;
 		public String SsdModel;
@@ -579,6 +639,8 @@ namespace XioItemInfo {
 		public Double SsdSizeGB;
 		public String SsdUid;
 		public String State;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 
 		// Implicit constructor
@@ -589,22 +651,27 @@ namespace XioItemInfo {
 	public class Ssd : HardwareBase {
 		public Object[] BrickId;
 		public Double CapacityGB;
+		public XioItemInfo.Cluster Cluster;
 		public Object DataProtectionGroup;
 		public String DiagHealthState;
 		public Boolean Enabled;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
 		public String EnabledState;
 		public String EncryptionStatus;
 		public String FWVersionError;
 		public String HealthState;
 		public Int64 IOPS;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Model' instead", false)]
 		public String ModelName;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Severity' instead", false)]
 		public String ObjSeverity;
 		public Int32 PctEnduranceLeft;
 		public String PctEnduranceLeftLvl;
 		public Object PerformanceInfo;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGroup' instead", false)]
 		public Object[] RGrpId;
 		public Int32 SlotNum;
@@ -616,6 +683,8 @@ namespace XioItemInfo {
 		public String SsdRGrpState;
 		public String SsdUid;
 		public String SwapLED;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 		public Double UsedGB;
 		public Double UsefulGB;
@@ -628,12 +697,14 @@ namespace XioItemInfo {
 	public class SsdPerformance : PerformanceBase {}
 
 	public class StorageController : HardwareBase {
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'FWVersion' instead", false)]
 		public String BiosFWVersion;
 		public String BrickName;
-		public String Cluster;
+		public XioItemInfo.Cluster Cluster;
 		public Object DataProtectionGroup;
 		public Boolean Enabled;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
 		public String EnabledState;
 		public String EncryptionMode;
@@ -669,6 +740,7 @@ namespace XioItemInfo {
 	// XIO StorageControllerPsu
 	public class StorageControllerPsu : InfoBase {
 		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
 		public Boolean Enabled;
 		public String FWVersionError;
 		public String HWRevision;
@@ -684,6 +756,8 @@ namespace XioItemInfo {
 		public String StatusLED;
 		public Object[] StorageController;
 		public String StorageControllerPSUId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 
 		// Implicit constructor
@@ -722,8 +796,10 @@ namespace XioItemInfo {
 	// Target (iSCSI/FC target)
 	public class Target : InfoBase {
 		public Object Brick;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
 		public String DriverVersion;
 		public String ErrorReason;
 		public Object FCIssue;
@@ -739,6 +815,7 @@ namespace XioItemInfo {
 		public String PortType;
 		public Object StorageController;
 		public Object TargetGroup;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'TargetGroup' instead", false)]
 		public Object[] TargetGrpId;
 		public String TargetId;
@@ -748,7 +825,12 @@ namespace XioItemInfo {
 	}
 
 	public class TargetGroup : InfoBase {
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 		public String TargetGrpId;
 
@@ -773,6 +855,7 @@ namespace XioItemInfo {
 	public class Volume : InfoBase {
 		public System.Nullable<Int32> AlignmentOffset;
 		public Object AncestorVolId;
+		public XioItemInfo.Cluster Cluster;
 		public String Compressible;
 		public System.Nullable<DateTime> CreationTime;
 		public Object DestSnapList;
@@ -782,11 +865,13 @@ namespace XioItemInfo {
 		public System.Nullable<Int32> LBSize;
 		public String LuName;
 		public Object LunMapList;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'LunMapList' instead", false)]
 		public Object LunMappingList;
 		public String NaaName;
 		public System.Nullable<Int32> NumDestSnap;
 		public System.Nullable<Int32> NumLunMap;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumLunMap' instead", false)]
 		public System.Nullable<Int32> NumLunMapping;
 		public Object PerformanceInfo;
@@ -795,6 +880,8 @@ namespace XioItemInfo {
 		public String SmallIORatioLevel;
 		public Object SnapGrpId;
 		public String SnapshotType;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 		public Object TagList;
 		public String UnalignedIOAlertsCfg;
@@ -838,9 +925,12 @@ namespace XioItemInfo {
 
 	public class XEnv : InfoBase {
 		public Object Brick;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
 		public Int32 CPUUsage;
+		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumModule' instead", false)]
 		public Int32 NumMdl;
 		public Int32 NumModule;

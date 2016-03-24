@@ -47,7 +47,7 @@ todo:
 	Get-XIODAEController | Get-XIODAE
 	Get-XIODAEPsu | Get-XIODAE
 	Get-XIOBBU | Get-XIOStorageController
-	Get-XIO<BBU,DAE,DAEController> | Get-XIOCluster (since they have ClusterId property)
+	Get-XIO<BBU,DAE,DAEController> | Get-XIOCluster (since they have Cluster kind of property)
 	Get-XIOStorageController | Get-XIOLocalDisk
 	Get-XIOLocalDisk | Get-XIOStorageController
 	Get-XIOSlot | Get-XIOSsd
@@ -216,7 +216,6 @@ todo:
 -?add "small" and "unaligned" performance items, too? (available in xmcli)
 -?add Get-XIOParentVolume / Get-XIOParentSnapshot
 	-or, implement this via something like -RelatedObject param on Get-XIOVolume?
--?add ClusterId or Cluster type of property to output objects, useful for multi-cluster XMS situations
 -?replace usage of singular item type string (essentially used for output type name creation; make config hsh table of plural item type string -> XIOItemInfo output object type)
 	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
 	-have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
@@ -231,36 +230,39 @@ todo:
 
 doing:
 [feat_AddClusterProperty]
--add Cluster properties to (still need to verify that things being deprecated are not used elsewhere in the module):
-	BBU:				add Cluster, deprecate (ClusterId, ClusterName, SysId)
-	Brick:				add Cluster, leave ClusterName
-	ConsistencyGroup: 	add Cluster, deprecate (ClusterId, SysId), leave ClusterName
-	DAE:  				add Cluster, deprecate (ClusterId, SysId), leave ClusterName
-	DAEController:  	add Cluster, deprecate (ClusterId, SysId) leave ClusterName
-	DAEPsu:				add Cluster, deprecate SysId
-	DataProtectionGroup:  already has Cluster; deprecate (ClusterIndex, ClusterName)
-	DataProtectionGroupPerformance:  no change (leave Cluster off?)
-	Initiator:			add Cluster
-	InitiatorGroup:		add Cluster
-	InitiatorGroupPerformance:  no change (leave Cluster off)
-	InitiatorPerformance:  no change (leave Cluster off)
-	LocalDisk:			add Cluster, deprecate (ClusterId, ClusterName, SysId)
-	LunMap:				add Cluster
-	Slot:				add Cluster, deprecate SysId
-	Snapshot:			add Cluster, deprecate SysId
-	SnapshotSet:		add Cluster, deprecate (ClusterId, ClusterName, SysId)
-	Ssd:				add Cluster, deprecate SysId
-	SsdPerformance:		no change (leave Cluster off)
-	StorageController:	add ClusterName, change Cluster to be obj instead of string
-	StorageControllerPsu:	add Cluster, deprecate SysId
-	Target:				add Cluster
-	TargetGroup:		add Cluster, deprecate SysId
-	TargetPerformance:	no change (leave Cluster off)
-	Volume:				add Cluster, deprecate SysId
-	VolumePerformance:	no change (leave Cluster off)
-	Xenv:				add Cluster
+-add Cluster properties (with value of XioItemInfo.Cluster objects) to following types:
+	done:
+		BBU:				add Cluster, deprecate (ClusterId, ClusterName, SysId), update format XML "ClusterName" ref
+		Brick:				add Cluster, deprecate ClusterName, update format XML "ClusterName" ref
+		ConsistencyGroup: 	add Cluster, deprecate (ClusterId, ClusterName, SysId), update format XML "ClusterName" ref
+		DAE:  				add Cluster, deprecate (ClusterId, ClusterName, SysId), update format XML "ClusterName" ref
+		DAEController:  	add Cluster, deprecate (ClusterId, ClusterName, SysId), update format XML "ClusterName" ref
+		DAEPsu:				add Cluster, deprecate SysId
+		DataProtectionGroup:  update Cluster to be an XioItemInfo.Cluster object; (ClusterIndex, ClusterName) already deprecated
+		DataProtectionGroupPerformance:  no change (leave Cluster off)
+		Initiator:			add Cluster
+		InitiatorGroup:		add Cluster
+		InitiatorGroupPerformance:  no change (leave Cluster off)
+		InitiatorPerformance:  no change (leave Cluster off)
+		LocalDisk:			add Cluster, deprecate (ClusterId, ClusterName, SysId)
+		LunMap:				add Cluster
+		SsdPerformance:		no change (leave Cluster off)
+		Slot:				add Cluster, deprecate SysId
+		Snapshot:			add Cluster, deprecate SysId
+		SnapshotSet:		add Cluster, deprecate (ClusterId, ClusterName, SysId)
+		Ssd:				add Cluster, deprecate SysId
+		StorageController:	change Cluster to be obj instead of string
+		StorageControllerPsu:	add Cluster, deprecate SysId
+		Target:				add Cluster
+		TargetGroup:		add Cluster, deprecate (ClusterName, SysId), update format XML "ClusterName" ref
+		TargetPerformance:	no change (leave Cluster off)
+		Volume:				add Cluster, deprecate SysId
+		VolumePerformance:	no change (leave Cluster off)
+		Xenv:				add Cluster
 	-this is also in prep for better pipelining, which will need to get Cluster info from pipeline object coming through
-
+-updated XioItemInfo.Cluster class to override .ToString() method so as to return cluster name instead of typename (for use in default table formats)
+-updated XioItemInfo.StorageController, DataProtectionGroup class .Cluster property to be a XioItemInfo.Cluster object instead of a string
+-updated Get-XioItemInfo to include "sys-id" anytime -Property is used, as that is used in populating the .Cluster property of objects with this property
 
 done for version 0.next (after v0.11.0):
 

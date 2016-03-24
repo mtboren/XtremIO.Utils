@@ -90,7 +90,7 @@
 				<TableHeaders>
 					<TableColumnHeader><Width>8</Width></TableColumnHeader>
 					<TableColumnHeader><Width>8</Width></TableColumnHeader>
-					<TableColumnHeader><Width>20</Width></TableColumnHeader>
+					<TableColumnHeader><Width>16</Width></TableColumnHeader>
 					<TableColumnHeader><Width>8</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 				</TableHeaders>
@@ -99,7 +99,7 @@
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Index</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumSSD</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>State</PropertyName></TableColumnItem>
 						</TableColumnItems>
@@ -136,7 +136,7 @@
 					<TableRowEntry>
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>CreatedByApp</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Certainty</PropertyName></TableColumnItem>
@@ -167,7 +167,7 @@
 							<TableColumnItem><PropertyName>LifecycleState</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>PartNumber</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -197,7 +197,7 @@
 							<TableColumnItem><PropertyName>Location</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>HWRevision</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>FWVersion</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -684,6 +684,14 @@
 			<Name>XioItem_initiator-groups</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.InitiatorGroup</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader><Width>7</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
@@ -692,6 +700,7 @@
 							<TableColumnItem><PropertyName>NumInitiator</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -789,7 +798,7 @@
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Index</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ClusterName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -855,6 +864,14 @@
 			<Name>XioItem_xenvs</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Xenv</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>12</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
@@ -863,6 +880,7 @@
 							<TableColumnItem><PropertyName>CPUUsage</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumModule</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>XEnvState</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
