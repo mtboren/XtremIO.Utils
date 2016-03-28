@@ -230,6 +230,8 @@ todo:
 
 
 doing:
+
+done for version 0.next (after v0.11.0):
 [feat_AddClusterProperty]
 -add Cluster properties (with value of XioItemInfo.Cluster objects) to following types:
 	done:
@@ -264,8 +266,6 @@ doing:
 -updated XioItemInfo.Cluster class to override .ToString() method so as to return cluster name instead of typename (for use in default table formats)
 -updated XioItemInfo.StorageController, DataProtectionGroup class .Cluster property to be a XioItemInfo.Cluster object instead of a string
 -updated Get-XioItemInfo to include "sys-id" anytime -Property is used, as that is used in populating the .Cluster property of objects with this property
-
-done for version 0.next (after v0.11.0):
 
 ## things below here are in changelog/readme
 
