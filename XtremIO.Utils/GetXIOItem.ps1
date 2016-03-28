@@ -171,13 +171,13 @@ function Get-XIOItemInfo {
 								## if -Property was specified, add &prop=<propName0>&prop=<propName1>... to the REST command
 								if ($PSBoundParameters.ContainsKey("Property")) {
 									$arrNamesOfPropertiesToGet = `
-										## if there is a "mapping" config hashtable that holds PSObjectPropertyName -> APIObjectPropertyName info, get the API property names
+										## if there is a "mapping" config hashtable that holds PSObjectPropertyName -> APIObjectPropertyName info, get the API property names; include sys-id by default, so that Cluster property (of objects that have it) can always be property populated
 										if ($hshCfg["TypePropMapping"].ContainsKey($strItemType_plural)) {
 											## if "friendly" property names were passed, get the corresponding XIO API property names to use in the request
-											$Property | Where-Object {$null -ne $_} | Foreach-Object {if ($hshCfg["TypePropMapping"][$strItemType_plural].ContainsKey($_)) {$hshCfg["TypePropMapping"][$strItemType_plural][$_]} else {$_}}
+											@($Property) + "sys-id" | Where-Object {$null -ne $_} | Foreach-Object {if ($hshCfg["TypePropMapping"][$strItemType_plural].ContainsKey($_)) {$hshCfg["TypePropMapping"][$strItemType_plural][$_]} else {$_}}
 										} ## end if
 										## else, just use the property names as passed in
-										else {$Property | Where-Object {$null -ne $_}}
+										else {@($Property) + "sys-id" | Where-Object {$null -ne $_}}
 									$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += ("&{0}" -f (($arrNamesOfPropertiesToGet | Foreach-Object {"prop=$_"}) -join "&"))
 								} ## end if
 								## get an object from the API that holds the full view of the given object types, and that has properties <objectsType> and "Links"
