@@ -222,6 +222,7 @@ todo:
 		-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 		-need to update all places that specify API types as singular to use real API type name
 -?add object definitions of sub-property objects?  Could slow things down (like Get-VM does vs. Get-View in PowerCLI)
+-?for when rev'ing minimum API support level to API v2.0, remove the conditional Cluster property population code (as needed .sys-id property should be present on everything at that point); affected object types:  Initiator, InitiatorGroup, LunMap, Target,
 
 
 
@@ -240,12 +241,12 @@ doing:
 		DAEPsu:				add Cluster, deprecate SysId
 		DataProtectionGroup:  update Cluster to be an XioItemInfo.Cluster object; (ClusterIndex, ClusterName) already deprecated
 		DataProtectionGroupPerformance:  no change (leave Cluster off)
-		Initiator:			add Cluster
-		InitiatorGroup:		add Cluster
+		Initiator:			add Cluster (conditionally, for backwards compatibility with XIOS v2.*, which does not provide a .sys-id property)
+		InitiatorGroup:		add Cluster (conditionally, for backwards compatibility with XIOS v2.*, which does not provide a .sys-id property)
 		InitiatorGroupPerformance:  no change (leave Cluster off)
 		InitiatorPerformance:  no change (leave Cluster off)
 		LocalDisk:			add Cluster, deprecate (ClusterId, ClusterName, SysId)
-		LunMap:				add Cluster
+		LunMap:				add Cluster (conditionally, for backwards compatibility with XIOS v2.*, which does not provide a .sys-id property)
 		SsdPerformance:		no change (leave Cluster off)
 		Slot:				add Cluster, deprecate SysId
 		Snapshot:			add Cluster, deprecate SysId
@@ -253,7 +254,7 @@ doing:
 		Ssd:				add Cluster, deprecate SysId
 		StorageController:	change Cluster to be obj instead of string
 		StorageControllerPsu:	add Cluster, deprecate SysId
-		Target:				add Cluster
+		Target:				add Cluster (conditionally, for backwards compatibility with XIOS v2.*, which does not provide a .sys-id property)
 		TargetGroup:		add Cluster, deprecate (ClusterName, SysId), update format XML "ClusterName" ref
 		TargetPerformance:	no change (leave Cluster off)
 		Volume:				add Cluster, deprecate SysId

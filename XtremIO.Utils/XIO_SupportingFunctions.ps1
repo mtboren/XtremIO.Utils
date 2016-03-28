@@ -674,7 +674,8 @@ function _New-Object_fromItemTypeAndContent {
 		$hshPropertyForNewObj = Switch ($argItemType) {
 			"initiator-groups" {
 				[ordered]@{
-					Cluster = & $sblkNewXioiteminfoClusterObj
+					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
+					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
 					Name = $oContent.Name
 					Guid = $oContent.guid
 					Index = $oContent.index
@@ -728,7 +729,8 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"initiators" {
 				[ordered]@{
-					Cluster = & $sblkNewXioiteminfoClusterObj
+					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
+					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
 					Name = $oContent.Name
 					PortAddress = $oContent."port-address"
 					IOPS = [int64]$oContent.iops
@@ -1081,7 +1083,8 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"lun-maps" {
 				[ordered]@{
-					Cluster = & $sblkNewXioiteminfoClusterObj
+					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
+					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
 					VolumeName = $oContent."vol-name"
 					LunId = $oContent.lun
 					LunMapId = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[0]})
@@ -1258,7 +1261,8 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"targets" {
 				[ordered]@{
-					Cluster = & $sblkNewXioiteminfoClusterObj
+					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
+					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
 					Name = $oContent.name
 					PortAddress = $oContent."port-address"
 					PortMacAddress = ($oContent."port-mac-addr" -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"

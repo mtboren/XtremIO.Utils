@@ -690,7 +690,6 @@
 					<TableColumnHeader><Width>14</Width></TableColumnHeader>
 					<TableColumnHeader><Width>8</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
 				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
@@ -700,7 +699,6 @@
 							<TableColumnItem><PropertyName>NumInitiator</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
