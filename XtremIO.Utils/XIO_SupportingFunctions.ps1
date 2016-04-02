@@ -676,12 +676,13 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
 					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
-					Name = $oContent.Name
 					Guid = $oContent.guid
 					Index = $oContent.index
+					InitiatorGrpId = $oContent."ig-id"[0]
+					IOPS = [int64]$oContent.iops
+					Name = $oContent.Name
 					NumInitiator = $oContent."num-of-initiators"
 					NumVol = $oContent."num-of-vols"
-					IOPS = [int64]$oContent.iops
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							BandwidthMB = $oContent.bw / 1KB
@@ -722,8 +723,8 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
-					InitiatorGrpId = $oContent."ig-id"[0]
 					Severity = $oContent."obj-severity"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -731,17 +732,15 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
 					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
-					Name = $oContent.Name
-					PortAddress = $oContent."port-address"
-					IOPS = [int64]$oContent.iops
-					Index = $oContent.index
 					ConnectionState = $oContent."initiator-conn-state"
 					Guid = $oContent.guid
+					Index = $oContent.index
 					InitiatorGrpId = $oContent."ig-id"[0]
 					InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$oContent."ig-id")
 					InitiatorId = $oContent."initiator-id"[0]
+					IOPS = [int64]$oContent.iops
+					Name = $oContent.Name
 					OperatingSystem = $oContent."operating-system"
-					PortType = $oContent."port-type"
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							BandwidthMB = $oContent.bw / 1KB
@@ -782,31 +781,35 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					PortAddress = $oContent."port-address"
+					PortType = $oContent."port-type"
 					Severity = $oContent."obj-severity"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"bricks" {
 				[ordered]@{
-					Name = $oContent."brick-id".Item(1)
-					Index = $oContent."index-in-system"
+					BrickGuid = $oContent."brick-guid"
+					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterName = $oContent."sys-id".Item(1)
-					State = $oContent."brick-state"
-					NumSSD = $oContent."num-of-ssds"
-					## deprecated; replacing with NumStorageController
-					NumNode = $oContent."num-of-nodes"
-					NumStorageController = $oContent."num-of-nodes"
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
+					Guid = $oContent."brick-id"[0]
+					Index = $oContent."index-in-system"
+					Name = $oContent."brick-id".Item(1)
 					## deprecated; replacing with StorageController
 					NodeList = $oContent."node-list"
-					BrickGuid = $oContent."brick-guid"
-					Guid = $oContent."brick-id"[0]
-					BrickId = $oContent."brick-id"
-					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
+					## deprecated; replacing with NumStorageController
+					NumNode = $oContent."num-of-nodes"
+					NumSSD = $oContent."num-of-ssds"
+					NumStorageController = $oContent."num-of-nodes"
 					RGrpId = $oContent."rg-id"
-					SsdSlotInfo = $oContent."ssd-slot-array"
 					Severity = $oContent."obj-severity"
+					SsdSlotInfo = $oContent."ssd-slot-array"
+					State = $oContent."brick-state"
 					StorageController =  _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray $oContent."node-list"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -815,44 +818,39 @@ function _New-Object_fromItemTypeAndContent {
 				#   check if "compression-factor" property exists; if so, this is at least API v3, and has the switched-up value for dedup-ratio
 				$dblDedupeRatio = $(if ($null -ne $oContent."dedup-ratio") {if ($null -eq $oContent."compression-factor") {1/$oContent."dedup-ratio"} else {$oContent."dedup-ratio"}})
 				[ordered]@{
-					Name = $oContent.Name
-					TotSSDTB = $oContent."ud-ssd-space" / 1GB
-					UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
-					## older API version has "free-ud-ssd-space", whereas newer API version does not (as of 2.2.3 rel 25); so, using different math if the given property does not exist
-					FreeSSDTB = $(if (Get-Member -Input $oContent -Name "free-ud-ssd-space") {$oContent."free-ud-ssd-space" / 1GB} else {($oContent."ud-ssd-space" - $oContent."ud-ssd-space-in-use") / 1GB})
-					FreespaceLevel = $oContent."free-ud-ssd-space-level"
-					UsedLogicalTB = $oContent."logical-space-in-use" / 1GB
-					TotProvTB = $oContent."vol-size" / 1GB
-					OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
-					DedupeRatio = $dblDedupeRatio
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray $oContent."brick-list"
+					BrickList = $oContent."brick-list"
 					ClusterId = $oContent."sys-id"[0]
 					## available in 3.0 and up
 					CompressionFactor = $(if ($null -ne $oContent."compression-factor") {$oContent."compression-factor"})
 					## available in 3.0 and up
 					CompressionMode = $(if ($null -ne $oContent."compression-mode") {$oContent."compression-mode"})
+					ConsistencyState = $oContent."consistency-state"
 					## available in 3.x, but went away in v4.0.0-54 (beta) and v4.0.1-7; if not present on this object (due to say, older or newer XIOS/API version on this appliance), the data reduction rate _is_ either the dedupe ratio or the dedupe ratio * compression factor, if compression factor is not $null
 					DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
-					ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
-					BrickList = $oContent."brick-list"
-					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray $oContent."brick-list"
-					InfinibandSwitch = _New-ObjListFromProperty_byObjName -Name "Switch" -ObjectArray $oContent."ib-switch-list"
-					Index = [int]$oContent.index
-					ConsistencyState = $oContent."consistency-state"
+					DedupeRatio = $dblDedupeRatio
 					## available in 2.4.0 and up
 					EncryptionMode = $oContent."encryption-mode"
 					## available in 2.4.0 and up
 					EncryptionSupported = $oContent."encryption-supported"
 					FcPortSpeed = $oContent."fc-port-speed"
+					FreespaceLevel = $oContent."free-ud-ssd-space-level"
+					## older API version has "free-ud-ssd-space", whereas newer API version does not (as of 2.2.3 rel 25); so, using different math if the given property does not exist
+					FreeSSDTB = $(if (Get-Member -Input $oContent -Name "free-ud-ssd-space") {$oContent."free-ud-ssd-space" / 1GB} else {($oContent."ud-ssd-space" - $oContent."ud-ssd-space-in-use") / 1GB})
 					Guid = $oContent.guid
+					Index = [int]$oContent.index
+					InfinibandSwitch = _New-ObjListFromProperty_byObjName -Name "Switch" -ObjectArray $oContent."ib-switch-list"
 					InfiniBandSwitchList = $oContent."ib-switch-list"
 					IOPS = [int64]$oContent.iops
 					LicenseId = $oContent."license-id"
 					NaaSysId = $oContent."naa-sys-id"
+					Name = $oContent.Name
 					NumBrick = $oContent."num-of-bricks"
 					NumInfiniBandSwitch = $oContent."num-of-ib-switches"
 					NumSSD = $oContent."num-of-ssds"
 					NumVol = $oContent."num-of-vols"
 					NumXenv = $oContent."num-of-xenvs"
+					OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							## latency in microseconds (µs)
@@ -957,6 +955,12 @@ function _New-Object_fromItemTypeAndContent {
 					SystemSN = $oContent."sys-psnt-serial-number"
 					SystemState = $oContent."sys-state"
 					SystemStopType = $oContent."sys-stop-type"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
+					TotProvTB = $oContent."vol-size" / 1GB
+					TotSSDTB = $oContent."ud-ssd-space" / 1GB
+					UsedLogicalTB = $oContent."logical-space-in-use" / 1GB
+					UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -1107,19 +1111,29 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"ssds" {
 				[ordered]@{
-					Cluster = & $sblkNewXioiteminfoClusterObj
-					Name = $oContent.name
+					BrickId = $oContent."brick-id"
 					CapacityGB = $oContent."ssd-size-in-kb"/1MB
-					UsefulGB = $oContent."useful-ssd-space"/1MB
-					UsedGB = $oContent."ssd-space-in-use"/1MB
-					SlotNum = $oContent."slot-num"
-					ModelName = $oContent."model-name"
-					Model = $oContent."model-name"
-					SerialNumber = $oContent."serial-number"
+					Cluster = & $sblkNewXioiteminfoClusterObj
+					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
+					DiagHealthState = $oContent."diagnostic-health-state"
+					Enabled = ($oContent."enabled-state" -eq "enabled")
+					EnabledState = $oContent."enabled-state"
+					## available in 2.4.0 and up
+					EncryptionStatus = $oContent."encryption-status"
 					FWVersion = $oContent."fw-version"
-					PartNumber = $oContent."part-number"
+					FWVersionError = $oContent."fw-version-error"
+					Guid = $oContent.guid
+					HealthState = $oContent."health-state"
+					HWRevision = $oContent."hw-revision"
+					IdLED = $oContent."identify-led"
+					Index = $oContent."index"
+					IOPS = [int64]$oContent."iops"
 					LifecycleState = $oContent."fru-lifecycle-state"
-					SSDFailureReason = $oContent."ssd-failure-reason"
+					Model = $oContent."model-name"
+					ModelName = $oContent."model-name"
+					Name = $oContent.name
+					ObjSeverity = $oContent."obj-severity"
+					PartNumber = $oContent."part-number"
 					PctEnduranceLeft = $oContent."percent-endurance-remaining"
 					PctEnduranceLeftLvl = $oContent."percent-endurance-remaining-level"
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
@@ -1132,45 +1146,29 @@ function _New-Object_fromItemTypeAndContent {
 							WriteIOPS = [int]$oContent."wr-iops"
 						}) ## end New-Object
 					}) ## end New-Object
-					IOPS = [int64]$oContent."iops"
-					HealthState = $oContent."health-state"
-					ObjSeverity = $oContent."obj-severity"
-					Guid = $oContent.guid
+					RGrpId = $oContent."rg-id"
+					SerialNumber = $oContent."serial-number"
 					Severity = $oContent."obj-severity"
-					Index = $oContent."index"
-					FWVersionError = $oContent."fw-version-error"
-					Enabled = ($oContent."enabled-state" -eq "enabled")
-					EnabledState = $oContent."enabled-state"
-					## available in 2.4.0 and up
-					EncryptionStatus = $oContent."encryption-status"
-					IdLED = $oContent."identify-led"
-					StatusLED = $oContent."status-led"
-					SwapLED = $oContent."swap-led"
-					HWRevision = $oContent."hw-revision"
-					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
-					DiagHealthState = $oContent."diagnostic-health-state"
+					SlotNum = $oContent."slot-num"
+					SSDFailureReason = $oContent."ssd-failure-reason"
+					SsdId = $oContent."ssd-id"[0]
 					SSDLink1Health = $oContent."ssd-link1-health-state"
 					SSDLink2Health = $oContent."ssd-link2-health-state"
 					SSDPositionState = $oContent."ssd-position-state"
-					BrickId = $oContent."brick-id"
-					RGrpId = $oContent."rg-id"
 					SsdRGrpState = $oContent."ssd-rg-state"
-					SsdId = $oContent."ssd-id"[0]
 					SsdUid = $oContent."ssd-uid"
+					StatusLED = $oContent."status-led"
+					SwapLED = $oContent."swap-led"
 					SysId = $oContent."sys-id"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					UsedGB = $oContent."ssd-space-in-use"/1MB
+					UsefulGB = $oContent."useful-ssd-space"/1MB
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"storage-controllers" {
 				[ordered]@{
-					Name = $oContent.name
-					State = $oContent."backend-storage-controller-state"
-					MgrAddr = $oContent."node-mgr-addr"
-					IBAddr1 = $oContent."ib-addr1"
-					IBAddr2 = $oContent."ib-addr2"
-					IPMIAddr = $oContent."ipmi-addr"
 					BiosFWVersion = $oContent."bios-fw-version"
-					FWVersion = $oContent."bios-fw-version"
 					## hm, seems to be second item in the 'brick-id' property
 					BrickName = $oContent."brick-id".Item(1)
 					Cluster = & $sblkNewXioiteminfoClusterObj
@@ -1187,12 +1185,16 @@ function _New-Object_fromItemTypeAndContent {
 						HWRevision = $oContent."fc-hba-hw-revision"
 						Model = $oContent."fc-hba-model"
 					} ## end New-Object
+					FWVersion = $oContent."bios-fw-version"
 					Guid = $oContent.guid
 					HealthState = $oContent."node-health-state"
 					## no overall HWRevision property, but adding here so that can be a hardwarebase object
 					HWRevision = "n/a"
+					IBAddr1 = $oContent."ib-addr1"
+					IBAddr2 = $oContent."ib-addr2"
 					IdLED = $oContent."identify-led"
 					Index = $oContent.index
+					IPMIAddr = $oContent."ipmi-addr"
 					IPMIState = $oContent."ipmi-conn-state"
 					## available in 2.4.0 and up
 					JournalState = $oContent."journal-state"
@@ -1201,12 +1203,15 @@ function _New-Object_fromItemTypeAndContent {
 					MgmtPortSpeed = $oContent."mgmt-port-speed"
 					## available in 2.4.0 and up
 					MgmtPortState = $oContent."mgmt-port-state"
+					MgrAddr = $oContent."node-mgr-addr"
 					## no overall model property, but adding here so that can be a hardwarebase object
 					Model = $null
+					Name = $oContent.name
 					NodeMgrConnState = $oContent."node-mgr-conn-state"
 					NumSSD = $oContent."num-of-ssds"
 					NumSSDDown = $oContent."ssd-dn"
 					NumTargetDown = $oContent."targets-dn"
+					OSVersion = $oContent."os-version"
 					PartNumber = $oContent."part-number"
 					PCI = New-Object -Type PSObject -Property ([ordered]@{
 						"10geHba" = New-Object -Type PSObject -Property @{
@@ -1239,38 +1244,34 @@ function _New-Object_fromItemTypeAndContent {
 					SdrFWVersion = $oContent."sdr-fw-version"
 					SerialNumber = $oContent."serial-number"
 					Severity = $oContent."obj-severity"
+					State = $oContent."backend-storage-controller-state"
 					StatusLED = $oContent."status-led"
 					StorageControllerId = $oContent."node-id"[0]
 					SWVersion = $oContent."sw-version"
-					OSVersion = $oContent."os-version"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"target-groups" {
 				[ordered]@{
-					Name = $oContent.name
-					Index = $oContent.index
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterName = $oContent."sys-id"[1]
 					Guid = $oContent.guid
-					TargetGrpId = $oContent."tg-id"[0]
+					Index = $oContent.index
+					Name = $oContent.name
 					Severity = $oContent."obj-severity"
 					SysId = $oContent."sys-id"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					TargetGrpId = $oContent."tg-id"[0]
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"targets" {
 				[ordered]@{
-					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
-					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
-					Name = $oContent.name
-					PortAddress = $oContent."port-address"
-					PortMacAddress = ($oContent."port-mac-addr" -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
-					PortSpeed = $oContent."port-speed"
-					PortState = $oContent."port-state"
-					PortType = $oContent."port-type"
 					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
+					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
+					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
 					DriverVersion = $oContent."driver-version"  ## renamed from "driver-version"
 					ErrorReason = $oContent."tar-error-reason"
 					FCIssue = New-Object -Type PSObject -Property ([ordered]@{
@@ -1282,16 +1283,12 @@ function _New-Object_fromItemTypeAndContent {
 						PrimSeqProtErrCount = [int]$oContent."fc-prim-seq-prot-err-count"
 					}) ## end New-Object
 					FWVersion = $oContent."fw-version"  ## renamed from "fw-version"
-					Severity = $oContent."obj-severity"
-					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray (,$oContent."node-id")
-					TargetGroup = _New-ObjListFromProperty_byObjName -Name "TargetGroup" -ObjectArray (,$oContent."tg-id")
-					TargetGrpId = $oContent."tg-id"
-					TargetId = $oContent."tar-id"[0]
 					Guid = $oContent.guid
 					Index = $oContent.index
 					IOPS = [int64]$oContent.iops
 					JumboFrameEnabled = $oContent."jumbo-enabled"
 					MTU = $oContent.mtu
+					Name = $oContent.name
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							BandwidthMB = $oContent.bw / 1KB
@@ -1332,6 +1329,17 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
+					PortAddress = $oContent."port-address"
+					PortMacAddress = ($oContent."port-mac-addr" -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
+					PortSpeed = $oContent."port-speed"
+					PortState = $oContent."port-state"
+					PortType = $oContent."port-type"
+					Severity = $oContent."obj-severity"
+					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray (,$oContent."node-id")
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					TargetGroup = _New-ObjListFromProperty_byObjName -Name "TargetGroup" -ObjectArray (,$oContent."tg-id")
+					TargetGrpId = $oContent."tg-id"
+					TargetId = $oContent."tar-id"[0]
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -1503,17 +1511,18 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"xenvs" {
 				[ordered]@{
-					Name = $oContent.name
-					Guid = $oContent.guid
-					Index = $oContent.index
-					CPUUsage = $oContent."cpu-usage"
-					NumMdl = $oContent."num-of-mdls"
-					NumModule = $oContent."num-of-mdls"
 					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
+					CPUUsage = $oContent."cpu-usage"
+					Guid = $oContent.guid
+					Index = $oContent.index
+					Name = $oContent.name
+					NumMdl = $oContent."num-of-mdls"
+					NumModule = $oContent."num-of-mdls"
 					Severity = $oContent."obj-severity"
 					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray (,$oContent."node-id")
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XEnvId = $oContent."xenv-id"[0]
 					XEnvState = $oContent."xenv-state"
 					XmsId = $oContent."xms-id"

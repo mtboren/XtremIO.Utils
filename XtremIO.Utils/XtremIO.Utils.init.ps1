@@ -103,6 +103,7 @@ namespace XioItemInfo {
 		public Object[] SsdSlotInfo;
 		public Object[] StorageController;
 		public string State;
+		public Object TagList;
 
 		// Implicit constructor
 		public Brick () {}
@@ -147,6 +148,7 @@ namespace XioItemInfo {
 		public String SystemSN;
 		public String SystemState;
 		public String SystemStopType;
+		public Object TagList;
 		public System.Nullable<Decimal> ThinProvSavingsPct;
 		public System.Nullable<Double> TotProvTB;
 		public System.Nullable<Double> TotSSDTB;
@@ -426,6 +428,7 @@ namespace XioItemInfo {
 		public Object PerformanceInfo;
 		public String PortAddress;
 		public String PortType;
+		public Object TagList;
 
 		// Implicit constructor
 		public Initiator () {}
@@ -438,6 +441,7 @@ namespace XioItemInfo {
 		public Int32 NumInitiator;
 		public Int32 NumVol;
 		public Object PerformanceInfo;
+		public Object TagList;
 
 		// Implicit constructor
 		public InitiatorGroup () {}
@@ -686,6 +690,7 @@ namespace XioItemInfo {
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
+		public Object TagList;
 		public Double UsedGB;
 		public Double UsefulGB;
 
@@ -732,6 +737,7 @@ namespace XioItemInfo {
 		public String State;
 		public String StorageControllerId;
 		public String SWVersion;
+		public Object TagList;
 
 		// Implicit constructor
 		public StorageController () {}
@@ -814,6 +820,7 @@ namespace XioItemInfo {
 		public String PortState;
 		public String PortType;
 		public Object StorageController;
+		public Object TagList;
 		public Object TargetGroup;
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'TargetGroup' instead", false)]
@@ -832,6 +839,7 @@ namespace XioItemInfo {
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
+		public Object TagList;
 		public String TargetGrpId;
 
 		// Implicit constructor
@@ -935,6 +943,7 @@ namespace XioItemInfo {
 		public Int32 NumMdl;
 		public Int32 NumModule;
 		public Object StorageController;
+		public Object TagList;
 		public String XEnvId;
 		public String XEnvState;
 
