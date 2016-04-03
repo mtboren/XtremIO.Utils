@@ -40,6 +40,9 @@ namespace XioItemInfo {
 		public Object[] Battery;
 		public Int32 BatteryChargePct;
 		public String BBUId;
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
 		public Boolean BypassActive;
 		public Boolean ConnectedToSC;
@@ -122,10 +125,12 @@ namespace XioItemInfo {
 		public String ClusterId;
 		public System.Nullable<Decimal> CompressionFactor;
 		public String CompressionMode;
+		public String ConfigurableVolumeType;
 		public String ConsistencyState;
 		public System.Nullable<Decimal> DataReduction;
 		public System.Nullable<Decimal> DedupeRatio;
 		public String EncryptionMode;
+		public System.Nullable<Int32> ExpansionDataTransferPct;
 		public System.Nullable<Boolean> EncryptionSupported;
 		public String FcPortSpeed;
 		public String FreespaceLevel;
@@ -136,6 +141,9 @@ namespace XioItemInfo {
 		public Object InfiniBandSwitchList;
 		public System.Nullable<Int64> IOPS;
 		public String LicenseId;
+		public System.Nullable<Boolean> MaintenanceMode;
+		public System.Nullable<Double> MemoryInUseGB;
+		public System.Nullable<Int32> MemoryInUsePct;
 		public String NaaSysId;
 		public System.Nullable<Int32> NumBrick;
 		public System.Nullable<Int32> NumInfiniBandSwitch;
@@ -147,6 +155,7 @@ namespace XioItemInfo {
 		public String SharedMemEfficiencyLevel;
 		public String SharedMemInUseRatioLevel;
 		public String SizeAndCapacity;
+		public String SshFirewallMode;
 		public String SWVersion;
 		public System.Nullable<DateTime> SystemActivationDateTime;
 		public System.Nullable<Int32> SystemActivationTimestamp;
@@ -157,6 +166,7 @@ namespace XioItemInfo {
 		public System.Nullable<Decimal> ThinProvSavingsPct;
 		public System.Nullable<Double> TotProvTB;
 		public System.Nullable<Double> TotSSDTB;
+		public String UpgradeState;
 		public System.Nullable<Double> UsedLogicalTB;
 		public System.Nullable<Double> UsedSSDTB;
 

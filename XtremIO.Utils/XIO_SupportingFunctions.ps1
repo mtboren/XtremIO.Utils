@@ -829,6 +829,7 @@ function _New-Object_fromItemTypeAndContent {
 					CompressionFactor = $(if ($null -ne $oContent."compression-factor") {$oContent."compression-factor"})
 					## available in 3.0 and up
 					CompressionMode = $(if ($null -ne $oContent."compression-mode") {$oContent."compression-mode"})
+					ConfigurableVolumeType = $oContent."configurable-vol-type-capability"
 					ConsistencyState = $oContent."consistency-state"
 					## available in 3.x, but went away in v4.0.0-54 (beta) and v4.0.1-7; if not present on this object (due to say, older or newer XIOS/API version on this appliance), the data reduction rate _is_ either the dedupe ratio or the dedupe ratio * compression factor, if compression factor is not $null
 					DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
@@ -837,6 +838,7 @@ function _New-Object_fromItemTypeAndContent {
 					EncryptionMode = $oContent."encryption-mode"
 					## available in 2.4.0 and up
 					EncryptionSupported = $oContent."encryption-supported"
+					ExpansionDataTransferPct = $oContent."max-data-transfer-percent-done"
 					FcPortSpeed = $oContent."fc-port-speed"
 					FreespaceLevel = $oContent."free-ud-ssd-space-level"
 					## older API version has "free-ud-ssd-space", whereas newer API version does not (as of 2.2.3 rel 25); so, using different math if the given property does not exist
@@ -847,6 +849,9 @@ function _New-Object_fromItemTypeAndContent {
 					InfiniBandSwitchList = $oContent."ib-switch-list"
 					IOPS = [int64]$oContent.iops
 					LicenseId = $oContent."license-id"
+					MaintenanceMode = $(if ($null -ne $oContent."under-maintenance") {$oContent."under-maintenance" -eq "false"})
+					MemoryInUseGB = $(if ($null -ne $oContent."total-memory-in-use") {$oContent."total-memory-in-use" / 1KB})
+					MemoryInUsePct = $(if ($null -ne $oContent."total-memory-in-use-in-percent") {$oContent."total-memory-in-use-in-percent"})
 					NaaSysId = $oContent."naa-sys-id"
 					Name = $oContent.Name
 					NumBrick = $oContent."num-of-bricks"
@@ -953,6 +958,7 @@ function _New-Object_fromItemTypeAndContent {
 					SharedMemInUseRatioLevel = $oContent."shared-memory-in-use-ratio-level"
 					## available in 2.4.0 and up
 					SizeAndCapacity = $oContent."size-and-capacity"
+					SshFirewallMode = $oContent."ssh-firewall-mode"
 					SWVersion = $oContent."sys-sw-version"
 					SystemActivationDateTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."sys-activation-timestamp"
 					SystemActivationTimestamp = $oContent."sys-activation-timestamp"
@@ -963,6 +969,7 @@ function _New-Object_fromItemTypeAndContent {
 					ThinProvSavingsPct = (1-$oContent."thin-provisioning-ratio") * 100
 					TotProvTB = $oContent."vol-size" / 1GB
 					TotSSDTB = $oContent."ud-ssd-space" / 1GB
+					UpgradeState = $oContent."upgrade-state"
 					UsedLogicalTB = $oContent."logical-space-in-use" / 1GB
 					UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
 					XmsId = $oContent."xms-id"
@@ -1576,7 +1583,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"bbus" {
 				[ordered]@{
-					Name = $oContent.name
 					Battery = New-Object -Type PSObject -Property ([ordered]@{
 						LowBattery_hasInput = ([string]"true" -eq $oContent."is-low-battery-has-input")
 						LowBattery_noInput = ([string]"true" -eq $oContent."is-low-battery-no-input")
@@ -1589,6 +1595,7 @@ function _New-Object_fromItemTypeAndContent {
 					BatteryChargePct = [int]$oContent."ups-battery-charge-in-percent"
 					## this should be the same value as the .guid property
 					BBUId = $oContent."ups-id"[0]
+					Brick = _New-ObjListFromProperty -IdPropertyPrefix "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					BypassActive = ([string]"true" -eq $oContent."is-bypass-active")
 					ConnectedToSC = ($oContent."ups-conn-state" -eq "connected")
@@ -1610,6 +1617,7 @@ function _New-Object_fromItemTypeAndContent {
 					LoadPct = [int]$oContent."ups-load-in-percent"
 					LoadPctLevel = $oContent."ups-load-percent-level"
 					Model = $oContent."model-name"
+					Name = $oContent.name
 					Outlet1Status = $oContent."outlet1-status"
 					Outlet2Status = $oContent."outlet2-status"
 					OutputA = [Double]$oContent."output-current"
@@ -1620,7 +1628,7 @@ function _New-Object_fromItemTypeAndContent {
 					PowerW = [int]$oContent.power
 					RealPowerW = [int]$oContent."real-power"
 					SerialNumber = $oContent."serial-number"
-					Severity = $oContent.severity
+					Severity = $oContent."obj-severity"
 					Status = $oContent."ups-status"
 					StatusLED = $oContent."status-led"
 					StorageController = _New-ObjListFromProperty -IdPropertyPrefix "StorageController" -ObjectArray @($oContent."monitoring-nodes-obj-id-list" | Select-Object -First 1)
