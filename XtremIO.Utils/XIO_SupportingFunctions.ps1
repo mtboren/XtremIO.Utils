@@ -676,6 +676,7 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
 					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
+					Folder = _New-ObjListFromProperty -IdPropertyPrefix "Folder" -ObjectArray @(,$oContent."folder-id")
 					Guid = $oContent.guid
 					Index = $oContent.index
 					InitiatorGrpId = $oContent."ig-id"[0]
@@ -730,6 +731,7 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"initiators" {
 				[ordered]@{
+					Certainty = $oContent.certainty
 					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
 					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
 					ConnectionState = $oContent."initiator-conn-state"
@@ -1018,6 +1020,7 @@ function _New-Object_fromItemTypeAndContent {
 					ClusterIndex = $oContent."sys-id"[2]
 					NumNode = $oContent."num-of-nodes"
 					NumSSD = $oContent."num-of-ssds"
+					NumStorageController = $oContent."num-of-nodes"
 					RGrpId = $oContent."rg-id"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1662,7 +1665,7 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"daes" {
 				[ordered]@{
-					Name = $oContent.name
+					Brick = _New-ObjListFromProperty -IdPropertyPrefix "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterId = $oContent."sys-id"[0]
@@ -1676,6 +1679,7 @@ function _New-Object_fromItemTypeAndContent {
 					Index = $oContent.index
 					LifecycleState = $oContent."fru-lifecycle-state"
 					Model = $oContent."model-name"
+					Name = $oContent.name
 					NumDAEController = [int]$oContent."num-of-jbod-controllers"
 					NumDAEPSU = [int]$oContent."num-of-jbod-psus"
 					PartNumber = $oContent."part-number"
@@ -1683,19 +1687,20 @@ function _New-Object_fromItemTypeAndContent {
 					SerialNumber = $oContent."serial-number"
 					Severity = $oContent."obj-severity"
 					StatusLED = $oContent."status-led"
-					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					SysId = $oContent."sys-id"
+					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"dae-controllers" {
 				[ordered]@{
-					Name = $oContent.name
+					Brick = _New-ObjListFromProperty -IdPropertyPrefix "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterId = $oContent."sys-id"[0]
 					ClusterName = $oContent."sys-id"[1]
 					ConnectivityState = $oContent."jbod-controller-connectivity-state"
+					DAE = _New-ObjListFromProperty -IdPropertyPrefix "DAE" -ObjectArray (,$oContent."jbod-id")
 					DAEId = $oContent."jbod-id"[0]
 					DAEControllerId = $oContent."jbod-controller-id"[0]
 					Enabled = ($oContent."enabled-state" -eq "enabled")
@@ -1710,6 +1715,7 @@ function _New-Object_fromItemTypeAndContent {
 					Index = $oContent.index
 					LifecycleState = $oContent."fru-lifecycle-state"
 					Location = $oContent.location
+					Name = $oContent.name
 					Model = $oContent."model-name"
 					PartNumber = $oContent."part-number"
 					ReplacementReason = $oContent."fru-replace-failure-reason"
@@ -1738,7 +1744,7 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"dae-psus" {
 				[ordered]@{
-					Name = $oContent.name
+					Brick = _New-ObjListFromProperty -IdPropertyPrefix "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					DAE = _New-ObjListFromProperty -IdPropertyPrefix "DAE" -ObjectArray (,$oContent."jbod-id")
@@ -1755,6 +1761,7 @@ function _New-Object_fromItemTypeAndContent {
 					LifecycleState = $oContent."fru-lifecycle-state"
 					Location = $oContent.location
 					Model = $oContent."model-name"
+					Name = $oContent.name
 					PartNumber = $oContent."part-number"
 					PowerFailure = $oContent."power-failure"
 					PowerFeed = $oContent."power-feed"
@@ -1773,6 +1780,7 @@ function _New-Object_fromItemTypeAndContent {
 					CompanyName = $oContent."company-name"
 					ContactDetails = $oContent."contact-details"
 					Enabled = ($oContent.enabled -eq "true")
+					Frequency = New-TimeSpan -Seconds $oContent.frequency
 					FrequencySec = [int]$oContent.frequency
 					Guid = $oContent.guid
 					Index = $oContent.index
@@ -1782,6 +1790,7 @@ function _New-Object_fromItemTypeAndContent {
 					ProxyPort = $oContent."proxy-port"
 					ProxyUser = $oContent."proxy-user"
 					Recipient = $oContent.recipients
+					Sender = $oContent."sender"
 					Severity = $oContent."obj-severity"
 					TransportProtocol = $oContent.transport
 					XmsId = $oContent."xms-id"
@@ -1789,13 +1798,14 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"infiniband-switches" {
 				[ordered]@{
-					Name = $oContent.name
+					Cluster = & $sblkNewXioiteminfoClusterObj
 					Enabled = ($oContent."enabled-state" -eq "enabled")
 					Fan1RPM = [int]$oContent."fan-1-rpm"
 					Fan2RPM = [int]$oContent."fan-2-rpm"
 					Fan3RPM = [int]$oContent."fan-3-rpm"
 					Fan4RPM = [int]$oContent."fan-4-rpm"
 					FanDrawerStatus = $oContent."fan-drawer-status"
+					FWId = $oContent."fw-psid"
 					FWVersion = $oContent."fw-version"
 					FWVersionError = $oContent."fw-version-error"
 					Guid = $oContent.guid
@@ -1807,6 +1817,7 @@ function _New-Object_fromItemTypeAndContent {
 					InterswitchIb2Port = $oContent."inter-switch-ib2-port-state"
 					LifecycleState = $oContent."fru-lifecycle-state"
 					Model = $oContent."model-name"
+					Name = $oContent.name
 					PartNumber = $oContent."part-number"
 					Port = $oContent.ports | Foreach-Object {
 						New-Object -TypeName PSObject -Property ([ordered]@{

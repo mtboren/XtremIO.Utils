@@ -205,6 +205,9 @@ namespace XioItemInfo {
 
 	// XIO DAE (Disk Array Enclosure) (inherits from class HardwareBase)
 	public class DAE : HardwareBase {
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
 		public XioItemInfo.Cluster Cluster;
 		// deprecated after rel v0.11.0
@@ -226,30 +229,11 @@ namespace XioItemInfo {
 		public DAE () {}
 	}
 
-	// XIO DAE (Disk Array Enclosure) PSU (inherits from class HardwareBase)
-	public class DAEPsu : HardwareBase {
-		public Object[] BrickId;
-		public XioItemInfo.Cluster Cluster;
-		public Object[] DAE;
-		public String DAEPSUId;
-		public Boolean Enabled;
-		public String FWVersionError;
-		public String Identification;
-		public String Input;
-		public String Location;
-		public String PowerFailure;
-		public String PowerFeed;
-		public String ReplacementReason;
-		// deprecated after rel v0.11.0
-		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
-		public Object[] SysId;
-
-		// Implicit constructor
-		public DAEPsu () {}
-	}
-
 	// XIO DAE Controller (inherits from class HardwareBase)
 	public class DAEController : HardwareBase {
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
 		public String ConnectivityState;
 		public XioItemInfo.Cluster Cluster;
@@ -259,6 +243,9 @@ namespace XioItemInfo {
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
+		public Object DAE;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DAE' instead", false)]
 		public String DAEId;
 		public String DAEControllerId;
 		public Boolean Enabled;
@@ -275,6 +262,31 @@ namespace XioItemInfo {
 
 		// Implicit constructor
 		public DAEController () {}
+	}
+
+	// XIO DAE (Disk Array Enclosure) PSU (inherits from class HardwareBase)
+	public class DAEPsu : HardwareBase {
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
+		public Object[] BrickId;
+		public XioItemInfo.Cluster Cluster;
+		public Object DAE;
+		public String DAEPSUId;
+		public Boolean Enabled;
+		public String FWVersionError;
+		public String Identification;
+		public String Input;
+		public String Location;
+		public String PowerFailure;
+		public String PowerFeed;
+		public String ReplacementReason;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
+		public Object[] SysId;
+
+		// Implicit constructor
+		public DAEPsu () {}
 	}
 
 	public class DataProtectionGroup : InfoBase {
@@ -295,8 +307,11 @@ namespace XioItemInfo {
 		public String ClusterName;
 		public String DataProtectionGrpId;
 		public Int64 IOPS;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'NumStorageController' instead", false)]
 		public Int32 NumNode;
 		public Int32 NumSSD;
+		public Int32 NumStorageController;
 		public Object PerformanceInfo;
 		public Boolean RebalanceInProg;
 		public Int32 RebalanceProgress;
@@ -326,6 +341,9 @@ namespace XioItemInfo {
 		public String CompanyName;
 		public String ContactDetails;
 		public Boolean Enabled;
+		public TimeSpan Frequency;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Frequency' instead", false)]
 		public Int32 FrequencySec;
 		public String MailRelayAddress;
 		public String MailUsername;
@@ -333,6 +351,7 @@ namespace XioItemInfo {
 		public String ProxyPort;
 		public String ProxyUser;
 		public String[] Recipient;
+		public String Sender;
 		public String TransportProtocol;
 
 		// Implicit constructor
@@ -393,12 +412,14 @@ namespace XioItemInfo {
 
 	// InfiniBand Switch (inherits from class HardwareBase)
 	public class InfinibandSwitch : HardwareBase {
+		public XioItemInfo.Cluster Cluster;
 		public Boolean Enabled;
 		public Int32 Fan1RPM;
 		public Int32 Fan2RPM;
 		public Int32 Fan3RPM;
 		public Int32 Fan4RPM;
 		public String FanDrawerStatus;
+		public String FWId;
 		public String FWVersionError;
 		public String IbSwitchId;
 		public String InterswitchIb1Port;
@@ -433,6 +454,7 @@ namespace XioItemInfo {
 	public class IgFolderPerformance : PerformanceTotal {}
 
 	public class Initiator : InfoBase {
+		public String Certainty;
 		public XioItemInfo.Cluster Cluster;
 		public String ConnectionState;
 		public String InitiatorGrpId;
@@ -451,6 +473,7 @@ namespace XioItemInfo {
 
 	public class InitiatorGroup : InfoBase {
 		public XioItemInfo.Cluster Cluster;
+		public Object Folder;
 		public String InitiatorGrpId;
 		public Int64 IOPS;
 		public Int32 NumInitiator;

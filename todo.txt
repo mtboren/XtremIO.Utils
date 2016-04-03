@@ -232,14 +232,6 @@ todo:
 doing:
 [feat_AddOtherProperties]
 -add properties to objects:
-	-to DAE:  add .Brick obj from $oContent."brick-id", deprecate BrickId
-	-to DAEController:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add .DAE property (new obj from jbod-id)
-	-to DAEPsu:  add .Brick obj from $oContent."brick-id", deprecate BrickId
-	-to DataProtectionGroup:  add NumStorageController from "num-of-nodes", deprecate "NumNode"
-	-to EmailNotifier:  add Frequency as timespan from $oContent.frequency, deprecate FrequencySec; add Sender from "sender"
-	-to InfinibandSwitch objects:  add .Cluster property; add FWId from "fw-psid" (internal firmware ID)
-	-to Initiator:  add Certainty = $oContent.certainty
-	-to InitiatorGroup: add Folder = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray (,$oContent."folder-id")
 	-to InitiatorGroupFolder: add .InitiatorGroup from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}) (use _New-ObjListFromProperty function); add FullName from ."folder-id"[1] (this is essentially the tag value:  /InitiatorGroup/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property
 	-to LDAPConfig:  add CacheExpire as a TimeSpan from cache-expire-hours, deprecate CacheExpireH
 	-to LocalDisk:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add StorageController obj property from "node-id", deprecate StorageControllerId and StorageControllerName;
@@ -259,6 +251,14 @@ doing:
 		-to Brick:  add .DAE property (new obj from jbod-list); add BBU info (from "ups-list" if not $null); add SSD info (new-objlist from "ssd-slot-array"[3] if not "ssd-slot-array" not $null), and deprecate SsdSlotInfo
 		-to BBU:  add .Brick obj from $oContent."brick-id", deprecate BrickId; correct Severity to use "obj-severity" instead of "severity"
 		-to Cluster:  add ConfigurableVolumeType property from "configurable-vol-type-capability" ("supported" and "unsupported" are the values); add ExpansionDataTransferPct from max-data-transfer-percent-done (Maximum data transfer percentage done The estimated time remaining for a cluster expansion procedure to complete, as a percentage); add SshFirewallMode from ssh-firewall-mode; add MemoryInUseGB from "total-memory-in-use" that is in MB if not $null, MemoryInUsePct from "total-memory-in-use-in-percent" if not $null; boolean MaintenanceMode from "under-maintenance" ("false") (nullable); UpgradeState from "upgrade-state"
+		-to DAE:  add .Brick obj from $oContent."brick-id", deprecate BrickId
+		-to DAEController:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add .DAE property (new obj from jbod-id) and deprecate DAEId
+		-to DAEPsu:  add .Brick obj from $oContent."brick-id", deprecate BrickId
+		-to DataProtectionGroup:  add NumStorageController from "num-of-nodes", deprecate "NumNode"
+		-to EmailNotifier:  add Frequency as timespan from $oContent.frequency, deprecate FrequencySec; add Sender from "sender"
+		-to InfinibandSwitch objects:  add .Cluster property; add FWId from "fw-psid" (internal firmware ID)
+		-to Initiator:  add Certainty = $oContent.certainty
+		-to InitiatorGroup: add Folder obj from "folder-id"
 -table to make for IB link speed info:
 	-unknown -> $null or so
 	-sdr - single data rate, 2.5Gb/s
