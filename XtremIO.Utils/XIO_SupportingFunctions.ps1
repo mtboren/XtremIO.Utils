@@ -545,7 +545,6 @@ function _New-ObjListFromProperty_byObjName {
 	begin {
 		## mapping of "raw" object name from API to desired display name used for object ID prefix in subsequent helper function
 		$hshObjNameToObjPrefixMap = @{
-			"Switch" = "IbSwitch"
 			Brick = "Brick"
 			Cluster = "Cluster"
 			ConsistencyGroup = "ConsistencyGrp"
@@ -556,6 +555,7 @@ function _New-ObjListFromProperty_byObjName {
 			Scheduler = "SnapshotScheduler"
 			SnapSet = "SnapshotSet"
 			Storagecontroller = "StorageController"
+			"Switch" = "IbSwitch"
 			Tag = "Tag"
 			TargetGroup = "TargetGrp"
 			Volume = "Vol"
@@ -790,10 +790,12 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"bricks" {
 				[ordered]@{
+					BBU = _New-ObjListFromProperty -IdPropertyPrefix "BBU" -ObjectArray $oContent."ups-list"
 					BrickGuid = $oContent."brick-guid"
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterName = $oContent."sys-id".Item(1)
+					DAE = _New-ObjListFromProperty -IdPropertyPrefix "DAE" -ObjectArray $oContent."jbod-list"
 					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
 					Guid = $oContent."brick-id"[0]
 					Index = $oContent."index-in-system"
@@ -806,9 +808,11 @@ function _New-Object_fromItemTypeAndContent {
 					NumStorageController = $oContent."num-of-nodes"
 					RGrpId = $oContent."rg-id"
 					Severity = $oContent."obj-severity"
+					## the SSD info, which is apparently in an object at index 3 in the "ssd-slot-array" property
+					Ssd = $($oContent."ssd-slot-array" | Foreach-Object {_New-ObjListFromProperty -IdPropertyPrefix "Ssd" -ObjectArray (,$_[3])})
 					SsdSlotInfo = $oContent."ssd-slot-array"
 					State = $oContent."brick-state"
-					StorageController =  _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray $oContent."node-list"
+					StorageController = _New-ObjListFromProperty_byObjName -Name "StorageController" -ObjectArray $oContent."node-list"
 					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary

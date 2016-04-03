@@ -81,13 +81,15 @@ namespace XioItemInfo {
 
 	// XIO Brick
 	public class Brick : InfoBase {
+		public Object BBU;
 		public Object[] BrickId;
 		public string BrickGuid;
 		public XioItemInfo.Cluster Cluster;
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public string ClusterName;
-		public Object[] DataProtectionGroup;
+		public Object DAE;
+		public Object DataProtectionGroup;
 		// Storage Controller info -- deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'StorageController' instead", false)]
 		public Object[] NodeList { get; set; }
@@ -100,6 +102,9 @@ namespace XioItemInfo {
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGroup' instead", false)]
 		public Object[] RGrpId;
 		// array of SSD Slot info items
+		public Object Ssd;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Ssd' instead", false)]
 		public Object[] SsdSlotInfo;
 		public Object[] StorageController;
 		public string State;
