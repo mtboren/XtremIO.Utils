@@ -234,9 +234,6 @@ todo:
 doing:
 [feat_AddOtherProperties]
 -add properties to objects:
-	-to LDAPConfig:  add CacheExpire as a TimeSpan from cache-expire-hours, deprecate CacheExpireH
-	-to LocalDisk:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add StorageController obj property from "node-id", deprecate StorageControllerId and StorageControllerName;
-	-to Slot:  add .Brick obj from $oContent."brick-id", deprecate BrickId;
 	-to Snapshot, Volume:  add AncestorVolume obj property from "ancestor-vol-id", deprecate AncestorVolId; add Certainty; add DestinationSnapshot obj from "dest-snap-list", deprecate DestSnapList; add RelatedConsistencyGroup objs property from "related-consistency-groups"; add SnapshotSet obj from "snapset-list"; add AccessType from "vol-access"; add Type from "vol-type"
 	-to SnapsthoSet:  add ConsistencyGroup obj from "cg-oid"
 	-to SnmpNotifier:  add HeartbeatFrequency as timespan, deprecate HeartbeatFreqSec
@@ -261,6 +258,9 @@ doing:
 		-to Initiator:  add Certainty = $oContent.certainty
 		-to InitiatorGroup: add Folder obj from "folder-id"
 		-to InitiatorGroupFolder: add .InitiatorGroup from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}), deprecate InitiatorGrpIdList; add FullName from ."folder-id"[1] (this is essentially the tag value:  /InitiatorGroup/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property; update NumIG to reflect proper count (exclude subfolders from the count, which were previously included in the value returned); update table view format to not include IOPS which is no longer populated in newer XIOS (none of the IGFolder performance items are populated any longer)
+		-to LDAPConfig:  add CacheLife as a TimeSpan from cache-expire-hours, deprecate CacheExpireH
+		-to LocalDisk:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add StorageController obj property from "node-id", deprecate StorageControllerId and StorageControllerName;
+		-to Slot:  add .Brick obj from $oContent."brick-id", deprecate BrickId;
 -table to make for IB link speed info:
 	-unknown -> $null or so
 	-sdr - single data rate, 2.5Gb/s

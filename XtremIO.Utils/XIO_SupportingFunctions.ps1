@@ -1861,6 +1861,7 @@ function _New-Object_fromItemTypeAndContent {
 					CACertData = $oContent."ca-cert-data"
 					CACertFile = $oContent."ca-cert-file"
 					CacheExpireH = [int]$oContent."cache-expire-hours"
+					CacheLife = New-TimeSpan -Hours $oContent."cache-expire-hours"
 					Guid = $oContent.guid
 					Index = $oContent.index
 					Role = $oContent.roles
@@ -1878,6 +1879,7 @@ function _New-Object_fromItemTypeAndContent {
 			"local-disks" {
 				[ordered]@{
 					Name = $oContent.name
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterId = $oContent."sys-id"[0]
@@ -1904,6 +1906,7 @@ function _New-Object_fromItemTypeAndContent {
 					Severity = $oContent."obj-severity"
 					SlotNum = $oContent."slot-num"
 					StatusLED = $oContent."status-led"
+					StorageController = _New-ObjListFromProperty -IdPropertyPrefix "StorageController" -ObjectArray (,$oContent."node-id")
 					StorageControllerId = $oContent."node-id"[0]
 					StorageControllerName = $oContent."node-id"[1]
 					SysId = $oContent."sys-id"
@@ -1939,13 +1942,14 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"slots" {
 				[ordered]@{
-					Name = $oContent.name
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ErrorReason = $oContent."slot-error-reason"
 					FailureReason = $oContent."failure-reason"
 					Guid = $oContent.guid
 					Index = $oContent.index
+					Name = $oContent.name
 					SlotNum = [int]$oContent."slot-num"
 					SsdId = $oContent."ssd-o-signature"
 					SsdModel = $oContent."product-model"

@@ -502,7 +502,10 @@ namespace XioItemInfo {
 		public String BindDN;
 		public String CACertData;
 		public String CACertFile;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'CacheLife' instead", false)]
 		public Int32 CacheExpireH;
+		public TimeSpan CacheLife;
 		public String[] Role;
 		public String SearchBaseDN;
 		public String SearchFilter;
@@ -517,6 +520,9 @@ namespace XioItemInfo {
 
 	// XIO LocalDisk in StorageControllers (inherits from class HardwareBase)
 	public class LocalDisk : HardwareBase {
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
 		public XioItemInfo.Cluster Cluster;
 		// deprecated after rel v0.11.0
@@ -535,7 +541,12 @@ namespace XioItemInfo {
 		public String Purpose;
 		public String ReplacementReason;
 		public Int32 SlotNum;
+		public Object StorageController;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'StorageController' instead", false)]
 		public String StorageControllerId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'StorageController' instead", false)]
 		public String StorageControllerName;
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
@@ -677,6 +688,9 @@ namespace XioItemInfo {
 
 	// Slot (inherits from class InfoBase)
 	public class Slot : InfoBase {
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
 		public XioItemInfo.Cluster Cluster;
 		public String ErrorReason;
