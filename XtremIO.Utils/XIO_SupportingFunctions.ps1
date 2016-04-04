@@ -1975,6 +1975,7 @@ function _New-Object_fromItemTypeAndContent {
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterId = $oContent."sys-id"[0]
 					ClusterName = $oContent."sys-id"[1]
+					ConsistencyGroup = _New-ObjListFromProperty_byObjName -Name "ConsistencyGroup" -ObjectArray @(,$oContent."cg-oid")
 					ConsistencyGrpId = $(if ($null -ne $oContent."cg-id") {$oContent."cg-id"[0]})
 					ConsistencyGrpName = $oContent."cg-name"
 					## "creation-time-long" is milliseconds since UNIX epoch (instead of traditional seconds)
@@ -2000,6 +2001,7 @@ function _New-Object_fromItemTypeAndContent {
 					Enabled = ($oContent.enabled -eq "true")
 					Guid = $oContent.guid
 					HeartbeatFreqSec = [int]$oContent."heartbeat-frequency"
+					HeartbeatFrequency = New-TimeSpan -Seconds $oContent."heartbeat-frequency"
 					Index = $oContent.index
 					Port = [int]$oContent.port
 					PrivacyProtocol = $oContent."priv-protocol"

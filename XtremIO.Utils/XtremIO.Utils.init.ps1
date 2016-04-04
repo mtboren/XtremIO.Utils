@@ -654,7 +654,12 @@ namespace XioItemInfo {
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
+		public Object ConsistencyGroup;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'ConsistencyGroup' instead", false)]
 		public String ConsistencyGrpId;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'ConsistencyGroup' instead", false)]
 		public String ConsistencyGrpName;
 		public DateTime CreationTime;
 		public Int32 NumVol;
@@ -675,7 +680,10 @@ namespace XioItemInfo {
 		public String AuthProtocol;
 		public String Community;
 		public Boolean Enabled;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'HeartbeatFrequency' instead", false)]
 		public Int32 HeartbeatFreqSec;
+		public TimeSpan HeartbeatFrequency;
 		public Int32 Port;
 		public String PrivacyProtocol;
 		public String[] Recipient;
