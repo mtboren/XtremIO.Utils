@@ -719,8 +719,12 @@ namespace XioItemInfo {
 
 	// SSD
 	public class Ssd : HardwareBase {
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
 		public Double CapacityGB;
+		public String Certainty;
 		public XioItemInfo.Cluster Cluster;
 		public Object DataProtectionGroup;
 		public String DiagHealthState;
@@ -729,12 +733,16 @@ namespace XioItemInfo {
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
 		public String EnabledState;
 		public String EncryptionStatus;
+		public String FailureReason;
 		public String FWVersionError;
 		public String HealthState;
 		public Int64 IOPS;
+		public Object LastIoError;
+		public Object LastSMARTError;
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Model' instead", false)]
 		public String ModelName;
+		public Int32 NumBadSector;
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Severity' instead", false)]
 		public String ObjSeverity;
@@ -745,6 +753,8 @@ namespace XioItemInfo {
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DataProtectionGroup' instead", false)]
 		public Object[] RGrpId;
 		public Int32 SlotNum;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'FailureReason' instead", false)]
 		public String SSDFailureReason;
 		public String SsdId;
 		public String SSDLink1Health;

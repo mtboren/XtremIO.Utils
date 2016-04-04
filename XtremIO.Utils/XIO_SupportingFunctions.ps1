@@ -1107,30 +1107,32 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
 					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
-					VolumeName = $oContent."vol-name"
-					LunId = $oContent.lun
-					LunMapId = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[0]})
-					Name = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[1]})
 					Guid = $oContent.guid
+					## available in 2.4.0 and up
+					Index = $oContent.index
 					## changed property name from "ig-name" after v0.6.0 release
 					InitiatorGroup = $oContent."ig-name"
 					InitiatorGrpIndex = $oContent."ig-index"
-					TargetGrpName = $oContent."tg-name"
-					TargetGrpIndex = $oContent."tg-index"
+					LunId = $oContent.lun
+					LunMapId = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[0]})
 					## changed from lm-id to mapping-id in v2.4
 					MappingId = $oContent."mapping-id"
-					## available in 2.4.0 and up
-					Index = $oContent.index
 					MappingIndex = $oContent."mapping-index"
+					Name = $(if ($null -ne $oContent."mapping-id") {$oContent."mapping-id"[1]})
 					Severity = $oContent."obj-severity"
-					XmsId = $oContent."xms-id"
+					TargetGrpIndex = $oContent."tg-index"
+					TargetGrpName = $oContent."tg-name"
 					VolumeIndex = $oContent."vol-index"
+					VolumeName = $oContent."vol-name"
+					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"ssds" {
 				[ordered]@{
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					CapacityGB = $oContent."ssd-size-in-kb"/1MB
+					Certainty = $oContent.certainty
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
 					DiagHealthState = $oContent."diagnostic-health-state"
@@ -1138,6 +1140,7 @@ function _New-Object_fromItemTypeAndContent {
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
 					EncryptionStatus = $oContent."encryption-status"
+					FailureReason = $oContent."ssd-failure-reason"
 					FWVersion = $oContent."fw-version"
 					FWVersionError = $oContent."fw-version-error"
 					Guid = $oContent.guid
@@ -1146,10 +1149,23 @@ function _New-Object_fromItemTypeAndContent {
 					IdLED = $oContent."identify-led"
 					Index = $oContent."index"
 					IOPS = [int64]$oContent."iops"
+					LastIoError = New-Object -Type PSObject -Property([ordered]@{
+						ASC = $oContent."io-error-asc"
+						ASCQ = $oContent."io-error-ascq"
+						SenseCode = $oContent."io-error-sense-code"
+						Timestamp = $(if (-not ("none",$null -contains $oContent."last-io-error-type")) {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."last-io-error-timestamp"})
+						Type = $oContent."last-io-error-type"
+						VendorSpecificCode = $oContent."io-error-vendor-specific"
+					}) ## end New-Object
+					LastSMARTError = New-Object -Type PSObject -Property([ordered]@{
+						ASC = $oContent."smart-error-asc"
+						ASCQ = $oContent."smart-error-ascq"
+					}) ## end New-Object
 					LifecycleState = $oContent."fru-lifecycle-state"
 					Model = $oContent."model-name"
 					ModelName = $oContent."model-name"
 					Name = $oContent.name
+					NumBadSector = $oContent."num-bad-sectors"
 					ObjSeverity = $oContent."obj-severity"
 					PartNumber = $oContent."part-number"
 					PctEnduranceLeft = $oContent."percent-endurance-remaining"
