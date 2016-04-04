@@ -304,13 +304,19 @@
 			<Name>XioItem_ig-folders</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.IgFolder</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>28</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>7</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ParentFolder</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumSubfolder</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumIG</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>InitiatorGroup</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>

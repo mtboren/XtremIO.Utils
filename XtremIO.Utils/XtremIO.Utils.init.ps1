@@ -396,12 +396,18 @@ namespace XioItemInfo {
 		public String ColorHex;
 		public System.Nullable<DateTime> CreationTime;
 		public String FolderId;
+		public String FullName;
+		public Object InitiatorGroup;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'InitiatorGroup' instead", false)]
 		public String[] InitiatorGrpIdList;
 		public Int64 IOPS;
 		public Int32 NumIG;
 		public Int32 NumSubfolder;
 		public String ObjectType;
-		public String ParentFolder;
+		public Object ParentFolder;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'ParentFolder' instead", false)]
 		public String ParentFolderId;
 		public Object PerformanceInfo;
 		public Object SubfolderList;

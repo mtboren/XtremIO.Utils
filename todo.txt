@@ -42,6 +42,7 @@ todo:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
+-for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
 -add pipelining abilities for things like:
 	Get-XIODAE | Get-XIODAEController
 	Get-XIODAEController | Get-XIODAE
@@ -205,6 +206,7 @@ todo:
 	-needs to iterate through those parents from the root
 	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
 -need to exclude -OperatingSystem parameter option in New-XIOInitiator if API of XMS is v1 -- breaks things to send along in a request to API V1 XMS; lower priority
+-for when dropping support for legacy XIOS/API (XIOS 2 & 3, API v1), remove PerformanceInfo property from IGFolder, VolumeFolder (and remove Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance cmdlets)
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
 -?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
@@ -232,7 +234,6 @@ todo:
 doing:
 [feat_AddOtherProperties]
 -add properties to objects:
-	-to InitiatorGroupFolder: add .InitiatorGroup from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}) (use _New-ObjListFromProperty function); add FullName from ."folder-id"[1] (this is essentially the tag value:  /InitiatorGroup/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property
 	-to LDAPConfig:  add CacheExpire as a TimeSpan from cache-expire-hours, deprecate CacheExpireH
 	-to LocalDisk:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add StorageController obj property from "node-id", deprecate StorageControllerId and StorageControllerName;
 	-to Slot:  add .Brick obj from $oContent."brick-id", deprecate BrickId;
@@ -259,6 +260,7 @@ doing:
 		-to InfinibandSwitch objects:  add .Cluster property; add FWId from "fw-psid" (internal firmware ID)
 		-to Initiator:  add Certainty = $oContent.certainty
 		-to InitiatorGroup: add Folder obj from "folder-id"
+		-to InitiatorGroupFolder: add .InitiatorGroup from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}), deprecate InitiatorGrpIdList; add FullName from ."folder-id"[1] (this is essentially the tag value:  /InitiatorGroup/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property; update NumIG to reflect proper count (exclude subfolders from the count, which were previously included in the value returned); update table view format to not include IOPS which is no longer populated in newer XIOS (none of the IGFolder performance items are populated any longer)
 -table to make for IB link speed info:
 	-unknown -> $null or so
 	-sdr - single data rate, 2.5Gb/s

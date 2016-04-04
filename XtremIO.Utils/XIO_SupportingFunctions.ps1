@@ -1038,20 +1038,25 @@ function _New-Object_fromItemTypeAndContent {
 				} ## end ordered dictionary
 				break} ## end case
 			"ig-folders" {
+				$arrDirectObjsThatAreNotSubfolders = $(if (($oContent."subfolder-list" | Measure-Object).Count -eq 0) {$oContent."direct-list"} else {$oContent."direct-list" | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_[0]}})
 				[ordered]@{
 					Name = $oContent.name
 					Caption = $oContent.caption
 					ColorHex = $oContent.color
 					CreationTime = $(if ($null -ne $oContent."creation-time-long") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)})
 					Index = $oContent.index
+					InitiatorGroup = _New-ObjListFromProperty_byObjName -Name InitiatorGroup -ObjectArray $arrDirectObjsThatAreNotSubfolders
 					## the initiator group IDs for IGs directly in this ig-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-					InitiatorGrpIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
+					InitiatorGrpIdList = @($arrDirectObjsThatAreNotSubfolders | Foreach-Object {$_[0]})
+					IOPS = [int64]$oContent.iops
 					FolderId = $oContent."folder-id"[0]
+					FullName = $oContent."folder-id"[1]
 					Guid = $oContent.guid
-					NumIG = $oContent."num-of-direct-objs"
+					## the number of objects that are not subfolders; should equal ."direct-list".Count - ."num-of-subfolders"
+					NumIG = ($arrDirectObjsThatAreNotSubfolders | Measure-Object).Count
 					NumSubfolder = $oContent."num-of-subfolders"
 					ObjectType = $oContent."object-type"
-					ParentFolder = $oContent."parent-folder-id"[1]
+					ParentFolder = _New-ObjListFromProperty -IdPropertyPrefix Folder -ObjectArray @(,$oContent."parent-folder-id")
 					ParentFolderId = $oContent."parent-folder-id"[0]
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
@@ -1095,7 +1100,6 @@ function _New-Object_fromItemTypeAndContent {
 					}) ## end New-object PerformanceInfo
 					Severity = $oContent."obj-severity"
 					SubfolderList = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray $oContent."subfolder-list"
-					IOPS = [int64]$oContent.iops
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
