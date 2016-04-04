@@ -919,11 +919,20 @@ namespace XioItemInfo {
 	}
 
 	public class Volume : InfoBase {
+		public String AccessType;
 		public System.Nullable<Int32> AlignmentOffset;
+		public Object AncestorVolume;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'AncestorVolume' instead", false)]
 		public Object AncestorVolId;
+		public String Certainty;
 		public XioItemInfo.Cluster Cluster;
 		public String Compressible;
+		public Object ConsistencyGroup;
 		public System.Nullable<DateTime> CreationTime;
+		public Object DestinationSnapshot;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'DestinationSnapshot' instead", false)]
 		public Object DestSnapList;
 		public Object Folder;
 		public String[] InitiatorGrpIdList;
@@ -944,12 +953,16 @@ namespace XioItemInfo {
 		public String SmallIOAlertsCfg;
 		public String SmallIORatio;
 		public String SmallIORatioLevel;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'SnapshotSet' instead", false)]
 		public Object SnapGrpId;
+		public Object SnapshotSet;
 		public String SnapshotType;
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public Object[] SysId;
 		public Object TagList;
+		public String Type;
 		public String UnalignedIOAlertsCfg;
 		public String UnalignedIORatio;
 		public String UnalignedIORatioLevel;

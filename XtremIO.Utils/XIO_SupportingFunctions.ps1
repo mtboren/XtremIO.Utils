@@ -1364,19 +1364,25 @@ function _New-Object_fromItemTypeAndContent {
 			## snapshots and volumes have the same properties
 			{"snapshots","volumes" -contains $_} {
 				[ordered]@{
-					Cluster = & $sblkNewXioiteminfoClusterObj
-					Name = $oContent.name
-					NaaName = $oContent."naa-name"
-					VolSizeTB = $(if ($null -ne $oContent."vol-size") {$oContent."vol-size" / 1GB})
-					VolId = $(if ($null -ne $oContent."vol-id") {$oContent."vol-id"[0]})  ## renamed from "vol-id"
+					AccessType = $oContent."vol-access"
 					AlignmentOffset = $oContent."alignment-offset"  ## renamed from "alignment-offset"
+					AncestorVolume = _New-ObjListFromProperty_byObjName -Name "Volume" -ObjectArray @(,$oContent."ancestor-vol-id")
 					AncestorVolId = $oContent."ancestor-vol-id"  ## renamed from "ancestor-vol-id"
+					Certainty = $oContent.certainty
+					Cluster = & $sblkNewXioiteminfoClusterObj
+					## available in 3.0 and up
+					Compressible = $oContent.compressible
+					ConsistencyGroup = _New-ObjListFromProperty_byObjName -Name "ConsistencyGroup" -ObjectArray $oContent."related-consistency-groups"
+					CreationTime = $(if ($null -ne $oContent."creation-time") {[System.DateTime]$oContent."creation-time"})
+					DestinationSnapshot = _New-ObjListFromProperty -IdPropertyPrefix "Snapshot" -ObjectArray $oContent."dest-snap-list"
 					DestSnapList = $oContent."dest-snap-list"  ## renamed from "dest-snap-list"
 					Folder = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray (,$oContent."folder-id")
+					Guid = $oContent.guid
+					Index = $oContent.index
+					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
+					InitiatorGrpIdList = @($(if (($oContent."lun-mapping-list" | Measure-Object).Count -gt 0) {$oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}}))
+					IOPS = $oContent.iops
 					LBSize = $oContent."lb-size"  ## renamed from "lb-size"
-					NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
-					NumLunMap = $oContent."num-of-lun-mappings"
-					NumLunMapping = $oContent."num-of-lun-mappings"
 					LunMapList = $oContent."lun-mapping-list" | Where-Object {$null -ne $_} | Foreach-Object {
 						New-Object -Type PSObject -Property ([ordered]@{
 							InitiatorGroup = _New-ObjListFromProperty_byObjName -Name "InitiatorGroup" -ObjectArray (,$_[0])
@@ -1384,17 +1390,15 @@ function _New-Object_fromItemTypeAndContent {
 							LunId = $_[2]
 						}) ## end New-Object
 					} ## end foreach-object
+					LuName = $oContent."lu-name"
 					LunMappingList = $oContent."lun-mapping-list"
-					Guid = $oContent.guid
-					## the initiator group IDs for IGs for this volume; Lun-Mapping-List property is currently array of @( @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>)
-					InitiatorGrpIdList = @($(if (($oContent."lun-mapping-list" | Measure-Object).Count -gt 0) {$oContent."lun-mapping-list" | Foreach-Object {$_[0][0]}}))
+					NaaName = $oContent."naa-name"
+					Name = $oContent.name
+					NumDestSnap = $oContent."num-of-dest-snaps"  ## renamed from "num-of-dest-snaps"
+					NumLunMap = $oContent."num-of-lun-mappings"
+					NumLunMapping = $oContent."num-of-lun-mappings"
 					## available in 2.4.0 and up
 					UsedLogicalTB = $(if ($null -ne $oContent."logical-space-in-use") {$oContent."logical-space-in-use" / 1GB})
-					IOPS = $oContent.iops
-					Index = $oContent.index
-					## available in 3.0 and up
-					Compressible = $oContent.compressible
-					CreationTime = $(if ($null -ne $oContent."creation-time") {[System.DateTime]$oContent."creation-time"})
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							## latency in microseconds (µs)
@@ -1447,19 +1451,22 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end New-Object
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
-					SmallIOAlertsCfg = $oContent."small-io-alerts"
-					UnalignedIOAlertsCfg = $oContent."unaligned-io-alerts"
-					VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
-					LuName = $oContent."lu-name"
 					Severity = $oContent."obj-severity"
+					SmallIOAlertsCfg = $oContent."small-io-alerts"
 					SmallIORatio = $oContent."small-io-ratio"
 					SmallIORatioLevel = $oContent."small-io-ratio-level"
 					SnapGrpId = $oContent."snapgrp-id"
+					SnapshotSet = _New-ObjListFromProperty_byObjName -Name "SnapSet" -ObjectArray $oContent."snapset-list"
 					SnapshotType = $oContent."snapshot-type"
+					SysId = $oContent."sys-id"
 					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					Type = $oContent."vol-type"
+					UnalignedIOAlertsCfg = $oContent."unaligned-io-alerts"
 					UnalignedIORatio = $oContent."unaligned-io-ratio"
 					UnalignedIORatioLevel = $oContent."unaligned-io-ratio-level"
-					SysId = $oContent."sys-id"
+					VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
+					VolId = $(if ($null -ne $oContent."vol-id") {$oContent."vol-id"[0]})  ## renamed from "vol-id"
+					VolSizeTB = $(if ($null -ne $oContent."vol-size") {$oContent."vol-size" / 1GB})
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
