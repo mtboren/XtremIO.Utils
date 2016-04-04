@@ -781,9 +781,13 @@ namespace XioItemInfo {
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'FWVersion' instead", false)]
 		public String BiosFWVersion;
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public String BrickName;
 		public XioItemInfo.Cluster Cluster;
 		public Object DataProtectionGroup;
+		public Object DedicatedIpmi;
 		public Boolean Enabled;
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
@@ -791,27 +795,32 @@ namespace XioItemInfo {
 		public String EncryptionMode;
 		public String EncryptionSwitchStatus;
 		public Object FcHba;
+		public String FWVersionError;
 		public String HealthState;
+		public Object HealthStateDetail;
 		public String IBAddr1;
 		public String IBAddr2;
+		public System.Nullable<Int32> IndexInXbrick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'IPMI' instead", false)]
 		public String IPMIAddr;
-		public String IPMIState;
 		public String JournalState;
 		public String MgmtPortSpeed;
 		public String MgmtPortState;
 		public String MgrAddr;
 		public String NodeMgrConnState;
+		public System.Nullable<Int32> NumDimmCorrectableError;
 		public Int32 NumSSD;
 		public Int32 NumSSDDown;
 		public Int32 NumTargetDown;
 		public String OSVersion;
 		public Object PCI;
 		public String PoweredState;
-		public String RemoteJournalHealthState;
 		public Object[] SAS;
 		public String SdrFWVersion;
 		public String State;
 		public String StorageControllerId;
+		public Object StorageControllerPSU;
 		public String SWVersion;
 		public Object TagList;
 

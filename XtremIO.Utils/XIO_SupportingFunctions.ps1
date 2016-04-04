@@ -1203,10 +1203,16 @@ function _New-Object_fromItemTypeAndContent {
 			"storage-controllers" {
 				[ordered]@{
 					BiosFWVersion = $oContent."bios-fw-version"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					## hm, seems to be second item in the 'brick-id' property
 					BrickName = $oContent."brick-id".Item(1)
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					DataProtectionGroup = _New-ObjListFromProperty_byObjName -Name "DataProtectionGroup" -ObjectArray (,$oContent."rg-id")
+					DedicatedIpmi = New-Object -Type PSObject -Property ([ordered]@{
+						ConnectionState = $oContent."dedicated-ipmi-link-conn-state"
+						PortSpeed = $oContent."dedicated-ipmi-port-speed"
+						PortState = $oContent."dedicated-ipmi-port-state"
+					}) ## end New-Object
 					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
@@ -1220,16 +1226,27 @@ function _New-Object_fromItemTypeAndContent {
 						Model = $oContent."fc-hba-model"
 					} ## end New-Object
 					FWVersion = $oContent."bios-fw-version"
+					FWVersionError = $oContent."fw-version-error"
 					Guid = $oContent.guid
+					## overall health state
 					HealthState = $oContent."node-health-state"
+					HealthStateDetail = New-Object -Type PSObject -Property ([ordered]@{
+						Controller = $oContent."current-health-state"
+						Dimm = $oContent."dimm-health-state"
+						Fan = $oContent."fan-health-state"
+						Journaling = $oContent."node-journaling-health-state"
+						RemoteJournal = $oContent."remote-journal-health-state"
+						Temperature = $oContent."temperature-health-state"
+						Voltage = $oContent."voltage-health-state"
+					}) ## end New-Object
 					## no overall HWRevision property, but adding here so that can be a hardwarebase object
 					HWRevision = "n/a"
 					IBAddr1 = $oContent."ib-addr1"
 					IBAddr2 = $oContent."ib-addr2"
 					IdLED = $oContent."identify-led"
 					Index = $oContent.index
+					IndexInXbrick = $oContent."index-in-brick"
 					IPMIAddr = $oContent."ipmi-addr"
-					IPMIState = $oContent."ipmi-conn-state"
 					## available in 2.4.0 and up
 					JournalState = $oContent."journal-state"
 					LifecycleState = $oContent."fru-lifecycle-state"
@@ -1242,6 +1259,7 @@ function _New-Object_fromItemTypeAndContent {
 					Model = $null
 					Name = $oContent.name
 					NodeMgrConnState = $oContent."node-mgr-conn-state"
+					NumDimmCorrectableError = $oContent."dimm-correctable-errors"
 					NumSSD = $oContent."num-of-ssds"
 					NumSSDDown = $oContent."ssd-dn"
 					NumTargetDown = $oContent."targets-dn"
@@ -1265,7 +1283,6 @@ function _New-Object_fromItemTypeAndContent {
 						} ## end New-Object
 					}) ## end New-Object
 					PoweredState = $oContent."powered-state"
-					RemoteJournalHealthState = $oContent."remote-journal-health-state"
 					SAS = $(1..2 | Foreach-Object {
 						New-Object -Type PSObject -Property ([ordered]@{
 							Name = "SAS$_"
@@ -1281,6 +1298,7 @@ function _New-Object_fromItemTypeAndContent {
 					State = $oContent."backend-storage-controller-state"
 					StatusLED = $oContent."status-led"
 					StorageControllerId = $oContent."node-id"[0]
+					StorageControllerPSU = _New-ObjListFromProperty -IdPropertyPrefix "StorageControllerPSU" -ObjectArray $oContent."node-psu-list"
 					SWVersion = $oContent."sw-version"
 					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
 					XmsId = $oContent."xms-id"
