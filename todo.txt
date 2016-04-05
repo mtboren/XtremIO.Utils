@@ -253,9 +253,9 @@ doing:
 
 		iSCSIDaemonState from "iscsi-daemon-state"; IsSYMNode boolean from ("is-sym-node" -eq "True"); LocalDisk object from "local-disk-list";
 
-	still working here for StorageController objs:
-	(DiscoveryNeeded object with boolean properties IBSwitchDetected from "ib-switches-dn", IBSwitchPSUDetected from "ib-switch-psu-dn", BBUDetected from "ups-discovery-needed", DAEDetected from "jbod-dn", DAEControllerDetected from "jbod-lcc-discovery-needed", DAEPSUDetected from "jbod-psu-dn", LocalDiskDetected from "local-disk-dn", StorageControllerPsuDetected from "node-psu-dn", SsdDetected from "ssd-dn", TargetDetected from "targets-dn");
+		(DiscoveryNeeded object with boolean properties IBSwitchDetected from "ib-switches-dn", IBSwitchPSUDetected from "ib-switch-psu-dn", BBUDetected from "ups-discovery-needed", DAEDetected from "jbod-dn", DAEControllerDetected from "jbod-lcc-discovery-needed", DAEPSUDetected from "jbod-psu-dn", LocalDiskDetected from "local-disk-dn", StorageControllerPsuDetected from "node-psu-dn", SsdDetected from "ssd-dn", TargetDetected from "targets-dn");
 
+	still working here for StorageController objs:
 	(ManagerPort object with properties from Address from "node-mgr-addr", DefaultGateway from "mgmt-gw-ip", LinkHealthLevel from "mgmt-link-health-level", Autonegotiate from "mgmt-port-autoneg", Duplex from "mgmt-port-duplex", Speed string from "mgmt-port-speed", State from "mgmt-port-state", Subnet string from "node-mgr-addr-subnet", ConnectionErrorReason from "node-mgr-conn-error-reason"; ConnectionState from "node-mgr-conn-state", );
 
 	MonitoredBBU object from "monitored-ups-list"; NodeGuid from "node-guid"; StopReason from "node-stop-reason"; StopType from "node-stop-type"; NumLocalDisk from "num-of-local-disks"; NumBBU from "num-of-monitored-upses"; NumStorageControllerPSU from "num-of-node-psus"; deprecate PoweredState and SdrFWVersion (now obsolete); add LastStartTime from "sc-start-timestamp" -- a datetime if not $null; remove NumSSDDown, NumTargetDown, as they were incorrect (these are "discovery-needed" properties)

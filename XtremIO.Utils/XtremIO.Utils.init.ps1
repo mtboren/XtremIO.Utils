@@ -788,7 +788,7 @@ namespace XioItemInfo {
 		public XioItemInfo.Cluster Cluster;
 		public Object DataProtectionGroup;
 		public Object DedicatedIpmi;
-		//public Object DiscoveryNeeded;
+		public Object DiscoveryNeeded;
 		public Boolean Enabled;
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]

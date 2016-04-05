@@ -570,6 +570,29 @@ function _New-ObjListFromProperty_byObjName {
 } ## end fn
 
 
+function _Get-BooleanFromVariousValue {
+<#	.Description
+	Helper function to try to get a boolean value from what could be various input value types, like a String "false" or Int32 "0" or Boolean "False". Useful for trying to consistently return a Boolean when the input might be "true" or "false" in some various representation
+#>
+	param(
+		## The value from which to try to get a boolean value
+		[PSObject]$Value
+	)
+	process {
+		$oThisVal = $Value
+		if ($null -eq $Value) {$null}
+		else {
+			switch ($oThisVal.GetType().Name) {
+				"Boolean" {$oThisVal; break}
+				"Int32" {$oThisVal -ne 0; break}
+				"String" {$oThisVal -ne "false"}
+				default {$null}
+			} ## end switch
+		} ## end else
+	} ## end process
+} ## end fn
+
+
 <#	.Description
 	Helper function to take "raw" API object and create new XIO Item Info object for return to consumer
 #>
@@ -1213,18 +1236,18 @@ function _New-Object_fromItemTypeAndContent {
 						PortSpeed = $oContent."dedicated-ipmi-port-speed"
 						PortState = $oContent."dedicated-ipmi-port-state"
 					}) ## end New-Object
-					# DiscoveryNeeded = New-Object -Type PSObject -Property ([ordered]@{
-					# 	IBSwitchDetected = [boolean]$oContent."ib-switches-dn"
-					# 	IBSwitchPSUDetected = [boolean]$oContent."ib-switch-psu-dn"
-					# 	BBUDetected = [boolean]$oContent."ups-discovery-needed"
-					# 	DAEDetected = [boolean]$oContent."jbod-dn"
-					# 	DAEControllerDetected = [boolean]$oContent."jbod-lcc-discovery-needed"
-					# 	DAEPSUDetected = [boolean]$oContent."jbod-psu-dn"
-					# 	LocalDiskDetected = [boolean]$oContent."local-disk-dn"
-					# 	StorageControllerPsuDetected = [boolean]$oContent."node-psu-dn"
-					# 	SsdDetected = [boolean]$oContent."ssd-dn"
-					# 	TargetDetected = [boolean]$oContent."targets-dn"
-					# }) ## end New-Object
+					DiscoveryNeeded = New-Object -Type PSObject -Property ([ordered]@{
+						IBSwitchDetected = _Get-BooleanFromVariousValue -Value $oContent."ib-switches-dn"
+						IBSwitchPSUDetected = _Get-BooleanFromVariousValue -Value $oContent."ib-switch-psu-dn"
+						BBUDetected = _Get-BooleanFromVariousValue -Value $oContent."ups-discovery-needed"
+						DAEDetected = _Get-BooleanFromVariousValue -Value $oContent."jbod-dn"
+						DAEControllerDetected = _Get-BooleanFromVariousValue -Value $oContent."jbod-lcc-discovery-needed"
+						DAEPSUDetected = _Get-BooleanFromVariousValue -Value $oContent."jbod-psu-dn"
+						LocalDiskDetected = _Get-BooleanFromVariousValue -Value $oContent."local-disk-dn"
+						StorageControllerPsuDetected = _Get-BooleanFromVariousValue -Value $oContent."node-psu-dn"
+						SsdDetected = _Get-BooleanFromVariousValue -Value $oContent."ssd-dn"
+						TargetDetected = _Get-BooleanFromVariousValue -Value $oContent."targets-dn"
+					}) ## end New-Object
 					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
