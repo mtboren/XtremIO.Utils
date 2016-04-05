@@ -1213,6 +1213,18 @@ function _New-Object_fromItemTypeAndContent {
 						PortSpeed = $oContent."dedicated-ipmi-port-speed"
 						PortState = $oContent."dedicated-ipmi-port-state"
 					}) ## end New-Object
+					# DiscoveryNeeded = New-Object -Type PSObject -Property ([ordered]@{
+					# 	IBSwitchDetected = [boolean]$oContent."ib-switches-dn"
+					# 	IBSwitchPSUDetected = [boolean]$oContent."ib-switch-psu-dn"
+					# 	BBUDetected = [boolean]$oContent."ups-discovery-needed"
+					# 	DAEDetected = [boolean]$oContent."jbod-dn"
+					# 	DAEControllerDetected = [boolean]$oContent."jbod-lcc-discovery-needed"
+					# 	DAEPSUDetected = [boolean]$oContent."jbod-psu-dn"
+					# 	LocalDiskDetected = [boolean]$oContent."local-disk-dn"
+					# 	StorageControllerPsuDetected = [boolean]$oContent."node-psu-dn"
+					# 	SsdDetected = [boolean]$oContent."ssd-dn"
+					# 	TargetDetected = [boolean]$oContent."targets-dn"
+					# }) ## end New-Object
 					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
 					## available in 2.4.0 and up
@@ -1246,10 +1258,64 @@ function _New-Object_fromItemTypeAndContent {
 					IdLED = $oContent."identify-led"
 					Index = $oContent.index
 					IndexInXbrick = $oContent."index-in-brick"
+					InfinibandPort = $(1..2 | Foreach-Object {
+						New-Object -Type PSObject -Property ([ordered]@{
+							DeclaredDown = New-Object -Type PSObject -Property ([ordered]@{
+								NumInLastMin = $oContent."ib${_}-link-downed-per-minute"
+								NumInLast5Min = $oContent."ib${_}-link-downed-per-long-period"
+								Total = $oContent."ib${_}-link-downed"
+							})
+							LinkErrorRecovery = New-Object -Type PSObject -Property ([ordered]@{
+								NumInLast5Min = $oContent."ib${_}-link-error-recoveries-per-long-period"
+								NumInLastMin = $oContent."ib${_}-link-error-recoveries-per-minute"
+								Total = $oContent."ib${_}-link-error-recoveries"
+							})
+							LinkHealthLevel = $oContent."ib${_}-link-health-level"
+							LinkIntegrityError  = New-Object -Type PSObject -Property ([ordered]@{
+								NumInLastMin = $oContent."ib${_}-local-link-integrity-errors-per-minute"
+								NumInLast5Min = $oContent."ib${_}-local-link-integrity-errors-per-long-period"
+								Total = $oContent."ib${_}-local-link-integrity-errors"
+							})
+							## NEED TO UPDATE HERE TO GET value from config hashtable
+							LinkRateGbps = $oContent."ib${_}-link-rate-in-gbps"
+							Misconnection = $oContent."ib${_}-port-misconnection"
+							PeerOid = $oContent."ib${_}-peer-oid"
+							PeerType = $oContent."ib${_}-port-peer-type"
+							ReceivedPacketError = New-Object -Type PSObject -Property ([ordered]@{
+								NumInLastMin = $oContent."ib${_}-port-rcv-errors-per-minute"
+								NumInLast5Min = $oContent."ib${_}-port-rcv-errors-per-long-period"
+								Total = $oContent."ib${_}-port-rcv-errors"
+							})
+							RemotePhysicalError = New-Object -Type PSObject -Property ([ordered]@{
+								NumInLastMin = $oContent."ib${_}-port-rcv-remote-physical-errors-per-minute"
+								NumInLast5Min = $oContent."ib${_}-port-rcv-remote-physical-errors-per-long-period"
+								Total = $oContent."ib${_}-port-rcv-remote-physical-errors"
+							})
+							State = $oContent."ib${_}-port-state"
+							SymbolError = New-Object -Type PSObject -Property ([ordered]@{
+								NumInLastMin = $oContent."ib${_}-symbol-errors-per-minute"
+								NumInLast5Min = $oContent."ib${_}-symbol-errors-per-long-period"
+								Total = $oContent."ib${_}-symbol-errors"
+							})
+						}) ## end New-Object
+					}) ## end sub call
+					IPMI = New-Object -Type PSObject -Property ([ordered]@{
+						ActiveIpmiPort = $oContent."active-ipmi-port"
+						Address = $oContent."ipmi-addr"
+						BMCFWVersion = $oContent."ipmi-bmc-fw-version"
+						BMCHWRevision = $oContent."ipmi-bmc-hw-revision"
+						BMCModel = $oContent."ipmi-bmc-model"
+						ConnectionErrorReason = $oContent."ipmi-conn-error-reason"
+						DefaultGateway = $oContent."ipmi-gw-ip"
+						Subnet = $oContent."ipmi-addr-subnet"
+					}) ## end New-Object
 					IPMIAddr = $oContent."ipmi-addr"
+					iSCSIDaemonState = $oContent."iscsi-daemon-state"
+					IsSYMNode = $(if ($null -ne $oContent."is-sym-node") {$oContent."is-sym-node" -eq "True"})
 					## available in 2.4.0 and up
 					JournalState = $oContent."journal-state"
 					LifecycleState = $oContent."fru-lifecycle-state"
+					LocalDisk = _New-ObjListFromProperty -IdPropertyPrefix "LocalDisk" -ObjectArray "local-disk-list"
 					## available in 2.4.0 and up
 					MgmtPortSpeed = $oContent."mgmt-port-speed"
 					## available in 2.4.0 and up

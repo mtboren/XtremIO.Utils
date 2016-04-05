@@ -788,6 +788,7 @@ namespace XioItemInfo {
 		public XioItemInfo.Cluster Cluster;
 		public Object DataProtectionGroup;
 		public Object DedicatedIpmi;
+		//public Object DiscoveryNeeded;
 		public Boolean Enabled;
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
@@ -801,10 +802,15 @@ namespace XioItemInfo {
 		public String IBAddr1;
 		public String IBAddr2;
 		public System.Nullable<Int32> IndexInXbrick;
+		public Object InfinibandPort;
+		public Object IPMI;
 		// deprecated after rel v0.11.0
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'IPMI' instead", false)]
 		public String IPMIAddr;
+		public String iSCSIDaemonState;
+		public System.Nullable<Boolean> IsSYMNode;
 		public String JournalState;
+		public Object LocalDisk;
 		public String MgmtPortSpeed;
 		public String MgmtPortState;
 		public String MgrAddr;
