@@ -778,6 +778,7 @@ namespace XioItemInfo {
 	public class SsdPerformance : PerformanceBase {}
 
 	public class StorageController : HardwareBase {
+		public Object BBU;
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'FWVersion' instead", false)]
 		public String BiosFWVersion;
@@ -810,25 +811,36 @@ namespace XioItemInfo {
 		public String iSCSIDaemonState;
 		public System.Nullable<Boolean> IsSYMNode;
 		public String JournalState;
+		public System.Nullable<DateTime> LastStartTime;
 		public Object LocalDisk;
+		public Object ManagerPort;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'ManagerPort' instead", false)]
 		public String MgmtPortSpeed;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'ManagerPort' instead", false)]
 		public String MgmtPortState;
 		public String MgrAddr;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'ManagerPort' instead", false)]
 		public String NodeMgrConnState;
-		public System.Nullable<Int32> NumDimmCorrectableError;
+		public Int32 NumBBU;
+		public Int32 NumDimmCorrectableError;
+		public Int32 NumLocalDisk;
 		public Int32 NumSSD;
-		public Int32 NumSSDDown;
-		public Int32 NumTargetDown;
+		public Int32 NumStorageControllerPSU;
 		public String OSVersion;
 		public Object PCI;
-		public String PoweredState;
+		public String PhysicalGuid;
 		public Object[] SAS;
-		public String SdrFWVersion;
 		public String State;
+		public String StopReason;
+		public String StopType;
 		public String StorageControllerId;
 		public Object StorageControllerPSU;
 		public String SWVersion;
 		public Object TagList;
+		public System.Nullable<TimeSpan> Uptime;
 
 		// Implicit constructor
 		public StorageController () {}

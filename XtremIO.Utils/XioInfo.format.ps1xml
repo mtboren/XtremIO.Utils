@@ -845,7 +845,6 @@
 					<TableColumnHeader><Width>15</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
-					<TableColumnHeader></TableColumnHeader>
 				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
@@ -856,7 +855,6 @@
 							<TableColumnItem><PropertyName>IPMIAddr</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>BrickName</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>Cluster</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>NodeMgrConnState</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>

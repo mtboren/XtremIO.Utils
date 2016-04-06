@@ -1224,7 +1224,10 @@ function _New-Object_fromItemTypeAndContent {
 				} ## end ordered dictionary
 				break} ## end case
 			"storage-controllers" {
+				## get the last start datetime, if not $null
+				$dteLastStartTime = $(if ($null -ne $oContent."sc-start-timestamp") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."sc-start-timestamp"})
 				[ordered]@{
+					BBU = _New-ObjListFromProperty -IdPropertyPrefix "BBU" -ObjectArray $oContent."monitored-ups-list"
 					BiosFWVersion = $oContent."bios-fw-version"
 					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					## hm, seems to be second item in the 'brick-id' property
@@ -1299,8 +1302,7 @@ function _New-Object_fromItemTypeAndContent {
 								NumInLast5Min = $oContent."ib${_}-local-link-integrity-errors-per-long-period"
 								Total = $oContent."ib${_}-local-link-integrity-errors"
 							})
-							## NEED TO UPDATE HERE TO GET value from config hashtable
-							LinkRateGbps = $oContent."ib${_}-link-rate-in-gbps"
+							LinkRateGbps = $(if ($null -ne $oContent."ib${_}-link-rate-in-gbps") {if ($hshCfg.LinkRateTextToSpeedMapping.ContainsKey($oContent."ib${_}-link-rate-in-gbps")) {$hshCfg.LinkRateTextToSpeedMapping[$oContent."ib${_}-link-rate-in-gbps"]} else {$oContent."ib${_}-link-rate-in-gbps"}})
 							Misconnection = $oContent."ib${_}-port-misconnection"
 							PeerOid = $oContent."ib${_}-peer-oid"
 							PeerType = $oContent."ib${_}-port-peer-type"
@@ -1337,8 +1339,21 @@ function _New-Object_fromItemTypeAndContent {
 					IsSYMNode = $(if ($null -ne $oContent."is-sym-node") {$oContent."is-sym-node" -eq "True"})
 					## available in 2.4.0 and up
 					JournalState = $oContent."journal-state"
+					LastStartTime = $dteLastStartTime
 					LifecycleState = $oContent."fru-lifecycle-state"
 					LocalDisk = _New-ObjListFromProperty -IdPropertyPrefix "LocalDisk" -ObjectArray "local-disk-list"
+					ManagerPort = New-Object -Type PSObject -Property ([ordered]@{
+						Address = $oContent."node-mgr-addr"
+						Autonegotiate = $oContent."mgmt-port-autoneg"
+						DefaultGateway = $oContent."mgmt-gw-ip"
+						ConnectionErrorReason = $oContent."node-mgr-conn-error-reason"
+						ConnectionState = $oContent."node-mgr-conn-state"
+						Duplex = $oContent."mgmt-port-duplex"
+						LinkHealthLevel = $oContent."mgmt-link-health-level"
+						Speed = $oContent."mgmt-port-speed"
+						State = $oContent."mgmt-port-state"
+						Subnet = $oContent."node-mgr-addr-subnet"
+					}) ## end New-Object
 					## available in 2.4.0 and up
 					MgmtPortSpeed = $oContent."mgmt-port-speed"
 					## available in 2.4.0 and up
@@ -1348,10 +1363,11 @@ function _New-Object_fromItemTypeAndContent {
 					Model = $null
 					Name = $oContent.name
 					NodeMgrConnState = $oContent."node-mgr-conn-state"
+					NumBBU = $oContent."num-of-monitored-upses"
 					NumDimmCorrectableError = $oContent."dimm-correctable-errors"
+					NumLocalDisk = $oContent."num-of-local-disks"
 					NumSSD = $oContent."num-of-ssds"
-					NumSSDDown = $oContent."ssd-dn"
-					NumTargetDown = $oContent."targets-dn"
+					NumStorageControllerPSU = $oContent."num-of-node-psus"
 					OSVersion = $oContent."os-version"
 					PartNumber = $oContent."part-number"
 					PCI = New-Object -Type PSObject -Property ([ordered]@{
@@ -1371,7 +1387,7 @@ function _New-Object_fromItemTypeAndContent {
 							Model = $oContent."pci-ib-hba-model"
 						} ## end New-Object
 					}) ## end New-Object
-					PoweredState = $oContent."powered-state"
+					PhysicalGuid = $oContent."node-guid"
 					SAS = $(1..2 | Foreach-Object {
 						New-Object -Type PSObject -Property ([ordered]@{
 							Name = "SAS$_"
@@ -1380,16 +1396,17 @@ function _New-Object_fromItemTypeAndContent {
 							PortState = $oContent."sas${_}-port-state"
 						}) ## end New-Object
 					}) ## end sub call
-					## available in 2.4.0 and up
-					SdrFWVersion = $oContent."sdr-fw-version"
 					SerialNumber = $oContent."serial-number"
 					Severity = $oContent."obj-severity"
 					State = $oContent."backend-storage-controller-state"
 					StatusLED = $oContent."status-led"
+					StopReason = $oContent."node-stop-reason"
+					StopType = $oContent."node-stop-type"
 					StorageControllerId = $oContent."node-id"[0]
 					StorageControllerPSU = _New-ObjListFromProperty -IdPropertyPrefix "StorageControllerPSU" -ObjectArray $oContent."node-psu-list"
 					SWVersion = $oContent."sw-version"
 					TagList = _New-ObjListFromProperty -IdPropertyPrefix "Tag" -ObjectArray $oContent."tag-list"
+					Uptime = $(if ($null -ne $dteLastStartTime) {New-TimeSpan -Start $dteLastStartTime})
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
