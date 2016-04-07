@@ -848,6 +848,9 @@ namespace XioItemInfo {
 
 	// XIO StorageControllerPsu
 	public class StorageControllerPsu : InfoBase {
+		public Object Brick;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
 		public XioItemInfo.Cluster Cluster;
 		public Boolean Enabled;
@@ -908,6 +911,7 @@ namespace XioItemInfo {
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Brick' instead", false)]
 		public Object[] BrickId;
+		public String Certainty;
 		public XioItemInfo.Cluster Cluster;
 		public String DriverVersion;
 		public String ErrorReason;
@@ -918,6 +922,7 @@ namespace XioItemInfo {
 		public Int32 MTU;
 		public Object PerformanceInfo;
 		public String PortAddress;
+		public String PortHealthLevel;
 		public String PortMacAddress;
 		public String PortSpeed;
 		public String PortState;
@@ -1025,17 +1030,21 @@ namespace XioItemInfo {
 		public String ColorHex;
 		public System.Nullable<DateTime> CreationTime;
 		public String FolderId;
+		public String FullName;
 		public Int64 IOPS;
 		public Int32 NumChild;
 		public Int32 NumSubfolder;
 		public Int32 NumVol;
 		public String ObjectType;
-		public String ParentFolder;
+		public Object ParentFolder;
+		// deprecated after rel v0.11.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'ParentFolder' instead", false)]
 		public String ParentFolderId;
 		public Object PerformanceInfo;
 		public Object SubfolderList;
 		public String[] VolIdList;
 		public Double VolSizeTB;
+		public Object Volume;
 
 		// Implicit constructor
 		public VolumeFolder () {}
@@ -1089,8 +1098,9 @@ namespace XioItemInfo {
 		public String ServerName;
 		public String SWVersion;
 		public Int32 ThinProvSavingsPct;
-		public Version Version;
 		public Object[] PerformanceInfo;
+		public TimeSpan Uptime;
+		public Version Version;
 
 		// Implicit constructor
 		public XMS () {}

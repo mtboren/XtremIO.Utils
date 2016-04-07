@@ -673,14 +673,19 @@
 			<Name>XioItem_volume-folders</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.VolumeFolder</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>28</Width></TableColumnHeader>
+					<TableColumnHeader><Width>14</Width></TableColumnHeader>
+					<TableColumnHeader><Width>8</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>ParentFolder</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NumSubfolder</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NumVol</PropertyName></TableColumnItem>
-							<TableColumnItem><PropertyName>VolSizeTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
-							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Volume</PropertyName></TableColumnItem>
 						</TableColumnItems>
 					</TableRowEntry>
 				</TableRowEntries>
@@ -976,7 +981,6 @@
 			<TableControl>
 				<TableHeaders>
 					<TableColumnHeader><Width>13</Width></TableColumnHeader>
-					<!-- <TableColumnHeader><Width>6</Width></TableColumnHeader> -->
 					<TableColumnHeader><Width>14</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 					<TableColumnHeader><Width>13</Width></TableColumnHeader>
@@ -990,7 +994,6 @@
 					<TableRowEntry>
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
-							<!-- <TableColumnItem><PropertyName>Index</PropertyName></TableColumnItem> -->
 							<TableColumnItem><PropertyName>WriteBW_MBps</PropertyName><FormatString>{0:n3}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>WriteIOPS</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>ReadBW_MBps</PropertyName><FormatString>{0:n3}</FormatString></TableColumnItem>

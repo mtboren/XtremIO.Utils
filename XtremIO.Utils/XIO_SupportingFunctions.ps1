@@ -514,7 +514,7 @@ function _New-ObjListFromProperty {
 #>
 	param(
 		## The prefix to add to the Id property name
-		[string]$IdPropertyPrefix,
+		[parameter(Mandatory)][string]$IdPropertyPrefix,
 		## The array of objects from which to get Id, Name, and Index
 		[PSObject[]]$ObjectArray
 	) ## end param
@@ -522,8 +522,8 @@ function _New-ObjListFromProperty {
 	process {
 		$ObjectArray | Where-Object {($null -ne $_) -and ($null -ne $_[0])} | Foreach-Object {
 			New-Object -TypeName PSObject -Property ([ordered]@{
-				"${IdPropertyPrefix}Id" = $_[0]
 				Name = $_[1]
+				"${IdPropertyPrefix}Id" = $_[0]
 				Index = $_[2]
 			}) ## end new-object
 		} ## end foreach-object
@@ -1002,14 +1002,21 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"data-protection-groups" {
 				[ordered]@{
-					Name = $oContent.name
+					AvailableRebuild = $oContent."available-rebuilds"
+					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
+					BrickName = $oContent."brick-id"[1]
+					BrickIndex = $oContent."brick-id"[2]
+					Cluster = & $sblkNewXioiteminfoClusterObj
+					ClusterName = $oContent."sys-id"[1]
+					ClusterIndex = $oContent."sys-id"[2]
 					DataProtectionGrpId = $oContent."rg-id"[0]
 					Guid = $oContent.guid
 					Index = $oContent.index
-					State = $oContent."protection-state"
-					TotSSDTB = $oContent."ud-ssd-space" / 1GB
-					UsefulSSDTB = $oContent."useful-ssd-space" / 1GB
-					UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
+					IOPS = [int64]$oContent.iops
+					Name = $oContent.name
+					NumNode = $oContent."num-of-nodes"
+					NumSSD = $oContent."num-of-ssds"
+					NumStorageController = $oContent."num-of-nodes"
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							BandwidthMB = $oContent.bw / 1KB
@@ -1020,50 +1027,38 @@ function _New-Object_fromItemTypeAndContent {
 							WriteIOPS = [int]$oContent."wr-iops"
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
-					IOPS = [int64]$oContent.iops
 					RebalanceInProg = ("False","done" -notcontains $oContent."rebalance-in-progress")
-					## the "raw" value returned from the API
-					# RebalanceInProgRaw = $oContent."rebalance-in-progress"
-					RebalanceProgress = $oContent."rebalance-progress"
 					RebuildInProg = ("False","done" -notcontains $oContent."rebuild-in-progress")
-					## the "raw" value returned from the API
-					# RebuildInProgRaw = $oContent."rebuild-in-progress"
 					RebuildPreventionReason = $oContent."rebuild-prevention-reason"
 					RebuildProgress = [int]$oContent."rebuild-progress"
-					Severity = $oContent."obj-severity"
-					## the "raw" value returned from the API
-					# SSDPrepInProgRaw = $oContent."ssd-preparation-in-progress"
-					SSDPrepProgress = $oContent."ssd-preparation-progress"
-					AvailableRebuild = $oContent."available-rebuilds"
-					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
-					BrickName = $oContent."brick-id"[1]
-					BrickIndex = $oContent."brick-id"[2]
-					Cluster = & $sblkNewXioiteminfoClusterObj
-					ClusterName = $oContent."sys-id"[1]
-					ClusterIndex = $oContent."sys-id"[2]
-					NumNode = $oContent."num-of-nodes"
-					NumSSD = $oContent."num-of-ssds"
-					NumStorageController = $oContent."num-of-nodes"
+					RebalanceProgress = $oContent."rebalance-progress"
 					RGrpId = $oContent."rg-id"
+					SSDPrepProgress = $oContent."ssd-preparation-progress"
+					Severity = $oContent."obj-severity"
+					State = $oContent."protection-state"
+					TotSSDTB = $oContent."ud-ssd-space" / 1GB
+					UsefulSSDTB = $oContent."useful-ssd-space" / 1GB
+					UsedSSDTB = $oContent."ud-ssd-space-in-use" / 1GB
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
 			"events" {
 				[ordered]@{
-					EventID = $oContent.id
-					DateTime = $(if ($null -ne $oContent.timestamp) {[System.DateTime]($oContent.timestamp)})
-					RelAlertCode = $oContent.event_code
 					Category = $oContent.classification
-					Severity = $oContent.severity
-					EntityType = $oContent.entity
-					EntityDetails = $oContent.entity_details
+					DateTime = $(if ($null -ne $oContent.timestamp) {[System.DateTime]($oContent.timestamp)})
 					Description = $oContent.description
+					EntityDetails = $oContent.entity_details
+					EntityType = $oContent.entity
+					EventID = $oContent.id
+					RelAlertCode = $oContent.event_code
+					Severity = $oContent.severity
 				} ## end ordered dictionary
 				break} ## end case
 			"ig-folders" {
 				$arrDirectObjsThatAreNotSubfolders = $(if (($oContent."subfolder-list" | Measure-Object).Count -eq 0) {$oContent."direct-list"} else {$oContent."direct-list" | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_[0]}})
+				## if there is only one initiatorGroup, need to update the array so that it is a single item long (an array with one "list" item in it)
+				if (1 -eq ($oContent."num-of-direct-objs" - $oContent."num-of-subfolders")) {$arrDirectObjsThatAreNotSubfolders = @(,$arrDirectObjsThatAreNotSubfolders)}
 				[ordered]@{
-					Name = $oContent.name
 					Caption = $oContent.caption
 					ColorHex = $oContent.color
 					CreationTime = $(if ($null -ne $oContent."creation-time-long") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)})
@@ -1075,8 +1070,9 @@ function _New-Object_fromItemTypeAndContent {
 					FolderId = $oContent."folder-id"[0]
 					FullName = $oContent."folder-id"[1]
 					Guid = $oContent.guid
+					Name = $oContent.name
 					## the number of objects that are not subfolders; should equal ."direct-list".Count - ."num-of-subfolders"
-					NumIG = ($arrDirectObjsThatAreNotSubfolders | Measure-Object).Count
+					NumIG = $oContent."num-of-direct-objs" - $oContent."num-of-subfolders"
 					NumSubfolder = $oContent."num-of-subfolders"
 					ObjectType = $oContent."object-type"
 					ParentFolder = _New-ObjListFromProperty -IdPropertyPrefix Folder -ObjectArray @(,$oContent."parent-folder-id")
@@ -1428,6 +1424,7 @@ function _New-Object_fromItemTypeAndContent {
 				[ordered]@{
 					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray (,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
+					Certainty = $oContent."certainty"
 					## check for "sys-id" property (not present for this object type on API from XIOS v2.4)
 					Cluster = $(if ($null -ne $oContent."sys-id") {& $sblkNewXioiteminfoClusterObj})
 					DriverVersion = $oContent."driver-version"  ## renamed from "driver-version"
@@ -1489,6 +1486,7 @@ function _New-Object_fromItemTypeAndContent {
 					}) ## end New-object PerformanceInfo
 					PortAddress = $oContent."port-address"
 					PortMacAddress = ($oContent."port-mac-addr" -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
+					PortHealthLevel = $oContent."port-health-level"
 					PortSpeed = $oContent."port-speed"
 					PortState = $oContent."port-state"
 					PortType = $oContent."port-type"
@@ -1611,25 +1609,25 @@ function _New-Object_fromItemTypeAndContent {
 				} ## end ordered dictionary
 				break} ## end case
 			"volume-folders" {
+				$arrDirectObjsThatAreNotSubfolders = $(if (($oContent."subfolder-list" | Measure-Object).Count -eq 0) {$oContent."direct-list"} else {$oContent."direct-list" | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_[0]}})
+				## if there is only one volume, need to update the array so that it is a single item long (an array with one "list" item in it)
+				if (1 -eq $oContent."num-of-vols") {$arrDirectObjsThatAreNotSubfolders = @(,$arrDirectObjsThatAreNotSubfolders)}
 				[ordered]@{
 					Caption = $oContent.caption
 					ColorHex = $oContent.color
 					CreationTime = $(if ($null -ne $oContent."creation-time-long") {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)})
-					Name = $oContent.name
-					ParentFolder = $oContent."parent-folder-id"[1]
-					NumVol = [int]$oContent."num-of-vols"
-					VolSizeTB = $oContent."vol-size" / 1GB
 					FolderId = $oContent."folder-id"[0]
+					FullName = $oContent."folder-id"[1]
 					Guid = $oContent.guid
-					ParentFolderId = $oContent."parent-folder-id"[0]
-					NumChild = [int]$oContent."num-of-direct-objs"
-					NumSubfolder = [int]$oContent."num-of-subfolders"
-					ObjectType = $oContent."object-type"
-					SubfolderList = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray $oContent."subfolder-list"
-					## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
-					VolIdList = @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_})
 					Index = [int]$oContent.index
 					IOPS = [int64]$oContent.iops
+					Name = $oContent.name
+					NumChild = [int]$oContent."num-of-direct-objs"
+					NumSubfolder = [int]$oContent."num-of-subfolders"
+					NumVol = [int]$oContent."num-of-vols"
+					ObjectType = $oContent."object-type"
+					ParentFolder = _New-ObjListFromProperty -IdPropertyPrefix Folder -ObjectArray @(,$oContent."parent-folder-id")
+					ParentFolderId = $oContent."parent-folder-id"[0]
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							BandwidthMB = $oContent.bw / 1KB
@@ -1671,6 +1669,11 @@ function _New-Object_fromItemTypeAndContent {
 						}) ## end New-Object
 					}) ## end New-object PerformanceInfo
 					Severity = $oContent."obj-severity"
+					SubfolderList = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray $oContent."subfolder-list"
+					## the volume IDs for volumes directly in this volume-folder, as determined by getting the IDs in the "direct-list" where said IDs are not also in the "subfolder-list" list of object IDs
+					VolIdList = @($arrDirectObjsThatAreNotSubfolders | Foreach-Object {$_[0]})
+					VolSizeTB = $oContent."vol-size" / 1GB
+					Volume = _New-ObjListFromProperty -IdPropertyPrefix Vol -ObjectArray $arrDirectObjsThatAreNotSubfolders
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
 				break} ## end case
@@ -1696,7 +1699,6 @@ function _New-Object_fromItemTypeAndContent {
 			#### API v2 items
 			"alert-definitions" {
 				[ordered]@{
-					Name = $oContent.name
 					AlertCode = [string]$oContent."alert-code"
 					## generally the same value as .name
 					AlertType = $oContent."alert-type"
@@ -1705,6 +1707,7 @@ function _New-Object_fromItemTypeAndContent {
 					Enabled = ($oContent."activity-mode" -eq "enabled")
 					Guid = $oContent.guid
 					Index = $oContent.index
+					Name = $oContent.name
 					SendToCallHome = ($oContent."send-to-call-home" -eq "yes")
 					Severity = $oContent.severity
 					ThresholdType = $oContent."threshold-type"
@@ -1715,7 +1718,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"alerts" {
 				[ordered]@{
-					Name = $oContent.name
 					AlertCode = [string]$oContent."alert-code"
 					AlertType = $oContent."alert-type"
 					AssociatedObjId = $oContent."assoc-obj-id"[0]
@@ -1729,6 +1731,7 @@ function _New-Object_fromItemTypeAndContent {
 					Description = $oContent.description
 					Guid = $oContent.guid
 					Index = $oContent.index
+					Name = $oContent.name
 					Severity = $oContent.severity
 					State = $oContent."alert-state"
 					Threshold = $oContent.threshold
@@ -1795,7 +1798,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"consistency-groups" {
 				[ordered]@{
-					Name = $oContent.name
 					Certainty = $oContent.certainty
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterId = $oContent."sys-id"[0]
@@ -1805,6 +1807,7 @@ function _New-Object_fromItemTypeAndContent {
 					ConsistencyGrpShortId = $oContent."cg-short-id"
 					Guid = $oContent.guid
 					Index = $oContent.index
+					Name = $oContent.name
 					NumVol = $oContent."num-of-vols"
 					Severity = $oContent."obj-severity"
 					SysId = $oContent."sys-id"
@@ -1927,7 +1930,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"email-notifier" {
 				[ordered]@{
-					Name = $oContent.name
 					CompanyName = $oContent."company-name"
 					ContactDetails = $oContent."contact-details"
 					Enabled = ($oContent.enabled -eq "true")
@@ -1937,6 +1939,7 @@ function _New-Object_fromItemTypeAndContent {
 					Index = $oContent.index
 					MailRelayAddress = $oContent."mail-relay-address"
 					MailUsername = $oContent."mail-user"
+					Name = $oContent.name
 					ProxyAddress = $oContent."proxy-address"
 					ProxyPort = $oContent."proxy-port"
 					ProxyUser = $oContent."proxy-user"
@@ -2003,7 +2006,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"ldap-configs" {
 				[ordered]@{
-					Name = $oContent.name
 					BindDN = $oContent."bind-dn"
 					CACertData = $oContent."ca-cert-data"
 					CACertFile = $oContent."ca-cert-file"
@@ -2011,6 +2013,7 @@ function _New-Object_fromItemTypeAndContent {
 					CacheLife = New-TimeSpan -Hours $oContent."cache-expire-hours"
 					Guid = $oContent.guid
 					Index = $oContent.index
+					Name = $oContent.name
 					Role = $oContent.roles
 					SearchBaseDN = $oContent."search-base"
 					SearchFilter = $oContent."search-filter"
@@ -2025,7 +2028,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"local-disks" {
 				[ordered]@{
-					Name = $oContent.name
 					Brick = _New-ObjListFromProperty_byObjName -Name "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
@@ -2044,6 +2046,7 @@ function _New-Object_fromItemTypeAndContent {
 					LifecycleState = $oContent."fru-lifecycle-state"
 					LocalDiskId = $oContent."local-disk-id"[0]
 					Model = $oContent."model-name"
+					Name = $oContent.name
 					NumBadSector = $oContent."num-bad-sectors"
 					PartNumber = $oContent."part-number"
 					Purpose = $oContent."local-disk-purpose"
@@ -2065,12 +2068,12 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"schedulers" {
 				[ordered]@{
-					Name = $oContent.name
 					Guid = $oContent.guid
 					Index = $oContent.index
 					Enabled = ($oContent."enabled-state" -eq "enabled")
 					LastActivated = $(if ($oContent."last-activation-time" -gt 0) {_Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime $oContent."last-activation-time"})
 					LastActivationResult = $oContent."last-activation-status"
+					Name = $oContent.name
 					NumSnapToKeep = [int]$oContent."snapshots-to-keep-number"
 					Retain = (New-TimeSpan -Seconds $oContent."snapshots-to-keep-time")
 					Schedule = (_New-ScheduleDisplayString -ScheduleType $oContent."scheduler-type" -ScheduleTriplet $oContent.schedule)
@@ -2111,7 +2114,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"snapshot-sets" {
 				[ordered]@{
-					Name = $oContent.name
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					ClusterId = $oContent."sys-id"[0]
 					ClusterName = $oContent."sys-id"[1]
@@ -2122,6 +2124,7 @@ function _New-Object_fromItemTypeAndContent {
 					CreationTime = _Get-LocalDatetimeFromUTCUnixEpoch -UnixEpochTime ($oContent."creation-time-long" / 1000)
 					Guid = $oContent.guid
 					Index = $oContent.index
+					Name = $oContent.name
 					NumVol = $oContent."num-of-vols"
 					Severity = $oContent."obj-severity"
 					SnapshotSetId = $oContent."snapset-id"[0]
@@ -2135,7 +2138,6 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"snmp-notifier" {
 				[ordered]@{
-					Name = $oContent.name
 					AuthProtocol = $oContent."auth-protocol"
 					Community = $oContent.community
 					Enabled = ($oContent.enabled -eq "true")
@@ -2143,6 +2145,7 @@ function _New-Object_fromItemTypeAndContent {
 					HeartbeatFreqSec = [int]$oContent."heartbeat-frequency"
 					HeartbeatFrequency = New-TimeSpan -Seconds $oContent."heartbeat-frequency"
 					Index = $oContent.index
+					Name = $oContent.name
 					Port = [int]$oContent.port
 					PrivacyProtocol = $oContent."priv-protocol"
 					Recipient = $oContent.recipients
@@ -2154,7 +2157,7 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"storage-controller-psus" {
 				[ordered]@{
-					Name = $oContent.name
+					Brick = _New-ObjListFromProperty -IdPropertyPrefix "Brick" -ObjectArray @(,$oContent."brick-id")
 					BrickId = $oContent."brick-id"
 					Cluster = & $sblkNewXioiteminfoClusterObj
 					Enabled = ($oContent."enabled-state" -eq "enabled")
@@ -2166,6 +2169,7 @@ function _New-Object_fromItemTypeAndContent {
 					LifecycleState = $oContent."fru-lifecycle-state"
 					Location = $oContent.location
 					Model = $oContent."model-name"
+					Name = $oContent.name
 					PartNumber = $oContent."part-number"
 					PowerFailure = $oContent."power-failure"
 					PowerFeed = $oContent."power-feed"
@@ -2230,6 +2234,8 @@ function _New-Object_fromItemTypeAndContent {
 				} ## end ordered dictionary
 				break} ## end case
 			"xms" {
+				## try to make an Uptime timespan for this XMS
+				$oTspVarForUptime = New-TimeSpan; $bTspParseSucceeded = [System.TimeSpan]::TryParse(($oContent.uptime -replace " days?, ", ":"), [ref]$oTspVarForUptime)
 				[ordered]@{
 					Name = $oContent.name
 					Index = $oContent.index
@@ -2283,6 +2289,7 @@ function _New-Object_fromItemTypeAndContent {
 						Current = New-Object -Type PSObject -Property ([ordered]@{
 							## latency in microseconds (µs)
 							Latency = New-Object -Type PSObject -Property ([ordered]@{
+								Average = $oContent."avg-latency"
 								Read = New-Object -Type PSObject -Property ([ordered]@{
 									AllBlockSize = [int64]$oContent."rd-latency"
 								}) ## end object
@@ -2340,6 +2347,7 @@ function _New-Object_fromItemTypeAndContent {
 							} ## end Foreach-Object
 						}) ## end property
 					}) ## end New-object PerformanceInfo
+					Uptime = $oTspVarForUptime
 				} ## end ordered dictionary
 				break} ## end case
 			#### end API v2 items
