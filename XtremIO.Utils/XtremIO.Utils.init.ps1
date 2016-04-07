@@ -463,8 +463,8 @@ namespace XioItemInfo {
 		public String Certainty;
 		public XioItemInfo.Cluster Cluster;
 		public String ConnectionState;
-		public String InitiatorGrpId;
 		public Object InitiatorGroup;
+		public String InitiatorGrpId;
 		public String InitiatorId;
 		public Int64 IOPS;
 		public System.Nullable<XioItemInfo.Enums.General.OSType> OperatingSystem;

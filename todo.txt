@@ -206,7 +206,9 @@ todo:
 	-needs to iterate through those parents from the root
 	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
 -need to exclude -OperatingSystem parameter option in New-XIOInitiator if API of XMS is v1 -- breaks things to send along in a request to API V1 XMS; lower priority
--for when dropping support for legacy XIOS/API (XIOS 2 & 3, API v1), remove PerformanceInfo property from IGFolder, VolumeFolder (and remove Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance cmdlets)
+-for when dropping support for legacy XIOS/API (XIOS 2 & 3, API v1)
+	-remove PerformanceInfo property from IGFolder, VolumeFolder (and remove Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance cmdlets)
+	-remove the Nullable aspect of .Cluster properties in the type def (v2 API objects should always have the .sys-id property on objects for which code tries to make .Cluster value from said property)
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
 -?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
@@ -233,8 +235,6 @@ todo:
 
 doing:
 [feat_AddOtherProperties]
--alphabetize the property definitions in supportingfunctions
--address removals of properties per "RESTful API (Ver. 2.0) Changes" section of API guide (starting at ~p378)
 	done:
 -add properties to objects:
 	-add .TagList property to all taggable objects missing it:  Brick, Cluster, Initiator, InitiatorGroup, Ssd, StorageController, Target, TargetGroup, XEnv
@@ -287,14 +287,16 @@ doing:
 	-to Target:  add Certainty from "certainty"; add PortHealthLevel from "port-health-level"
 	-to VolumeFolder:  add .Volume property from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}) (use _New-ObjListFromProperty function); add FullName from ."folder-id"[1] (this is essentially the tag value:  /Volume/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property; update default table view (remove IOPS and ParentFolder, add NumSubFolder and Volume)
 	-to XMS:  add Average in latency from "avg-latency"; add Uptime timespan from "uptime" string like "72 days, 6:12:22.610000"
-
-	-added table for IB link speed info:
-		-unknown -> $null or so
-		-sdr - single data rate, 2.5Gb/s
-		-ddr - double data rate, 5 Gb/s
-		-qdr - quad data rate, 10 Gb/s
-		-fdr - fourteen data rate, 14.0625 Gb/s
-		-fdr10 - ~10.31 Gb/s
+-added table for IB link speed info:
+	-unknown -> $null or so
+	-sdr - single data rate, 2.5Gb/s
+	-ddr - double data rate, 5 Gb/s
+	-qdr - quad data rate, 10 Gb/s
+	-fdr - fourteen data rate, 14.0625 Gb/s
+	-fdr10 - ~10.31 Gb/s
+-alphabetize the property definitions in supportingfunctions
+-address removals of properties per "RESTful API (Ver. 2.0) Changes" section of API guide (starting at ~p378) -- none affected the module
+-Pester tests
 
 
 done for version 0.next (after v0.11.0):

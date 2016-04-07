@@ -92,9 +92,9 @@ Describe -Tags "Get" -Name "Get-XIOLunMap (choice properties)" {
 ## for each cmdlet that supports -Cluster param, test getting such an object, specifying -Cluster for each test (the object types' typenames happen to match the object name in the cmdlet noun)
 $arrXioCmdletsSupportingClusterParam = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv, DataProtectionGroupPerformance, InitiatorGroupPerformance, InitiatorPerformance, SsdPerformance, TargetPerformance, VolumePerformance, PerformanceCounter
 $arrXioCmdletsSupportingClusterParam | Foreach-Object {
-	Describe -Tags "Get","ClusterSpecific" -Name "Get-XIO$_ (Cluster-specific)" {
+	Describe -Tags "Get","ClusterSpecific" -Name "Get-XIO$_ (Cluster-specific for targeted XMS)" {
 	    It "Gets an XIO $_ object, uses -Cluster param" {
-	 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$_" -Cluster $strClusterNameToUse}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
+	 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$_" -ComputerName $strXmsComputerName -Cluster $strClusterNameToUse}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
 	    	New-Variable -Name "bGetsOnly${_}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$_")
 	    	(Get-Variable -ValueOnly -Name "bGetsOnly${_}Type") | Should Be $true
 	    }
