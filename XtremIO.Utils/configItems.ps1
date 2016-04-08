@@ -30,6 +30,14 @@ $hshCfg = @{
 	} ## end hashtable
 	## item types that support specifying ?cluster-name=<somename> in the URI to retrieve items specific to the given cluster (per the API reference)
 	ItemTypesSupportingClusterNameInput = "bbus", "bricks", "consistency-group-volumes", "consistency-groups", "dae-controllers", "dae-psus", "daes", "data-protection-groups", "infiniband-switches", "initiator-groups", "initiators", "iscsi-portals", "iscsi-routes", "local-disks", "lun-maps", "performance", "schedulers", "slots", "snapshot-sets", "snapshots", "ssds", "storage-controller-psus", "storage-controllers", "target-groups", "targets", "volumes", "xenvs"
+	LinkRateTextToSpeedMapping = @{
+		unknown = $null
+		sdr = 2.5	## single data rate
+		ddr = 5		## double data rate
+		qdr = 10	## quad data rate
+		fdr = 14.0625	## fourteen data rate
+		fdr10 = 10.31
+	} ## end hashtable
 	## mapping of PowerShell object property names to their property names in the XtremIO REST API; useful for the -Property parameter in Get-XIOItemInfo and others
 	TypePropMapping = @{
 		"lun-maps" = @{

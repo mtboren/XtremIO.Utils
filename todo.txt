@@ -1,39 +1,4 @@
 todo:
--add properties to objects:
-	-add .TagList property to all taggable objects missing it:  Brick, Cluster, Initiator, InitiatorGroup, Ssd, StorageController, Target, TargetGroup, XEnv
-	-to Brick:  add .DAE property (new obj from jbod-list; need to update _New-ObjListFromProperty to include DAE type); add SSD info (new-objlist from "ssd-slot-array"[3] if not "ssd-slot-array" not $null); add BBU info (from "ups-list" if not $null)
-	-to BBU:  add .Brick obj from $oContent."brick-id", deprecate BrickId; correct Severity to use "obj-severity" instead of "serverity"
-	-to Cluster:  add ConfigurableVolumeType property from "configurable-vol-type-capability" ("supported" and "unsupported" are the values); add ExpansionDataTransferPct from max-data-transfer-percent-done (Maximum data transfer percentage done The estimated time remaining for a cluster expansion procedure to complete, as a percentage); add SshFirewallMode from ssh-firewall-mode; add MemoryInUseGB from "total-memory-in-use" that is in MB if not $null, MemoryInUsePct from "total-memory-in-use-in-percent" if not $null; boolean MaintenanceMode from "under-maintenance" ("false") (nullable); UpgradeState from "upgrade-state"
-	-to DAE:  add .Brick obj from $oContent."brick-id", deprecate BrickId
-	-to DAEController:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add .DAE property (new obj from jbod-id)
-	-to DAEPsu:  add .Brick obj from $oContent."brick-id", deprecate BrickId
-	-to DataProtectionGroup:  add NumStorageController from "num-of-nodes", deprecate "NumNode"
-	-to EmailNotifier:  add Frequency as timespan from $oContent.frequency, deprecate FrequencySec; add Sender from "sender"
-	-to InfinibandSwitch objects:  add .Cluster property; add FWId from "fw-psid" (internal firmware ID)
-	-to Initiator:  add Certainty = $oContent.certainty
-	-to InitiatorGroup: add Folder = _New-ObjListFromProperty_byObjName -Name "Folder" -ObjectArray (,$oContent."folder-id")
-	-to InitiatorGroupFolder: add .InitiatorGroup from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}) (use _New-ObjListFromProperty function); add FullName from ."folder-id"[1] (this is essentially the tag value:  /InitiatorGroup/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property
-	-to LDAPConfig:  add CacheExpire as a TimeSpan from cache-expire-hours, deprecate CacheExpireH
-	-to LocalDisk:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add StorageController obj property from "node-id", deprecate StorageControllerId and StorageControllerName;
-	-to Slot:  add .Brick obj from $oContent."brick-id", deprecate BrickId;
-	-to Snapshot, Volume:  add AncestorVolume obj property from "ancestor-vol-id", deprecate AncestorVolId; add Certainty; add DestinationSnapshot obj from "dest-snap-list", deprecate DestSnapList; add RelatedConsistencyGroup objs property from "related-consistency-groups"; add SnapshotSet obj from "snapset-list"; add AccessType from "vol-access"; add Type from "vol-type"
-	-to SnapsthoSet:  add ConsistencyGroup obj from "cg-oid"
-	-to SnmpNotifier:  add HeartbeatFrequency as timespan, deprecate HeartbeatFreqSec
-	-to Ssd:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add Certainty from "certainty" (and does that change class parent in init class def?); add LastIoError object with properties: Timestamp from "last-io-error-timestamp" (set as $null if "last-io-error-type" -eq "none"; need to find if there are any SSDs w/ this value, as the units are not doc'd -- is this a string, or epoch number, or?), Type from "last-io-error-type", ASC from "io-error-asc", ASCQ from "io-error-ascq", SenseCode from "io-error-sense-code", and VendorSpecificCode from "io-error-vendor-specific"; add NumBadSector = $oContent."num-bad-sectors"; add LastSMARTError object with properties:  ASC from "smart-error-asc", ASCQ from "smart-error-ascq"; add FailureReason from "ssd-failure-reason", deprecate SSDFailureReason
-	-to StorageController object:  add .Brick and deprecate BrickName; add .StorageControllerPSU obj (from node-psu-list); add ActiveIpmiPort from "active-ipmi-port"; add ControllerHealthState from "current-health-state"; (make HealthStateDetail obj w/ sub health states, like Controller, Journaling, etc?; if so, move RemoteJournalHealthState into this from top level); (add DedicatedIpmi object with properties ConnectionState from "dedicated-ipmi-link-conn-state", PortSpeed from "dedicated-ipmi-port-speed", and PortState from "dedicated-ipmi-port-state"); add DimmNumCorrectableError from "dimm-correctable-errors"; add DimmHealthState from "dimm-health-state"; add FanHealthState from "fan-health-state"; add TemperatureHealthState from "temperature-health-state"; add VoltageHealthState from "voltage-health-state"; add FWVersionError from "fw-version-error"; add InfinibandPort object with two sub objects (from properties named ib1-* and ib2-*), each with: (DeclaredDown object with properties Total from "ib1-link-downed", NumInLast5Min from "ib1-link-downed-per-long-period", NumInLastMin from "ib1-link-downed-per-minute"), (LinkErrorRecovery object with properties Total from "ib1-link-error-recoveries", NumInLast5Min from "ib1-link-error-recoveries-per-long-period", and NumInLastMin from "ib1-link-error-recoveries-per-minute"), LinkHealthLevel from "ib1-link-health-level", LinkRateGbps (nullable double) from "ib1-link-rate-in-gbps" and need to get value from key returned here, (LinkIntegrityError obj  with properties Total from "ib1-local-link-integrity-errors", NumInLast5Min from "ib1-local-link-integrity-errors-per-long-period", and NumInLastMin from "ib1-local-link-integrity-errors-per-minute"); PeerOid from "ib1-peer-oid"; Misconnection from "ib1-port-misconnection"; PeerType from "ib1-port-peer-type"; (ReceivedPacketError object with properties Total from "ib1-port-rcv-errors", NumInLast5Min from "ib1-port-rcv-errors-per-long-period", NumInLastMin from "ib1-port-rcv-errors-per-minute"), (RemotePhysicalError object with properties Total from "ib1-port-rcv-remote-physical-errors", NumInLast5Min from "ib1-port-rcv-remote-physical-errors-per-long-period", NumInLastMin from "ib1-port-rcv-remote-physical-errors-per-minute"); State from "ib1-port-state"; (SymbolError object with properties Total from "ib1-symbol-errors", NumInLast5Min from "ib1-symbol-errors-per-long-period", NumInLastMin from "ib1-symbol-errors-per-minute"); and, of course, repeat this for ib2-*; deprecate  IPMIAddr (moving), IPMIState (obsolete) properties and remove from default table view; (DiscoveryNeeded object with boolean properties IBSwitchDetected from "ib-switches-dn", IBSwitchPSUDetected from "ib-switch-psu-dn", BBUDetected from "ups-discovery-needed", DAEDetected from "jbod-dn", DAEControllerDetected from "jbod-lcc-discovery-needed", DAEPSUDetected from "jbod-psu-dn", LocalDiskDetected from "local-disk-dn", StorageControllerPsuDetected from "node-psu-dn", SsdDetected from "ssd-dn", TargetDetected from "targets-dn"); IndexInXbrick from [int]$oContent."index-in-brick"; (add IPMI object with properties Address from "ipmi-addr", Subnet from "ipmi-addr-subnet", BMCFWVersion from "ipmi-bmc-fw-version", BMCHWRevision from "ipmi-bmc-hw-revision", BMCModel from "ipmi-bmc-model", ConnectionErrorReason from "ipmi-conn-error-reason", DefaultGateway from "ipmi-gw-ip"); iSCSIDaemonState from "iscsi-daemon-state"; IsSYMNode boolean from ("is-sym-node" -eq "True"); LocalDisk object from "local-disk-list"; (ManagerPort object with properties from Address from "node-mgr-addr", DefaultGateway from "mgmt-gw-ip", LinkHealthLevel from "mgmt-link-health-level", Autonegotiate from "mgmt-port-autoneg", Duplex from "mgmt-port-duplex", Speed string from "mgmt-port-speed", State from "mgmt-port-state", Subnet string from "node-mgr-addr-subnet", ConnectionErrorReason from "node-mgr-conn-error-reason"; ConnectionState from "node-mgr-conn-state", ); MonitoredBBU object from "monitored-ups-list"; NodeGuid from "node-guid"; JournalingHealthState from "node-journaling-health-state"; StopReason from "node-stop-reason"; StopType from "node-stop-type"; NumLocalDisk from "num-of-local-disks"; NumBBU from "num-of-monitored-upses"; NumStorageControllerPSU from "num-of-node-psus"; deprecate PoweredState and SdrFWVersion (now obsolete); add LastStartTime from "sc-start-timestamp" -- a datetime if not $null; remove NumSSDDown, NumTargetDown, as they were incorrect (these are "discovery-needed" properties);
-	-to StorageControllerPsu:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add StorageControllerPsu, deprecate StorageControllerPSUId
-	-to Target:  add Certainty from "certainty"; add PortHealthLevel from "port-health-level"
-	-to VolumeFolder:  add .FullName property (from folder-id -- 1th item in the array); add .Volume property from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}) (use _New-ObjListFromProperty function); add FullName from ."folder-id"[1] (this is essentially the tag value:  /Volume/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property
-	-to XMS:  add Average in latency from "avg-latency"; add Uptime timespan from "uptime" string like "72 days, 6:12:22.610000"
-	-and, alphabetize the property definitions in supportingfunctions
--table to make for IB link speed info:
-	-unknown -> $null or so
-	-sdr - single data rate, 2.5Gb/s
-	-ddr - double data rate, 5 Gb/s
-	-qdr - quad data rate, 10 Gb/s
-	-fdr - fourteen data rate, 14.0625 Gb/s
-	-fdr10 - ~10.31 Gb/s
-	-address removals of properties per "RESTful API (Ver. 2.0) Changes" section of API guide (starting at ~p378)
 -once .Cluster type of property is added to cluster-specific objects:
 	-for Volume: update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 	-this is also in prep for better pipelining, which will need to get Cluster info from pipeline object coming through (along with .ComputerName, right?)
@@ -77,6 +42,7 @@ todo:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
+-for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
 -add pipelining abilities for things like:
 	Get-XIODAE | Get-XIODAEController
 	Get-XIODAEController | Get-XIODAE
@@ -240,6 +206,9 @@ todo:
 	-needs to iterate through those parents from the root
 	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
 -need to exclude -OperatingSystem parameter option in New-XIOInitiator if API of XMS is v1 -- breaks things to send along in a request to API V1 XMS; lower priority
+-for when dropping support for legacy XIOS/API (XIOS 2 & 3, API v1)
+	-remove PerformanceInfo property from IGFolder, VolumeFolder (and remove Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance cmdlets)
+	-remove the Nullable aspect of .Cluster properties in the type def (v2 API objects should always have the .sys-id property on objects for which code tries to make .Cluster value from said property)
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
 -?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
@@ -265,6 +234,70 @@ todo:
 
 
 doing:
+[feat_AddOtherProperties]
+	done:
+-add properties to objects:
+	-add .TagList property to all taggable objects missing it:  Brick, Cluster, Initiator, InitiatorGroup, Ssd, StorageController, Target, TargetGroup, XEnv
+	-to Brick:  add .DAE property (new obj from jbod-list); add BBU info (from "ups-list" if not $null); add SSD info (new-objlist from "ssd-slot-array"[3] if not "ssd-slot-array" not $null), and deprecate SsdSlotInfo
+	-to BBU:  add .Brick obj from $oContent."brick-id", deprecate BrickId; correct Severity to use "obj-severity" instead of "severity"
+	-to Cluster:  add ConfigurableVolumeType property from "configurable-vol-type-capability" ("supported" and "unsupported" are the values); add ExpansionDataTransferPct from max-data-transfer-percent-done (Maximum data transfer percentage done The estimated time remaining for a cluster expansion procedure to complete, as a percentage); add SshFirewallMode from ssh-firewall-mode; add MemoryInUseGB from "total-memory-in-use" that is in MB if not $null, MemoryInUsePct from "total-memory-in-use-in-percent" if not $null; boolean MaintenanceMode from "under-maintenance" ("false") (nullable); UpgradeState from "upgrade-state"
+	-to DAE:  add .Brick obj from $oContent."brick-id", deprecate BrickId
+	-to DAEController:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add .DAE property (new obj from jbod-id) and deprecate DAEId
+	-to DAEPsu:  add .Brick obj from $oContent."brick-id", deprecate BrickId
+	-to DataProtectionGroup:  add NumStorageController from "num-of-nodes", deprecate "NumNode"
+	-to EmailNotifier:  add Frequency as timespan from $oContent.frequency, deprecate FrequencySec; add Sender from "sender"
+	-to InfinibandSwitch objects:  add .Cluster property; add FWId from "fw-psid" (internal firmware ID)
+	-to Initiator:  add Certainty = $oContent.certainty
+	-to InitiatorGroup: add Folder obj from "folder-id"
+	-to InitiatorGroupFolder: add .InitiatorGroup from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}), deprecate InitiatorGrpIdList; add FullName from ."folder-id"[1] (this is essentially the tag value:  /InitiatorGroup/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property; update NumIG to reflect proper count (exclude subfolders from the count, which were previously included in the value returned); update table view format to not include IOPS which is no longer populated in newer XIOS (none of the IGFolder performance items are populated any longer)
+	-to LDAPConfig:  add CacheLife as a TimeSpan from cache-expire-hours, deprecate CacheExpireH
+	-to LocalDisk:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add StorageController obj property from "node-id", deprecate StorageControllerId and StorageControllerName;
+	-to Slot:  add .Brick obj from $oContent."brick-id", deprecate BrickId;
+	-to Snapshot, Volume:  add AncestorVolume obj property from "ancestor-vol-id", deprecate AncestorVolId; add Certainty; add DestinationSnapshot obj from "dest-snap-list", deprecate DestSnapList; add ConsistencyGroup objs property from "related-consistency-groups"; add SnapshotSet obj from "snapset-list"; add AccessType from "vol-access"; add Type from "vol-type"
+	-to SnapshotSet:  add ConsistencyGroup obj from "cg-oid", deprecate ConsistencyGrpId and ConsistencyGrpName
+	-to SnmpNotifier:  add HeartbeatFrequency as timespan, deprecate HeartbeatFreqSec
+	-to Ssd:  add .Brick obj from $oContent."brick-id", deprecate BrickId; add Certainty from "certainty" (and does that change class parent in init class def?); add LastIoError object with properties: Timestamp from "last-io-error-timestamp" (set as $null if "last-io-error-type" -eq "none"; need to find if there are any SSDs w/ this value, as the units are not doc'd -- is this a string, or epoch number, or?), Type from "last-io-error-type", ASC from "io-error-asc", ASCQ from "io-error-ascq", SenseCode from "io-error-sense-code", and VendorSpecificCode from "io-error-vendor-specific"; add NumBadSector = $oContent."num-bad-sectors"; add LastSMARTError object with properties:  ASC from "smart-error-asc", ASCQ from "smart-error-ascq"; add FailureReason from "ssd-failure-reason", deprecate SSDFailureReason
+	-to StorageController object (still need to add LinkRateGbps value lookup from config hashtable):
+		added, not tested:
+		add .Brick and deprecate BrickName; add .StorageControllerPSU obj (from node-psu-list);
+
+		add HealthStateDetail obj property with:
+		move RemoteJournalHealthState into this from top level, add ControllerHealthState from "current-health-state"; add DimmHealthState from "dimm-health-state"; add FanHealthState from "fan-health-state"; add TemperatureHealthState from "temperature-health-state"; add VoltageHealthState from "voltage-health-state"; JournalingHealthState from "node-journaling-health-state";
+
+		(add DedicatedIpmi object with properties ConnectionState from "dedicated-ipmi-link-conn-state", PortSpeed from "dedicated-ipmi-port-speed", and PortState from "dedicated-ipmi-port-state");
+		add NumDimmCorrectableError from "dimm-correctable-errors";
+
+		add FWVersionError from "fw-version-error"; deprecate IPMIAddr (moving to IPMI), removed IPMIState (obsolete), and remove from default table view; IndexInXbrick from "index-in-brick";
+
+		add InfinibandPort object with two sub objects (from properties named ib1-* and ib2-*), each with:
+		(DeclaredDown object with properties Total from "ib1-link-downed", NumInLast5Min from "ib1-link-downed-per-long-period", NumInLastMin from "ib1-link-downed-per-minute"), (LinkErrorRecovery object with properties Total from "ib1-link-error-recoveries", NumInLast5Min from "ib1-link-error-recoveries-per-long-period", and NumInLastMin from "ib1-link-error-recoveries-per-minute"), LinkHealthLevel from "ib1-link-health-level", LinkRateGbps (nullable double) from "ib1-link-rate-in-gbps" and need to get value from key returned here, (LinkIntegrityError obj  with properties Total from "ib1-local-link-integrity-errors", NumInLast5Min from "ib1-local-link-integrity-errors-per-long-period", and NumInLastMin from "ib1-local-link-integrity-errors-per-minute"); PeerOid from "ib1-peer-oid"; Misconnection from "ib1-port-misconnection"; PeerType from "ib1-port-peer-type"; (ReceivedPacketError object with properties Total from "ib1-port-rcv-errors", NumInLast5Min from "ib1-port-rcv-errors-per-long-period", NumInLastMin from "ib1-port-rcv-errors-per-minute"), (RemotePhysicalError object with properties Total from "ib1-port-rcv-remote-physical-errors", NumInLast5Min from "ib1-port-rcv-remote-physical-errors-per-long-period", NumInLastMin from "ib1-port-rcv-remote-physical-errors-per-minute"); State from "ib1-port-state"; (SymbolError object with properties Total from "ib1-symbol-errors", NumInLast5Min from "ib1-symbol-errors-per-long-period", NumInLastMin from "ib1-symbol-errors-per-minute"); and, of course, repeat this for ib2-*;
+
+		(add IPMI object with properties ActiveIpmiPort from "active-ipmi-port", Address from "ipmi-addr", Subnet from "ipmi-addr-subnet", BMCFWVersion from "ipmi-bmc-fw-version", BMCHWRevision from "ipmi-bmc-hw-revision", BMCModel from "ipmi-bmc-model", ConnectionErrorReason from "ipmi-conn-error-reason", DefaultGateway from "ipmi-gw-ip");
+
+		iSCSIDaemonState from "iscsi-daemon-state"; IsSYMNode boolean from ("is-sym-node" -eq "True"); LocalDisk object from "local-disk-list";
+
+		(DiscoveryNeeded object with boolean properties IBSwitchDetected from "ib-switches-dn", IBSwitchPSUDetected from "ib-switch-psu-dn", BBUDetected from "ups-discovery-needed", DAEDetected from "jbod-dn", DAEControllerDetected from "jbod-lcc-discovery-needed", DAEPSUDetected from "jbod-psu-dn", LocalDiskDetected from "local-disk-dn", StorageControllerPsuDetected from "node-psu-dn", SsdDetected from "ssd-dn", TargetDetected from "targets-dn");
+
+		(ManagerPort object with properties from Address from "node-mgr-addr", DefaultGateway from "mgmt-gw-ip", LinkHealthLevel from "mgmt-link-health-level", Autonegotiate from "mgmt-port-autoneg", Duplex from "mgmt-port-duplex", Speed string from "mgmt-port-speed", State from "mgmt-port-state", Subnet string from "node-mgr-addr-subnet", ConnectionErrorReason from "node-mgr-conn-error-reason"; ConnectionState from "node-mgr-conn-state");  deprecate MgmtPortSpeed, MgmtPortState, NodeMgrConnState
+
+		BBU object from "monitored-ups-list"; PhysicalGuid from "node-guid"; StopReason from "node-stop-reason"; StopType from "node-stop-type"; NumLocalDisk from "num-of-local-disks"; NumBBU from "num-of-monitored-upses"; NumStorageControllerPSU from "num-of-node-psus"; add LastStartTime (datetime) and Uptime (timespan) from "sc-start-timestamp" -- a datetime if not $null;
+
+		remove PoweredState and SdrFWVersion (now obsolete), remove NumSSDDown and NumTargetDown, as they were incorrect (these are "discovery-needed" properties)
+	-to StorageControllerPsu:  add .Brick obj from $oContent."brick-id", deprecate BrickId
+	-to Target:  add Certainty from "certainty"; add PortHealthLevel from "port-health-level"
+	-to VolumeFolder:  add .Volume property from @($oContent."direct-list" | Foreach-Object {$_[0]} | Where-Object {($oContent."subfolder-list" | Foreach-Object {$_[0]}) -notcontains $_}) (use _New-ObjListFromProperty function); add FullName from ."folder-id"[1] (this is essentially the tag value:  /Volume/FolderName/foldername2); replace .ParentFolder w/ an obj from "parent-folder-id", instead of just parent folder name; deprecate ParentFolderId property; update default table view (remove IOPS and ParentFolder, add NumSubFolder and Volume)
+	-to XMS:  add Average in latency from "avg-latency"; add Uptime timespan from "uptime" string like "72 days, 6:12:22.610000"
+-added table for IB link speed info:
+	-unknown -> $null or so
+	-sdr - single data rate, 2.5Gb/s
+	-ddr - double data rate, 5 Gb/s
+	-qdr - quad data rate, 10 Gb/s
+	-fdr - fourteen data rate, 14.0625 Gb/s
+	-fdr10 - ~10.31 Gb/s
+-alphabetize the property definitions in supportingfunctions
+-address removals of properties per "RESTful API (Ver. 2.0) Changes" section of API guide (starting at ~p378) -- none affected the module
+-Pester tests
+
 
 done for version 0.next (after v0.11.0):
 [feat_AddClusterProperty]
