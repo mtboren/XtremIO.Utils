@@ -1,6 +1,192 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.12.0
+08 Apr 2016
+
+New properties!  This release was all about fleshing out the properties of returned objects, partly for increasing the richness of the objects, and partly in preparation for making vast pipelining improvements between cmdlets.  The further standardization of objects' properties lead to three property deprecations, and those properties will be removed in a future release (see list below).  Some details:
+
+- \[new] added or updated `Cluster` property to twenty-one (21) object types, and in the form of an `XioItemInfo.Cluster` object
+- \[change] updated `Cluster` property to be an `XioItemInfo.Cluster` object instead of just a `String`  on object types `DataProtectionGroup` and `StorageController`
+- \[deprecated] deprecated properties `ClusterId`, `ClusterName`, and `SysId`, with the new `Cluster` property being the direction forward, for fourteen object types that had one or more of said properties.  Affected object types: `BBU`, `Brick`, `ConsistencyGroup`, `DAE`, `DAEController`, `DAEPsu`, `LocalDisk`, `Slot`, `Snapshot`, `SnapshotSet`, `Ssd`, `StorageControllerPsu`, `TargetGroup`, `Volume`
+- \[new] added various new properties to twenty-seven object types
+ 
+### v0.11.0
+20 Mar 2016
+
+This release brings four (4) new cmdlets for creating XtremIO configuration items.  Additionally, there is now support for the `OperatingSystem` property of `Initiator` objects.  The list:
+
+- \[new] New cmdlets: `New-XIOConsistencyGroup`, `New-XIOSnapshotScheduler`, `New-XIOTag`, and `New-XIOUserAccount`
+- \[improvement] the `New-XIOInitiator` cmdlet now provides the `-OperatingSystem` parameter for specifying the OS type of the host whose HBA is involved with the new `Initiator` object, and `Initiator` objects now have the `OperatingSystem` property
+- \[improvement] Better reporting for when a web exception does happen, for easier issue identification/troubleshooting (mostly useful/applicable during development and API exploration)
+
+### v0.10.0
+08 Mar 2016
+
+This release took on the task of adding support for multi-cluster XMS situations to `Get-XIO*` and `New-XIO*` cmdlets.  Another great add was the formalization and integration of the [Pester](https://github.com/pester/Pester "Pester GitHub repo") unit testing.  While there were some tests before, the actual test code was external to this project -- no longer.
+
+The behavior for multi-cluster scenarios is:
+
+- For `Get-XIO*` cmdlets:
+	- if `-Cluster` parameter/value specified, the `Get-XIO*` cmdlet will only consider the given cluster(s) when querying for XIO objects
+	- if no `-Cluster` parameter/value specified, the `Get-XIO*` cmdlet will return any matching XIO object from all clusters managed by the XMS devices to which current session is connected
+- For `New-XIO*` cmdlets:  you must specify one or more values for `-Cluster` for `New-XIO*` cmdlets for objects that are cluster-specific; otherwise, the cmdlets return an error (though, as the `-Cluster` parameter is not necessary for single-cluster scenarios, the parameter itself is not made proper "Mandatory" from a PowerShell standpoint) 
+
+And, `-Cluster` is now valid for all of the cmdlets that deal with XtremIO objects that are cluster-specific (like, `Volumes`, `LunMaps`, etc. -- not XMS-specific things like `Alerts` and `SnmpNotifiers`).  This consists of 22 object-specific `Get-XIO*` cmdlets, six (6) object-specific performance cmdlets, the general `Get-XIOPerformanceCounter` cmdlet, and five (5) `New-XIO*` cmdlets.  You can see which cmdlets support the `-Cluster` parameter like:
+
+	Get-Command -Module XtremIO.Utils -ParameterName Cluster
+
+Some further details about this release:
+
+
+- \[improvement] added `Cluster` property to `XioConnection` objects; this new property holds the `XIOCluster` objects for the clusters that the given XMS appliance manages
+- \[improvement] added oodles of Pester tests for verifying functioning module/cmdlets
+- \[improvement] restructured/cleaned-up project directory:  segregated module-specific files into new subdirectory
+- \[bugfixes] fixed issues with using the module in PowerShell v5 (WMF 5 RTM re-release from 24 Feb 2016)
+
+
+### v0.9.5
+03 Jan 2016
+
+This version is a collection of improvements, bug fixes, feature additions, and standardization.  Fixed are several bugs relating to using the module in PowerShell v5, and changes in behavior due to changes in the XMS (particularly, the launching of the Java management console).
+
+A couple of improvements around speed/efficiency take advantage of capabilities provided by v2.0 of the XtremIO REST API (which came to be in XIOS v4).  Firstly, we can now retrieve all objects of a given type in one web call, instead of one web call per object.  Also, we can specify just the properties to return, instead of always receiving all properties of the given objects.  While this can help greatly with the speed and efficiency of the cmdlets, it introduces a new potential for issue:  the size of the JSON response might be larger than 2MB, the maximum size currently supported by the PowerShell cmdlet from Microsoft used in this module for JSON handling (`ConvertFrom-Json`).  The use of the `-Property` parameter can help keep the response size under the current 2MB max.  If Microsoft does not make change this cmdlet in the near future, we will need to explore other means for JSON handling. 
+
+See below for the full list of changes.
+
+- \[new] added `New-XIOSnapshot` cmdlet for creating snapshots from the types `Volume`, `Tag`, `ConsistencyGroup`, and `SnapshotSet`, including from-pipeline support. Note:  this cmdlet currently supports new snapshots via the v2 API (in XIOS v4). Further support for snapshots in v1 of the API may be coming, depending on need
+- \[improvement] added support for leveraging v2 API feature that allows for getting "full" view of objects upon initial request, instead of getting just the list of HREFs the the "default" view gives. Allows for far more efficient queries.  Supported by `Get-XIOItemInfo`, implemented in `Get-XIOLunMap` for now.  `Get-XIOLunMap` showed an up to 15x speed improvement in the testing environment
+- \[improvement] added `about_XtremIO.Utils.help.txt` with the general "here's the module, here are some ways to use it".  You can now get this help via `Get-Help about_XtremIO.Utils`
+- \[improvement] more standardized:  updated type definitions for "original" object types (types that have been available since API v1), bringing them in line with the properties of objects from API v2.  While the goal was to avoid any breaking changes, there are several deprecated properties now, and just a few changes to property values, as described here:
+	- deprecated (in `DeprecatedPropertyName` -> `NewPropertyName` format below), and deprecated properties are to be removed in some future release:
+		- On `Brick`:
+			- `NumNode` -> `NumStorageController`
+			- `NodeList` -> `StorageController`, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+		- On `Cluster`:
+			- `BrickList` -> `Brick`, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+			- `InfiniBandSwitchList` -> `InfiniBandSwitch`, a collection of objects with ID, Name, Index properties, instead of just lists of the properties
+		- On `DataProtectionGroup`:
+			- `BrickIndex`, `BrickName` -> `Brick`, a collection of objects with ID, Name, Index properties, instead of just the properties
+			- `ClusterIndex`, `ClusterName` -> `Cluster`, objects with ID, Name, Index properties, instead of just the properties
+			- `RGrpId` -> `DataProtectionGrpId`, the ID of the `DataProtectionGroup` (instead of an array of id/name/index)
+		- On `LunMap`:
+			- `MappingId` -> `LunMapId`, the ID of the `LunMap` (instead of an array of id/name/index)
+			- `MappingIndex` -> `Index`, to have the standard property name used across other objects
+		- On `SSD`:
+			- `EnabledState` -> (new property) `Enabled`, to have the standard property name and type used across other objects
+			- `ModelName` -> `Model`, to have the standard property name used across other objects
+			- `ObjSeverity` -> `Severity`, to have the standard property name used across other objects
+			- `RGrpId` -> `DataProtectionGroup`, objects with ID, Name, Index properties, instead of just the properties
+		- On `StorageController`:
+			- `EnabledState` -> (new property) `Enabled`, to have the standard property name and type used across other objects
+			- `BiosFWVersion` -> `FWVersion`, to have the standard property name used across other objects
+		- On `Target`:
+			- `BrickId` -> `Brick`, an object with ID, Name, Index properties, instead of just the properties
+			- `TargetGrpId` -> `TargetGroup`, an object with ID, Name, Index properties, instead of just the properties
+		- On `Volume`, `Snapshot`:
+			- `LunMappingList` -> `LunMapList`, which contains objects with `InitiatorGroup`, `TargetGroup`, and `LunId` info, instead of just lists of properties
+			- `NumLunMapping` -> `NumLunMap`, for naming consistency
+		- On `Xenv`:
+			- `BrickId` -> `Brick`, an object with ID, Name, Index properties, instead of just the properties
+			- `NumMdl` -> `NumModule`, for more clear naming of property
+	- changes/additions:
+		- On `Brick`:
+			- added `NumStorageController`, `StorageController` properties
+		- On `Cluster`:
+			- added `Brick`, `InfiniBandSwitch` properties
+		- On `DataProtectionGroup`:
+			- added `Brick`, `Cluster`, `DataProtectionGrpId`, `Guid`  properties
+		- On `IgFolder`:
+			- **CHANGED** `FolderId`: it is now the unique identifier of the folder, instead of the array of <id>,<name>,<index>; this is to align with the *Id properties of the rest of the objects in the module -- they are just the Id string value, not the array of all three properties. And, this <objType>Id property is essentially the `Guid` property of the object, but, older XIOS did not present the `Guid` property directly; so, <objType>Id and `Guid` values should be the same on objects from XIOS v4 and newer; on objects from XIOS older than v3, the `Guid` property will be empty string
+			- `SubfolderList` now contains objects with subfolders' Id, Name, and Index info, instead of just lists of properties
+			- added `Caption`, `ColorHex`, `CreationTime`, `Guid`, `ObjectType` properties
+		- On `Initiator`:
+			- **CHANGED** `InitiatorId`: it is now the unique identifier of the intiator, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+			- added `Guid`, `InitiatorGroup` properties
+		- On `LunMap`:
+			- added `LunMapId`, that is the unique identifier of the folder; will eventually be the favored identifying property, over the deprecated MappingId property
+		- On `SSD`:
+			- **CHANGED** `SsdId`: it is now the unique identifier of the SSD, instead of the array of <id>,<name>,<index>; this is like the change to the FolderId property of IgFolder objects above
+			- added `DataProtectionGroup`, `Enabled`, `Model`, `Severity` properties
+		- On `StorageController`:
+			- added `DataProtectionGroup`, `Enabled`, `FWVersion`, `IdLED`, `LifecycleState`, `PartNumber`, `StorageControllerId` properties
+		- On `Target`:
+			- added `Brick`, `ErrorReason`, `PortMacAddress`, `StorageController`, `TargetGroup`, `TargetId` properties
+		- On `TargetGroup`:
+			- **CHANGED** `TargetGrpId`: it is now the unique identifier of the `TargetGroup`, instead of the array of <id>,<name>,<index>; this is like the change to the `FolderId` property of `IgFolder` objects above
+		- On `Snapshot`, `Volume`:
+			- added `Folder`, `LunMapList`, `NumLunMap`, `SnapshotType`, `TagList` properties
+		- On `VolumeFolder`:
+			- added `Caption`, `ColorHex`, `CreationTime`, `ObjectType`, `SubfolderList` properties
+		- On `Xenv`:
+			- **CHANGED** `XenvId`: it is now the unique identifier of the `Xenv`, instead of the array of <id>,<name>,<index>; this is like the change to the `FolderId` property of `IgFolder` objects above
+			- added `NumModule`, `StorageController` properties
+- \[improvement] Added ability to specify particular properties for retrieval/return, so as to allow for quicker, more focused queries.  Implemented on `Get-XIOItemInfo` and `Get-XIOLunMap` cmdlets first.  Can specify the "nice" property names as defined for objects created by the PowerShell module, or the "raw" property names as defined in the XIO REST API.
+- \[improvement] for when web call returns an error, added additional verbose error info from WebException in InnnerException of returned error (if any) for when issue getting items from API.  This is helpful for troubleshooting, especially when you are crafting own URIs
+- \[bugfix] `Open-XIOMgmtConsole` now works as it should on XMS of XIOS version 4 and newer -- the path to the .jnlp file is now dependent upon the XMS version. Also uses HTTPS to get launch file. This now expects the current PowerShell session has an `XioConnection` to the target XMS server (via which the XMS version info is retrieved)
+- \[bugfix] Module now works in PowerShell v5. Importing the module in PowerShell v5 previously resulted in multiple errors of:  `Multiple ambiguous overloads found for ".ctor" and the argument count: "1"`. This was due to the `OutputType` statement for cmdlet definitions specifying a type that was not yet defined in the session, which was due to the adding of types occurring _after_ the dot-source of the given function-defining .ps1 file
+- \[bugfix] Several cmdlets are now fixed for use in PowerShell v5:
+	- `TagList` property type was not a nullable type before, so would throw error if returned object had no value. Fixed for:
+		- `Get-XIOBBU`
+		- `Get-XIODAE`
+		- `Get-XIOInfinibandSwitch`
+		- `Get-XIOLocalDisk`
+		- `Get-XIOSnapshotSet`
+	- Similar issue for various properties of objects returned by other cmdlets. Fixed for:
+		- `Get-XIOInitiatorGroupFolder`
+		- `Get-XIOInitiatorGroupFolderPerformance`
+		- `Get-XIOSnapshot`
+		- `Get-XIOTag`
+		- `Get-XIOVolume`
+		- `Get-XIOVolumeFolder`
+		- `Get-XIOVolumeFolderPerformance`
+		- `Get-XIOVolumePerformance`
+	- difference in PowerShell v5 in `Where-Object` result in function internals for creating the URL. Fixed for:
+		- `Get-XIOPerformanceCounter`
+- \[bugfix] Fixed issue where `BuildNumber` property of XMS object did not handle all possible values.  Usually the value received from the API call is an Int32, but can be string. **CHANGED:**  This property was renamed to `Build` and is now a `String` instead of an `Int32`
+
+
+
+
+### v0.9.0
+14 Nov 2015
+
+The focus for this version was on updating the module to support new things available in XIOS version 4.0.  Twenty new types, and the ability to get the newly available performance counters for eleven entity types (`Cluster`, `DataProtectionGroup`, `Initiator`, `InitiatorGroup`, `SnapshotGroup`, `SSD`, `Target`, `TargetGroup`, `Volume`, `XEnv`, and `Xms`).
+
+- \[new] added `Get-` cmdlet coverage for new types available in XIOS v4 and newer:
+
+		Get-XIOAlert
+		Get-XIOAlertDefinition
+		Get-XIOBBU
+		Get-XIOConsistencyGroup
+		Get-XIODAE
+		Get-XIODAEController
+		Get-XIODAEPsu
+		Get-XIOEmailNotifier
+		Get-XIOInfinibandSwitch
+		Get-XIOLdapConfig
+		Get-XIOLocalDisk
+		Get-XIOSlot
+		Get-XIOSnapshotScheduler
+		Get-XIOSnapshotSet
+		Get-XIOSnmpNotifier
+		Get-XIOStorageControllerPsu
+		Get-XIOSyslogNotifier
+		Get-XIOTag
+		Get-XIOUserAccount
+		Get-XIOXMS
+
+- \[new] added `Get-XIOPerformanceCounter` cmdlet for getting performance counter values for given entity types, and exposing the ability to set granularity of the counter values and timeframe from which to get the data. Note:  not yet supporting getting performance counters based on Tag entity type, as there may be some further research needed, possibly involving discussions with the vendor
+- \[new] added feature that allows for graceful determination of valid types for given XioConnection; so, executing `Get-XIOTag` when connected to an XIOS v3 or older XMS will not throw error due to non-existent object types, but rather will return verbose message that given type is not available on XMS at older XIOS (API) version 
+- \[improvement] added XIOS REST API version and full XMS version to `XioItemInfo.XioConnection` object (if available via XMS type, which it _is_ for XIOS v4+).  The new properties on the XioConnection type are `RestApiVersion`, `XmsDBVersion`, `XmsSWVersion` (string representation, like "4.0.1-41"), and `XmsVersion`
+- \[bugfix] fixed issue in return-object-creation where *in-progress properties from XIOS v4 DataProtectionGroup API objects might have values other than "true" and "false". Module was expecting just these two strings and converting them to boolean; this could have failed in XIOS v4 environments. Affected cmdlets were `Get-XIODataProtectionGroup` and `Get-XIODataProtectionGroupPerformance`
+
+Other notes:
+
+- not yet adding support for `consistency-group-volumes` API objects, as their returned properties seem to just be consistency groups, not consistency group volumes -- may also require discussion with vendor
+- not yet adding support for SYR Notifiers. While the XIOS v4 release notes talk about API support for these objects, the API on the few systems on which I tested did not surface this object type
+- the new cmdlets are at the base level -- on the to-do list are things like extending/improving them to bring in the additional power of supporting pipelining
+
 ### v0.8.3
 Sep 2015
 
