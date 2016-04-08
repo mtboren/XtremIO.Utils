@@ -1,7 +1,7 @@
 todo:
--add Cluster or SysId properties to (and, need to investigate the rest of the types -- do they need these properties?): Initiator, InitiatorGroup, Target, XEnv, Volume, Snapshot
-	-once added to Volume, update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
-	-this is also in prep for better pipelining, which will need to take Cluster from pipeline property of object coming through
+-once .Cluster type of property is added to cluster-specific objects:
+	-for Volume: update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
+	-this is also in prep for better pipelining, which will need to get Cluster info from pipeline object coming through (along with .ComputerName, right?)
 	-once added to Volume and Tag, update New-XIOConsistencyGroup to take it from Volume/Tag objects if those were passed as values to -Volume or -Tag?  Else, user has to specify the vol/tag _and_ the cluster, when that should be gleanable from the vol/tag objects themselves (right?)
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
@@ -42,12 +42,13 @@ todo:
 		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
+-for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
 -add pipelining abilities for things like:
 	Get-XIODAE | Get-XIODAEController
 	Get-XIODAEController | Get-XIODAE
 	Get-XIODAEPsu | Get-XIODAE
 	Get-XIOBBU | Get-XIOStorageController
-	Get-XIO<BBU,DAE,DAEController> | Get-XIOCluster (since they have ClusterId property)
+	Get-XIO<BBU,DAE,DAEController> | Get-XIOCluster (since they have Cluster kind of property)
 	Get-XIOStorageController | Get-XIOLocalDisk
 	Get-XIOLocalDisk | Get-XIOStorageController
 	Get-XIOSlot | Get-XIOSsd
@@ -99,7 +100,7 @@ todo:
 	/fol04       5.918          609           12.021        739           17.938       1348       29298610477  77718390880
 #>
 -update pipelining behavior for things like:
-	Get-XioVolumeFolder /someFolderWithNoDirectVolumes | Get-XioVolume
+	Get-XIOVolumeFolder /someFolderWithNoDirectVolumes | Get-XIOVolume
 		-to just return $null, instead of throwing error about " The input object cannot be bound to any parameters for the command either because the command does not take pipeline input or the input and its properties do not match any of the parameters that take pipeline input", which happens when .VolIdList is $null in this example
 -add Catch for explicit DownloadString exception:
 	VERBOSE: Uh-oh -- something went awry trying to get data from that URI
@@ -205,7 +206,11 @@ todo:
 	-needs to iterate through those parents from the root
 	-and, make it just use a full path for the new folder, not Name and ParentFolder?  Like:  New-XIOVolumeFolder -Path /someVolume/Folder/ThatDoes/NotYet/Exist/myNewFolder
 -need to exclude -OperatingSystem parameter option in New-XIOInitiator if API of XMS is v1 -- breaks things to send along in a request to API V1 XMS; lower priority
+-for when dropping support for legacy XIOS/API (XIOS 2 & 3, API v1)
+	-remove PerformanceInfo property from IGFolder, VolumeFolder (and remove Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance cmdlets)
+	-remove the Nullable aspect of .Cluster properties in the type def (v2 API objects should always have the .sys-id property on objects for which code tries to make .Cluster value from said property)
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
+-?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
 -?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
 -?eventually for Open-XIOMgmtConsole:  only act on existing XMS connections (as the cmdlet will need the XMS software version in order to create the correct URL to the JNLP file); or, will this cmdlet change to open the web management console instead of the Java management console, once the Web UI takes over?
@@ -215,13 +220,13 @@ todo:
 -?add "small" and "unaligned" performance items, too? (available in xmcli)
 -?add Get-XIOParentVolume / Get-XIOParentSnapshot
 	-or, implement this via something like -RelatedObject param on Get-XIOVolume?
--?add ClusterId or Cluster type of property to output objects, useful for multi-cluster XMS situations
 -?replace usage of singular item type string (essentially used for output type name creation; make config hsh table of plural item type string -> XIOItemInfo output object type)
-	-use the config API item types as the ValidateSet value for ItemType in Get-XioItem function, so as not to need to upkeep such info in multiple places!
+	-use the config API item types as the ValidateSet value for ItemType in Get-XIOItem function, so as not to need to upkeep such info in multiple places!
 	-have config hsh of API type (like /types/ig-folders) -> XioItemInfo type (like IgFolder)
 		-to remove the "strip an 's', title case the string, and remove the dash" antics that are in place now
 		-need to update all places that specify API types as singular to use real API type name
 -?add object definitions of sub-property objects?  Could slow things down (like Get-VM does vs. Get-View in PowerCLI)
+-?for when rev'ing minimum API support level to API v2.0, remove the conditional Cluster property population code (as needed .sys-id property should be present on everything at that point); affected object types:  Initiator, InitiatorGroup, LunMap, Target,
 
 
 
@@ -230,7 +235,9 @@ todo:
 
 doing:
 
-done for version 0.next (after v0.11.0):
+
+done for version 0.next (after v0.12.0):
+
 
 ## things below here are in changelog/readme
 
@@ -243,6 +250,19 @@ done for previous versions:  moved to done.txt
 
 
 
+
+
+
+
+## release items
+rev module version
+test
+update changelog/readme
+
+merge to master
+move "Latest" tag to master commit
+add version-specific tag
+make .zip of just PSModule files
 
 
 
