@@ -1,6 +1,16 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.12.0
+08 Apr 2016
+
+New properties!  This release was all about fleshing out the properties of returned objects, partly for increasing the richness of the objects, and partly in preparation for making vast pipelining improvements between cmdlets.  The further standardization of objects' properties lead to three property deprecations, and those properties will be removed in a future release (see list below).  Some details:
+
+- \[new] added or updated `Cluster` property to twenty-one (21) object types, and in the form of an `XioItemInfo.Cluster` object
+- \[change] updated `Cluster` property to be an `XioItemInfo.Cluster` object instead of just a `String`  on object types `DataProtectionGroup` and `StorageController`
+- \[deprecated] deprecated properties `ClusterId`, `ClusterName`, and `SysId`, with the new `Cluster` property being the direction forward, for fourteen object types that had one or more of said properties.  Affected object types: `BBU`, `Brick`, `ConsistencyGroup`, `DAE`, `DAEController`, `DAEPsu`, `LocalDisk`, `Slot`, `Snapshot`, `SnapshotSet`, `Ssd`, `StorageControllerPsu`, `TargetGroup`, `Volume`
+- \[new] added various new properties to twenty-seven object types
+ 
 ### v0.11.0
 20 Mar 2016
 
