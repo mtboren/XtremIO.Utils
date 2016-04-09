@@ -1,13 +1,28 @@
 <#	.Description
-	Function to set XtremIO item info using REST API with XtremIO XMS appliance
+	Function to set XtremIO item info using REST API with XtremIO XMS appliance.  Generally used as supporting function to the rest of the Set-XIO* cmdlets, but can be used directly, too, if needed
+	.Example
+	Set-XIOItemInfo -Name /mattTestFolder -ItemType volume-folder -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -Cluster myCluster0
+	Set a new name for the given VolumeFolder, using the hashtable that has a "caption" key/value pair for the new name
+	An example of the hastable is:  $hshTmpSpecForNewVolFolderName = @{"caption" = "mattTestFolder_renamed"}
+	.Example
+	Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -URI https://somexms.dom.com/api/json/types/volume-folders/10
+	Set a new name for the given VolumeFolder by specifying the object's URI, using the hashtable that has a "caption" key/value pair for the new name
+	.Example
+	Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -XIOItemInfoObj (Get-XIOVolumeFolder /mattTestFolder)
+	Set a new name for the given VolumeFolder from the existing object itself, using the hashtable that has a "caption" key/value pair for the new name
+	.Example
+	Get-XIOVolumeFolder /mattTestFolder | Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json)
+	Set a new name for the given VolumeFolder from the existing object itself (via pipeline), using the hashtable that has a "caption" key/value pair for the new name
 	.Outputs
-	PSCustomObject
+	XioItemInfo object for the newly updated object if successful
 #>
 function Set-XIOItemInfo {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName", SupportsShouldProcess=$true, ConfirmImpact=[System.Management.Automation.Confirmimpact]::High)]
 	param(
 		## XMS appliance address to which to connect
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Name(s) of cluster in which resides the object whose properties to set
+		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item type for which to set info
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")]
 		[ValidateSet("ig-folder", "initiator-group", "initiator", "volume", "volume-folder")]
@@ -23,27 +38,6 @@ function Set-XIOItemInfo {
 		[parameter(Position=0,ParameterSetName="ByXioItemInfoObj",ValueFromPipeline)][ValidateNotNullOrEmpty()][PSObject]$XIOItemInfoObj
 	) ## end param
 
-
-<# general process:
--get item
-	-Switch (ParamSet)
-		ByComputerName
-			-get the item by name
-				-if not valid, error
-		SpecifyFullUri
-			-get item by URI
-				-if not valid, error
-		ByXioItemInfoObj
-			-continue on
--try to PUT request
-	-takes the URI and the JSON
-
-#>
-<#	.Description
-	Set properties of an XtremIO item, like a volume, initiator group, etc.  Used as helper function to the Set-XIO* functions that are each for modifying items of a specific type
-	.Outputs
-	XioItemInfo object for the newly updated object if successful
-#>
 	Begin {
 		## string to add to messages written by this function; function name in square brackets
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
@@ -77,15 +71,15 @@ function Set-XIOItemInfo {
 				## the Set items' specification, from JSON; PSCustomObject with properties/values to be set
 				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem
 				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
-				$strShouldProcessOutput = "Set {0} propert{1} for '{2}' object named '{3}'" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
+				## make a string to display the properties being set in the -WhatIf and -Confirm types of messages
+				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())}) -join "`n"
+				$strShouldProcessOutput = "Set following {0} propert{1} for '{2}' object named '{3}':`n$strPropertiesBeingSet`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
 					$hshParamsToSetXIOItem = @{
-						## make URI
 						Uri = $oExistingXioItem.Uri
 						## JSON contents for body, for the params for creating the new XIO object
 						Body = $SpecForSetItem
-						## set method
 						Method = "Put"
 						## do something w/ creds to make Headers
 						Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
@@ -93,11 +87,12 @@ function Set-XIOItemInfo {
 
 					## try request
 					try {
-						Write-Debug "$strLogEntry_ToAdd hshParamsToSetXIOItem: `n$(dWrite-ObjectToTableString -ObjectToStringify $hshParamsToSetXIOItem)"
+						## when Method is Put or when there is a body to the request, seems to ignore cert errors by default, so no need to change cert-handling behavior here based on -TrustAllCert value
 						$oWebReturn = Invoke-WebRequest @hshParamsToSetXIOItem
 					} ## end try
-					## catch, write-error, break
-					catch {Write-Error $_; break}
+					catch {
+						_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToSetXIOItem['Uri'] -ErrorRecord $_
+					} ## end catch
 					## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
 					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Put"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Put"]["StatusDescription"])) {
 						Write-Verbose "$strLogEntry_ToAdd Item updated successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
@@ -111,10 +106,53 @@ function Set-XIOItemInfo {
 } ## end function
 
 
+<#	.Description
+	Modify an XtremIO IgFolder. Not yet functional for XIOS v3.x and older
+	.Example
+	Set-XIOInitiatorGroupFolder -InitiatorGroupFolder (Get-XIOInitiatorGroupFolder /myIgFolder) -Name myIgFolder_renamed
+	Set a new name for the given IgFolder from the existing object itself
+	.Example
+	Get-XIOInitiatorGroupFolder /myIgFolder | Set-XIOInitiatorGroupFolder -Name myIgFolder_renamed
+	Set a new name for the given IgFolder from the existing object itself (via pipeline)
+	.Outputs
+	XioItemInfo.IgFolder object for the modified object if successful
+#>
+function Set-XIOInitiatorGroupFolder {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.IgFolder])]
+	param(
+		## IgFolder object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.IgFolder]$InitiatorGroupFolder,
+		## New name to set for initiator group folder
+		[parameter(Mandatory=$true)][string]$Name
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			caption = $Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $InitiatorGroupFolder
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
 
 <#	.Description
-	Modify an XtremIO volume-folder. Not yet functional for XIOS v4 and newer
+	Modify an XtremIO VolumeFolder. Not yet functional for XIOS v3.x and older
 	.Example
+	Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /mattTestFolder) -Name mattTestFolder_renamed
+	Set a new name for the given VolumeFolder from the existing object itself
+	.Example
+	Get-XIOVolumeFolder /mattTestFolder | Set-XIOVolumeFolder -Name mattTestFolder_renamed
+	Set a new name for the given VolumeFolder from the existing object itself (via pipeline)
 	.Outputs
 	XioItemInfo.VolumeFolder object for the modified object if successful
 #>
@@ -122,27 +160,23 @@ function Set-XIOVolumeFolder {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.VolumeFolder])]
 	param(
-		## XMS appliance to use
-		[parameter(Position=0)][string[]]$ComputerName,
-		## New name to set for volume
-		[parameter(Mandatory=$true)][string]$Name,
-		## Volume Folder to modify; either a VolumeFolder object or the name of the Volume folder to modify
-		[parameter(Mandatory=$true,ValueFromPipeline=$true)][ValidateScript({
-			_Test-TypeOrString -Object $_ -Type ([XioItemInfo.VolumeFolder])
-		})]
-		[PSObject]$VolumeFolder
+		## Volume Folder object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.VolumeFolder]$VolumeFolder,
+		## New name to set for volume folder
+		[parameter(Mandatory=$true)][string]$Name
 	) ## end param
 
 	Begin {
 		## this item type (singular)
-		$strThisItemType = "volume-folder"
+		# $strThisItemType = "volume-folder"
 	} ## end begin
 
 	Process {
 		## the API-specific pieces for modifying the XIO object's properties
 		## set argument name based on XIOS version (not functional yet -- not yet testing XIOS version, so always defaults to older-than-v4 right now)
-## INCOMPLETE:  still need to do the determination for $intXiosMajorVersion; on hold while working on addint XIOSv4 object support
-		$strNewCaptionArgName = if ($intXiosMajorVersion -lt 4) {"new-caption"} else {"caption"}
+## INCOMPLETE for older-than-v4 XIOS:  still need to do the determination for $intXiosMajorVersion; on hold while working on addint XIOSv4 object support
+		# $strNewCaptionArgName = if ($intXiosMajorVersion -lt 4) {"new-caption"} else {"caption"}
+		$strNewCaptionArgName = "caption"
 		$hshSetItemSpec = @{
 			$strNewCaptionArgName = $Name
 		} ## end hashtable
@@ -150,12 +184,15 @@ function Set-XIOVolumeFolder {
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{
 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			## not needed while not supporting object-by-name for Set command
+			# ItemType = $strThisItemType
+			# ComputerName = $ComputerName
 		} ## end hashtable
 
-		if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder}
-		else {$hshParamsForSetItem["ItemName"] = $VolumeFolder}
-		$hshParamsForSetItem["ComputerName"] = $ComputerName
-		$hshParamsForSetItem["ItemType"] = $strThisItemType
+		## check if specifying object by name or by object (object-by-name not currently implemented)
+		# if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder}
+		# else {$hshParamsForSetItem["ItemName"] = $VolumeFolder}
+		$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder
 
 		## call the function to actually modify this item
 		Set-XIOItemInfo @hshParamsForSetItem

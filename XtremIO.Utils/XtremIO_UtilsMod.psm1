@@ -2,7 +2,7 @@
 . $PSScriptRoot\configItems.ps1
 
 ## dot-source the function-definition files, class-definition file
-"XtremIO.Utils.init.ps1", "GetXIOItem.ps1", "NewXIOItem.ps1", "OtherXIOMgmt.ps1" | Foreach-Object {
+"XtremIO.Utils.init.ps1", "GetXIOItem.ps1", "NewXIOItem.ps1", "OtherXIOMgmt.ps1", "SetXIOItem.ps1" | Foreach-Object {
 	. $PSScriptRoot\$_
 } ## end foreach-object
 
@@ -11,4 +11,6 @@ Export-ModuleMember -Function Get-XIOItemInfo, Get-XIOAlert, Get-XIOAlertDefinit
 	## performance items
 	Get-XIOClusterPerformance, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOPerformanceCounter, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance,
 	## "New-" items
-	New-XIOConsistencyGroup, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOSnapshot, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount, New-XIOVolume, New-XIOVolumeFolder
+	New-XIOConsistencyGroup, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOSnapshot, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount, New-XIOVolume, New-XIOVolumeFolder,
+	## "Set-" items
+	Set-XIOItemInfo, Set-XIOInitiatorGroupFolder, Set-XIOVolumeFolder

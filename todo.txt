@@ -190,6 +190,7 @@ todo:
 -add ability to create ISCSI initiators via New-XIOInitiator
 -for future (once supporitng iSCSI in this PSModule), add ability to set following properties via Set-XIOInitiator:  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
+-?for Set-XIO* cmdlets other than Set-XIOItemInfo, add ability to specify object by name and cluster?  Currently just supports by-object
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
 -?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
@@ -218,17 +219,16 @@ doing:
 -for Set-XioItemInfo:
 	working properly on pre XIOSv4 versions
 	-need piece that makes proper URI w/ given method
-	-only accept XioItemInfo objects?
-	-"Cluster" is not necessarily in the URI (for XMS-level things like tags and whatnot)
+	-only accept XioItemInfo objects for now
+	-only geared towards XIOS v4 and up for now
 -make sure that Set-XioItemInfo is solid, then work on:
-	Initiator:  'port-address', 'initiator-name'
-	InitiatorGroup:  'initiator-group-name'
-	InitiatorGroupFolder:  'new-caption'
-	Volume:	 'vol-size', 'vol-name', 'small-io-alerts', 'unaligned-io-alerts', 'vaai-tp-alerts'
-	VolumeFolder:  'new-caption'
-	-needs "?cluster=blahh" ?
-	 	no:  UserAccount, Tag
-	 	yes:  Cluster, Volume, Snapshot
+	-needs "?cluster-id=blahh" ?
+		no:  UserAccount, Tag, IGFolder, LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier, SyslogNotifier
+		yes:  Cluster, Volume, Snapshot, SnapshotSet, SnapshotScheduler, Initiator, InitiatorGroup, Target, ConsistencyGroup
+	-done:
+	-needs "?cluster-id=blahh" ?
+		no:  Set-XIOInitiatorGroupFolder, Set-XIOVolumeFolder
+		yes:
 -once done, un-export Set-XIOItemInfo?  Or, leave it exported?
 
 
