@@ -147,6 +147,49 @@ function Set-XIOInitiatorGroupFolder {
 
 
 <#	.Description
+	Modify an XtremIO SnapshotSet
+	.Example
+	Set-XIOSnapshotSet -SnapshotSet (Get-XIOSnapshotSet mySnapshotSet0) -Name newSnapsetName0
+	Rename the given SnapshotSet to have the new name.
+	.Example
+	Get-XIOSnapshotSet -Name mySnapshotSet0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOSnapshotSet -Name newSnapsetName0
+	Get the given SnapshotSet from the specified cluster managed by the specified XMS, and set its name to a new value.
+	.Outputs
+	XioItemInfo.SnapshotSet object for the modified object if successful
+#>
+function Set-XIOSnapshotSet {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SnapshotSet])]
+	param(
+		## SnapshotSet object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnapshotSet]$SnapshotSet,
+		## New name to set for this SnapshotSet
+		[parameter(Mandatory=$true)]$Name
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			# "cluster-id" = $SnapshotSet.Cluster.Name
+			"new-name" = $Name
+			## SnapshotSet's current name or index number -- not a valid property per the error the API returns
+			# "snapshot-set-id" = $SnapshotSet.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $SnapshotSet
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Modify an XtremIO SyslogNotifier
 	.Example
 	Set-XIOSyslogNotifier -SyslogNotifier (Get-XIOSyslogNotifier) -Enable:$false

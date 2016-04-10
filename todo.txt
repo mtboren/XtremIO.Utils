@@ -224,11 +224,13 @@ doing:
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
 		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier
-		yes:  Cluster, Volume, Snapshot, SnapshotSet, SnapshotScheduler, Initiator, InitiatorGroup, Target, ConsistencyGroup
+		yes:  Cluster, Volume, Snapshot, SnapshotScheduler, Initiator, InitiatorGroup, Target, ConsistencyGroup
 	-done:
 	-needs "?cluster-id=blahh" ?
 		no:  Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
-		yes:
+		yes:  Set-XIOSnapshotSet
+		issues w/ API documentation:
+			setting SnapshotSet:  "cluster-id" and "snapshot-set-id" are invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
 -once done, un-export Set-XIOItemInfo?  Or, leave it exported?
 
 
