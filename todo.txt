@@ -223,11 +223,11 @@ doing:
 	-only geared towards XIOS v4 and up for now
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
-		no:  UserAccount, Tag, IGFolder, LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier, SyslogNotifier
+		no:  UserAccount, LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier
 		yes:  Cluster, Volume, Snapshot, SnapshotSet, SnapshotScheduler, Initiator, InitiatorGroup, Target, ConsistencyGroup
 	-done:
 	-needs "?cluster-id=blahh" ?
-		no:  Set-XIOInitiatorGroupFolder, Set-XIOVolumeFolder
+		no:  Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOVolumeFolder
 		yes:
 -once done, un-export Set-XIOItemInfo?  Or, leave it exported?
 

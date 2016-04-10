@@ -13,4 +13,4 @@ Export-ModuleMember -Function Get-XIOItemInfo, Get-XIOAlert, Get-XIOAlertDefinit
 	## "New-" items
 	New-XIOConsistencyGroup, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOSnapshot, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount, New-XIOVolume, New-XIOVolumeFolder,
 	## "Set-" items
-	Set-XIOItemInfo, Set-XIOInitiatorGroupFolder, Set-XIOVolumeFolder
+	Set-XIOItemInfo, Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOVolumeFolder

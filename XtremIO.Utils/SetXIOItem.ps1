@@ -25,7 +25,7 @@ function Set-XIOItemInfo {
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item type for which to set info
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")]
-		[ValidateSet("ig-folder", "initiator-group", "initiator", "volume", "volume-folder")]
+		[ValidateSet("ig-folder", "initiator-group", "initiator", "tag", "syslog-notifier", "volume", "volume-folder")]
 		[string]$ItemType,
 		## Item name for which to set info
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("ItemName")][string]$Name,
@@ -106,14 +106,15 @@ function Set-XIOItemInfo {
 } ## end function
 
 
+
 <#	.Description
 	Modify an XtremIO IgFolder. Not yet functional for XIOS v3.x and older
 	.Example
-	Set-XIOInitiatorGroupFolder -InitiatorGroupFolder (Get-XIOInitiatorGroupFolder /myIgFolder) -Name myIgFolder_renamed
-	Set a new name for the given IgFolder from the existing object itself
+	Set-XIOInitiatorGroupFolder -InitiatorGroupFolder (Get-XIOInitiatorGroupFolder /myIgFolder) -Caption myIgFolder_renamed
+	Set a new caption for the given IgFolder from the existing object itself
 	.Example
-	Get-XIOInitiatorGroupFolder /myIgFolder | Set-XIOInitiatorGroupFolder -Name myIgFolder_renamed
-	Set a new name for the given IgFolder from the existing object itself (via pipeline)
+	Get-XIOInitiatorGroupFolder /myIgFolder | Set-XIOInitiatorGroupFolder -Caption myIgFolder_renamed
+	Set a new caption for the given IgFolder from the existing object itself (via pipeline)
 	.Outputs
 	XioItemInfo.IgFolder object for the modified object if successful
 #>
@@ -123,14 +124,14 @@ function Set-XIOInitiatorGroupFolder {
 	param(
 		## IgFolder object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.IgFolder]$InitiatorGroupFolder,
-		## New name to set for initiator group folder
-		[parameter(Mandatory=$true)][string]$Name
+		## New caption to set for initiator group folder
+		[parameter(Mandatory=$true)][string]$Caption
 	) ## end param
 
 	Process {
 		## the API-specific pieces for modifying the XIO object's properties
 		$hshSetItemSpec = @{
-			caption = $Name
+			caption = $Caption
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -146,13 +147,97 @@ function Set-XIOInitiatorGroupFolder {
 
 
 <#	.Description
+	Modify an XtremIO SyslogNotifier
+	.Example
+	Set-XIOSyslogNotifier -SyslogNotifier (Get-XIOSyslogNotifier) -Enable:$false
+	Disable the given SyslogNotifier
+	.Example
+	Get-XIOSyslogNotifier | Set-XIOSyslogNotifier -Enable -Target syslog0.dom.com,syslog1.dom.com:515
+	Enable the SyslogNotifier and set two targets, one that will use the default port of 514 (as none was specified), and one that will use custom port 515
+	.Outputs
+	XioItemInfo.SyslogNotifier object for the modified object if successful
+#>
+function Set-XIOSyslogNotifier {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SyslogNotifier])]
+	param(
+		## SyslogNotifier object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SyslogNotifier]$SyslogNotifier,
+		## Switch:  Enable/disable SyslogNotifier (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable,
+		## For when enabling the SyslogNotifier, the syslog target(s) to use.  If none specified, the existing Targets for the SyslogNotifier will be retained/used, if any (if none already in use, will throw error with informative message).
+		[String[]]$Target
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = if ($Enable) {
+			@{
+				enable = $true
+				## if someone specified the target(s), use them; else, pass the .Target value from the existing SyslogNotifier object
+				targets = $(if ($PSBoundParameters.ContainsKey("Target")) {$Target} else {if (($SyslogNotifier.Target | Measure-Object).Count -gt 0) {$SyslogNotifier.Target} else {Throw "No Target specified and this SyslogNotifier had none to start with.  SyslogNotifier must have one or more targets when enabled. Please specify a Target"}})
+			}
+		} else {@{disable = $true}}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $SyslogNotifier
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO Tag
+	.Example
+	Set-XIOTag -Tag (Get-XIOTag /InitiatorGroup/myTag) -Caption myTag_renamed
+	Set a new caption for the given Tag from the existing object itself
+	.Example
+	Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed
+	Set a new caption for the given Tag from the existing object itself (via pipeline)
+	.Outputs
+	XioItemInfo.Tag object for the modified object if successful
+#>
+function Set-XIOTag {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Tag])]
+	param(
+		## Tag object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Tag]$Tag,
+		## New caption to set for Tag
+		[parameter(Mandatory=$true)][string]$Caption
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			caption = $Caption
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $Tag
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Modify an XtremIO VolumeFolder. Not yet functional for XIOS v3.x and older
 	.Example
-	Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /mattTestFolder) -Name mattTestFolder_renamed
-	Set a new name for the given VolumeFolder from the existing object itself
+	Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /mattTestFolder) -Caption mattTestFolder_renamed
+	Set a new caption for the given VolumeFolder from the existing object itself
 	.Example
-	Get-XIOVolumeFolder /mattTestFolder | Set-XIOVolumeFolder -Name mattTestFolder_renamed
-	Set a new name for the given VolumeFolder from the existing object itself (via pipeline)
+	Get-XIOVolumeFolder /mattTestFolder | Set-XIOVolumeFolder -Caption mattTestFolder_renamed
+	Set a new caption for the given VolumeFolder from the existing object itself (via pipeline)
 	.Outputs
 	XioItemInfo.VolumeFolder object for the modified object if successful
 #>
@@ -162,8 +247,8 @@ function Set-XIOVolumeFolder {
 	param(
 		## Volume Folder object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.VolumeFolder]$VolumeFolder,
-		## New name to set for volume folder
-		[parameter(Mandatory=$true)][string]$Name
+		## New caption to set for volume folder
+		[parameter(Mandatory=$true)][string]$Caption
 	) ## end param
 
 	Begin {
@@ -178,7 +263,7 @@ function Set-XIOVolumeFolder {
 		# $strNewCaptionArgName = if ($intXiosMajorVersion -lt 4) {"new-caption"} else {"caption"}
 		$strNewCaptionArgName = "caption"
 		$hshSetItemSpec = @{
-			$strNewCaptionArgName = $Name
+			$strNewCaptionArgName = $Caption
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
