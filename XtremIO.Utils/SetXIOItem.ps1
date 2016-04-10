@@ -25,7 +25,7 @@ function Set-XIOItemInfo {
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item type for which to set info
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")]
-		[ValidateSet("ig-folder", "initiator-group", "initiator", "tag", "syslog-notifier", "volume", "volume-folder")]
+		[ValidateSet("ig-folder", "initiator-group", "initiator", "syslog-notifier", "tag", "user-account", "volume", "volume-folder")]
 		[string]$ItemType,
 		## Item name for which to set info
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("ItemName")][string]$Name,
@@ -71,8 +71,8 @@ function Set-XIOItemInfo {
 				## the Set items' specification, from JSON; PSCustomObject with properties/values to be set
 				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem
 				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
-				## make a string to display the properties being set in the -WhatIf and -Confirm types of messages
-				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())}) -join "`n"
+				## make a string to display the properties being set in the -WhatIf and -Confirm types of messages; replace any "password" values with asterisks
+				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"password": ') {$_ -replace '^(\s+"password":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
 				$strShouldProcessOutput = "Set following {0} propert{1} for '{2}' object named '{3}':`n$strPropertiesBeingSet`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
@@ -222,6 +222,57 @@ function Set-XIOTag {
 		$hshParamsForSetItem = @{
 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
 			XIOItemInfoObj = $Tag
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO UserAccount
+	.Example
+	Get-XIOUserAccount -Name someUser0 | Set-XIOUserAccount -UserName someUser0_renamed -SecureStringPassword (Read-Host -AsSecureString)
+	Change the username for this UserAccount, and set the password to the new value (without showing the password in clear-text)
+	.Example
+	Set-XIOUserAccount -UserAccount (Get-XIOUserAccount someUser0) -InactivityTimeout 0 -Role read_only
+	Disable the inactivity timeout value for this UserAccount, and set the user's role to read_only
+	.Outputs
+	XioItemInfo.UserAccount object for the modified object if successful
+#>
+function Set-XIOUserAccount {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.UserAccount])]
+	param(
+		## UserAccount object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.UserAccount]$UserAccount,
+		## The new username to set for this UserAccount
+		[string]$UserName,
+		## Password in SecureString format.  Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -SecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password")
+		[parameter(ParameterSetName="SpecifySecureStringPassword")][System.Security.SecureString]$SecureStringPassword,
+		## Public key for UserAccount; use either -SecureStringPassword or -UserPublicKey
+		[parameter(ParameterSetName="SpecifyPublicKey")][ValidateLength(16,2048)][string]$UserPublicKey,
+		## User role.  One of 'read_only', 'configuration', 'admin', or 'technician'. To succeed in adding a user with "technician" role, seems that you may need to authenticated to the XMS _as_ a technician first (as administrator does not succeed)
+		[ValidateSet('read_only', 'configuration', 'admin', 'technician')]$Role,
+		## Inactivity timeout in minutes. Provide value of zero ("0") to specify "no timeout" for this UserAccount
+		[int]$InactivityTimeout
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{}
+
+		if ($PSBoundParameters.ContainsKey("UserName")) {$hshSetItemSpec["usr-name"] = $UserName}
+		if ($PSBoundParameters.ContainsKey("Role")) {$hshSetItemSpec["role"] = $Role}
+		if ($PSBoundParameters.ContainsKey("SecureStringPassword")) {$hshSetItemSpec["password"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureStringPassword))}
+		if ($PSBoundParameters.ContainsKey("UserPublicKey")) {$hshSetItemSpec["public-key"] = $UserPublicKey}
+		if ($PSBoundParameters.ContainsKey("InactivityTimeout")) {$hshSetItemSpec["inactivity-timeout"] = $InactivityTimeout}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $UserAccount
 		} ## end hashtable
 
 		## call the function to actually modify this item
