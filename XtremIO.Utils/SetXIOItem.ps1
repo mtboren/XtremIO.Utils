@@ -108,6 +108,92 @@ function Set-XIOItemInfo {
 
 
 <#	.Description
+	Modify an XtremIO ConsistencyGroup
+	.Example
+	Set-XIOConsistencyGroup -ConsistencyGroup (Get-XIOConsistencyGroup myConsistencyGroup0) -Name newConsistencyGroupName0
+	Rename the given ConsistencyGroup to have the new name.
+	.Example
+	Get-XIOConsistencyGroup -Name myConsistencyGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOConsistencyGroup -Name newConsistencyGroupName0
+	Get the given ConsistencyGroup from the specified cluster managed by the specified XMS, and set its name to a new value.
+	.Outputs
+	XioItemInfo.ConsistencyGroup object for the modified object if successful
+#>
+function Set-XIOConsistencyGroup {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.ConsistencyGroup])]
+	param(
+		## ConsistencyGroup object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.ConsistencyGroup]$ConsistencyGroup,
+		## New name to set for this ConsistencyGroup
+		[parameter(Mandatory=$true)]$Name
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			# "cluster-id" = $ConsistencyGroup.Cluster.Name
+			"new-name" = $Name
+			## ConsistencyGroup's current name or index number -- seems to not matter if this is passed or not
+			# "cg-id" = $ConsistencyGroup.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $ConsistencyGroup
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO InitiatorGroup
+	.Example
+	Set-XIOInitiatorGroup -InitiatorGroup (Get-XIOInitiatorGroup myInitiatorGroup0) -Name newInitiatorGroupName0
+	Rename the given InitiatorGroup to have the new name.
+	.Example
+	Get-XIOInitiatorGroup -Name myInitiatorGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOInitiatorGroup -Name newInitiatorGroupName0
+	Get the given InitiatorGroup from the specified cluster managed by the specified XMS, and set its name to a new value.
+	.Outputs
+	XioItemInfo.InitiatorGroup object for the modified object if successful
+#>
+function Set-XIOInitiatorGroup {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.InitiatorGroup])]
+	param(
+		## InitiatorGroup object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.InitiatorGroup]$InitiatorGroup,
+		## New name to set for this InitiatorGroup
+		[parameter(Mandatory=$true)]$Name
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			# "cluster-id" = $InitiatorGroup.Cluster.Name
+			"new-name" = $Name
+			## InitiatorGroup's current name or index number -- seems to not matter if this is passed or not
+			# "ig-id" = $InitiatorGroup.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $InitiatorGroup
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Modify an XtremIO IgFolder. Not yet functional for XIOS v3.x and older
 	.Example
 	Set-XIOInitiatorGroupFolder -InitiatorGroupFolder (Get-XIOInitiatorGroupFolder /myIgFolder) -Caption myIgFolder_renamed
@@ -271,6 +357,49 @@ function Set-XIOTag {
 		Set-XIOItemInfo @hshParamsForSetItem
 	} ## end process
 } ## end function
+
+
+<#	.Description
+	Modify an XtremIO Target
+	.Example
+	Set-XIOTarget -Target (Get-XIOTarget X1-SC2-iscsi1) -MTU 9000
+	Set the given Target to have 9000 as its MTU value
+	.Example
+	Get-XIOTarget -Name X1-SC2-iscsi1 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOTarget -MTU 1500
+	Get the given Target from the specified cluster managed by the specified XMS, and set its MTU value back to 1500 (effectively "disabling" jumbo frames for it).
+	.Outputs
+	XioItemInfo.Target object for the modified object if successful
+#>
+# function Set-XIOTarget {
+# 	[CmdletBinding(SupportsShouldProcess=$true)]
+# 	[OutputType([XioItemInfo.Target])]
+# 	param(
+# 		## Target object to modify
+# 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Target]$Target,
+# 		## MTU value to set for this Target
+# 		[parameter(Mandatory=$true)][ValidateRange(1500,9KB)]$MTU
+# 	) ## end param
+
+# 	Process {
+# 		## the API-specific pieces for modifying the XIO object's properties
+# 		$hshSetItemSpec = @{
+# 			## Cluster's name or index number
+# 			"cluster-id" = $Target.Cluster.Name
+# 			mtu = $MTU
+# 			## Target's current name or index number -- does it matter if this is passed or not?
+# 			"tar-id" = $Target.Name
+# 		} ## end hashtable
+
+# 		## the params to use in calling the helper function to actually modify the object
+# 		$hshParamsForSetItem = @{
+# 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+# 			XIOItemInfoObj = $Target
+# 		} ## end hashtable
+
+# 		## call the function to actually modify this item
+# 		Set-XIOItemInfo @hshParamsForSetItem
+# 	} ## end process
+# } ## end function
 
 
 <#	.Description
