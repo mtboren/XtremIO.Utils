@@ -224,8 +224,7 @@ doing:
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
 		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier
-		yes:  Cluster, Volume, Snapshot, SnapshotScheduler
-			setting Target MTU fails so far w/ "cluster-name=<blahh>" in obj URL:  does not work regardless of the values passed in for "tar-id" property (index, name, not passing "tar-id" at all in JSON body).  Fails with web-exception message:  "message": "tar_not_found".  And, the value in the XMS audit log is always:  tar_id=["", "myxms01", "0"], when that should seemingly change to reflect the target being acted upon
+		yes:  Cluster, Volume, Snapshot, working on Set-XIOSnapshotScheduler
 	-done:
 	-needs "?cluster-id=blahh" ?
 		no:  Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
@@ -234,8 +233,11 @@ doing:
 			setting ConsistencyGroup:  specifying "cg-id" is optional (works with or without), but doc says, "Mandatory"
 			setting Initiator:  doc does not include "operating-system" property that can be set
 			setting InitiatorGroup:  specifying "ig-id" is optional (works with or without), but doc says, "Mandatory"
+			setting SnapshotScheduler:  doc says the property name is "time", but it is "schedule"
 			setting SnapshotSet:  specifying "snapshot-set-id" in JSON body is invalid, per the API error message returned like:  "message": "Command Syntax Error: Invalid property snapshot-set-id"
+			setting Target:  specifying "tar-id" is optional (works with or without), but doc says, "Mandatory"
 			setting ConsistencyGroup, InitiatorGroup, SnapshotSet:  specifying "cluster-id" in JSON body is invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
+			setting Initiator, Target fails so far w/ "cluster-name=<blahh>" in obj URL:  does not work regardless of the values passed in for "xxxxxxx-id" property, where "xxxxxxx" is "initiator", "tar" respectively (index, name, not passing "xxxxxxx-id" at all in JSON body).  Fails with web-exception message:  "message": "xxxxxxx_not_found".  And, the value in the XMS audit log is always:  xxxxxxx_id=["", "myxms01", "0"], when that should seemingly change to reflect the initiator/target being acted upon
 		issues w/ API:
 			setting Initiator property fails if "cluster-name=<something>" is in URI:  does not work regardless of the values passed in for "initiator-id" property (index, name, or not passing "initiator-id" at all in JSON body).  Fails with web-exception message:  "message": "initiator_not_found".  And, the value in the XMS audit log is always:  initiator_id=["", "myxms01", "0"], when that should seemingly change to reflect the initiator being acted upon
 -once done, un-export Set-XIOItemInfo?  Or, leave it exported?
