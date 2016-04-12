@@ -428,37 +428,37 @@ function Set-XIOTag {
 	.Outputs
 	XioItemInfo.Target object for the modified object if successful
 #>
-## leaving commented out while trying to get answer from EMC as to whether there is an API bug involved with this type
-# function Set-XIOTarget {
-# 	[CmdletBinding(SupportsShouldProcess=$true)]
-# 	[OutputType([XioItemInfo.Target])]
-# 	param(
-# 		## Target object to modify
-# 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Target]$Target,
-# 		## MTU value to set for this Target
-# 		[parameter(Mandatory=$true)][ValidateRange(1500,9KB)]$MTU
-# 	) ## end param
+function Set-XIOTarget {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Target])]
+	param(
+		## Target object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Target]$Target,
+		## MTU value to set for this Target
+		[parameter(Mandatory=$true)][ValidateRange(1500,9KB)]$MTU
+	) ## end param
 
-# 	Process {
-# 		## the API-specific pieces for modifying the XIO object's properties
-# 		$hshSetItemSpec = @{
-# 			## Cluster's name or index number
-# 			"cluster-id" = $Target.Cluster.Name
-# 			mtu = $MTU
-# 			## Target's current name or index number -- does it matter if this is passed or not?
-# 			"tar-id" = $Target.Name
-# 		} ## end hashtable
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number
+			"cluster-id" = $Target.Cluster.Name
+			mtu = $MTU
+			## Target's current name or index number -- does it matter if this is passed or not?
+			"tar-id" = $Target.Name
+		} ## end hashtable
 
-# 		## the params to use in calling the helper function to actually modify the object
-# 		$hshParamsForSetItem = @{
-# 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
-# 			XIOItemInfoObj = $Target
-# 		} ## end hashtable
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			## API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
+			Uri = _Remove-ClusterNameQStringFromURI -URI $Target.Uri
+		} ## end hashtable
 
-# 		## call the function to actually modify this item
-# 		Set-XIOItemInfo @hshParamsForSetItem
-# 	} ## end process
-# } ## end function
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
 
 
 <#	.Description

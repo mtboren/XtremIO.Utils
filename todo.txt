@@ -223,15 +223,16 @@ doing:
 	-only geared towards XIOS v4 and up for now
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
-		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier, Target
+		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier
 		yes:  Cluster, Volume, Snapshot, SnapshotScheduler
 			setting Target MTU fails so far w/ "cluster-name=<blahh>" in obj URL:  does not work regardless of the values passed in for "tar-id" property (index, name, not passing "tar-id" at all in JSON body).  Fails with web-exception message:  "message": "tar_not_found".  And, the value in the XMS audit log is always:  tar_id=["", "myxms01", "0"], when that should seemingly change to reflect the target being acted upon
 	-done:
 	-needs "?cluster-id=blahh" ?
 		no:  Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
-		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotSet
+		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotSet, Set-XIOTarget
 		issues w/ API documentation:
 			setting ConsistencyGroup:  specifying "cg-id" is optional (works with or without), but doc says, "Mandatory"
+			setting Initiator:  doc does not include "operating-system" property that can be set
 			setting InitiatorGroup:  specifying "ig-id" is optional (works with or without), but doc says, "Mandatory"
 			setting SnapshotSet:  specifying "snapshot-set-id" in JSON body is invalid, per the API error message returned like:  "message": "Command Syntax Error: Invalid property snapshot-set-id"
 			setting ConsistencyGroup, InitiatorGroup, SnapshotSet:  specifying "cluster-id" in JSON body is invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
