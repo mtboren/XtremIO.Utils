@@ -188,7 +188,6 @@ todo:
 	iscsi-portals
 	iscsi-routes
 -add ability to create ISCSI initiators via New-XIOInitiator
--add Set-XIOTarget cmdlet after hearing back from EMC is there is a bug in the API for setting this (seems like there might be)
 -for future (once supporitng iSCSI in this PSModule), add ability to set following properties via Set-XIOInitiator:  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -?add ability to specify -Tag for when creating new objects that support "tag-list" property via API (like New-XIOInitiatorGroup, for example); or, just stick w/ adding new Tag assignments via dedicated cmdlet?
@@ -224,19 +223,20 @@ doing:
 	-only geared towards XIOS v4 and up for now
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
-		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier
-		yes:  Cluster, Volume, Snapshot, SnapshotScheduler, Initiator
+		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier, Target
+		yes:  Cluster, Volume, Snapshot, SnapshotScheduler
+			setting Target MTU fails so far w/ "cluster-name=<blahh>" in obj URL:  does not work regardless of the values passed in for "tar-id" property (index, name, not passing "tar-id" at all in JSON body).  Fails with web-exception message:  "message": "tar_not_found".  And, the value in the XMS audit log is always:  tar_id=["", "myxms01", "0"], when that should seemingly change to reflect the target being acted upon
 	-done:
 	-needs "?cluster-id=blahh" ?
 		no:  Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
-		yes:  Set-XIOConsistencyGroup, Set-XIOInitiatorGroup, Set-XIOSnapshotSet
+		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotSet
 		issues w/ API documentation:
-			setting InitiatorGroup:  specifying "ig-id" is optional (works with or without), but doc says, "Mandatory"
 			setting ConsistencyGroup:  specifying "cg-id" is optional (works with or without), but doc says, "Mandatory"
+			setting InitiatorGroup:  specifying "ig-id" is optional (works with or without), but doc says, "Mandatory"
 			setting SnapshotSet:  specifying "snapshot-set-id" in JSON body is invalid, per the API error message returned like:  "message": "Command Syntax Error: Invalid property snapshot-set-id"
 			setting ConsistencyGroup, InitiatorGroup, SnapshotSet:  specifying "cluster-id" in JSON body is invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
 		issues w/ API:
-			setting Target MTU fails:  does not work regardless of the values passed in for "tar-id" property (index, name, not passing "tar-id" at all in JSON body).  Fails with web-exception message:  "message": "tar_not_found".  And, the value in the XMS audit log is always:  tar_id=["", "myxms01", "0"]
+			setting Initiator property fails if "cluster-name=<something>" is in URI:  does not work regardless of the values passed in for "initiator-id" property (index, name, or not passing "initiator-id" at all in JSON body).  Fails with web-exception message:  "message": "initiator_not_found".  And, the value in the XMS audit log is always:  initiator_id=["", "myxms01", "0"], when that should seemingly change to reflect the initiator being acted upon
 -once done, un-export Set-XIOItemInfo?  Or, leave it exported?
 
 

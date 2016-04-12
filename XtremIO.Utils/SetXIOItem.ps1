@@ -125,7 +125,7 @@ function Set-XIOConsistencyGroup {
 		## ConsistencyGroup object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.ConsistencyGroup]$ConsistencyGroup,
 		## New name to set for this ConsistencyGroup
-		[parameter(Mandatory=$true)]$Name
+		[parameter(Mandatory=$true)][string]$Name
 	) ## end param
 
 	Process {
@@ -142,6 +142,64 @@ function Set-XIOConsistencyGroup {
 		$hshParamsForSetItem = @{
 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
 			XIOItemInfoObj = $ConsistencyGroup
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO Initiator
+	.Example
+	Set-XIOInitiator -Initiator (Get-XIOInitiator myInitiator0) -Name newInitiatorName0 -OperatingSystem ESX
+	Rename the given Initiator to have the new name, and set its OperatingSystem property to ESX.
+	.Example
+	Get-XIOInitiator -Name myInitiator0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOInitiator -Name newInitiatorName0 -PortAddress 10:00:00:00:00:00:00:54
+	Get the given Initiator from the specified cluster managed by the specified XMS, set its name and port address to a new values.
+	.Outputs
+	XioItemInfo.Initiator object for the modified object if successful
+#>
+function Set-XIOInitiator {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Initiator])]
+	param(
+		## Initiator object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Initiator]$Initiator,
+		## New name to set for this Initiator
+		[String]$Name,
+		## The initiator's port address.  The following rules apply:
+		#-For FC initiators, any of the following formats are allowed ("X" is a hexadecimal digit – uppercase and lower case are allowed):
+		#	XX:XX:XX:XX:XX:XX:XX:XX
+		#	XXXXXXXXXXXXXXXX
+		#	0xXXXXXXXXXXXXXXXX
+		#-For iSCSI initiators, IQN and EUI formats are allowed
+		#-Two initiators cannot share the same port address
+		#-You cannot specify an FC address for an iSCSI target and vice-versa
+		[string][ValidateScript({$_ -match "^((0x)?[0-9a-f]{16}|(([0-9a-f]{2}:){7}[0-9a-f]{2}))$"})][string]$PortAddress,
+		## The operating system of the host whose HBA this Initiator involves. One of Linux, Windows, ESX, Solaris, AIX, HPUX, or Other
+		[XioItemInfo.Enums.General.OSType]$OperatingSystem
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			"cluster-id" = $Initiator.Cluster.Name
+			## Initiator's current name or index number -- seems to not matter if this is passed or not
+			"initiator-id" = $Initiator.Name
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("Name"))	{$hshSetItemSpec["initiator-name"] = $Name}
+		if ($PSBoundParameters.ContainsKey("OperatingSystem"))	{$hshSetItemSpec["operating-system"] = $OperatingSystem.ToString().ToLower()}
+		if ($PSBoundParameters.ContainsKey("PortAddress"))	{$hshSetItemSpec["port-address"] = $PortAddress}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			## API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
+			Uri = _Remove-ClusterNameQStringFromURI -URI $Initiator.Uri
 		} ## end hashtable
 
 		## call the function to actually modify this item
@@ -168,7 +226,7 @@ function Set-XIOInitiatorGroup {
 		## InitiatorGroup object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.InitiatorGroup]$InitiatorGroup,
 		## New name to set for this InitiatorGroup
-		[parameter(Mandatory=$true)]$Name
+		[parameter(Mandatory=$true)][string]$Name
 	) ## end param
 
 	Process {
@@ -250,7 +308,7 @@ function Set-XIOSnapshotSet {
 		## SnapshotSet object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnapshotSet]$SnapshotSet,
 		## New name to set for this SnapshotSet
-		[parameter(Mandatory=$true)]$Name
+		[parameter(Mandatory=$true)][string]$Name
 	) ## end param
 
 	Process {
@@ -370,6 +428,7 @@ function Set-XIOTag {
 	.Outputs
 	XioItemInfo.Target object for the modified object if successful
 #>
+## leaving commented out while trying to get answer from EMC as to whether there is an API bug involved with this type
 # function Set-XIOTarget {
 # 	[CmdletBinding(SupportsShouldProcess=$true)]
 # 	[OutputType([XioItemInfo.Target])]
