@@ -224,16 +224,16 @@ doing:
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
 		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier
-		yes:  Cluster, Volume, Snapshot, working on Set-XIOSnapshotScheduler
+		yes:  Cluster, Volume, Snapshot
 	-done:
 	-needs "?cluster-id=blahh" ?
 		no:  Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
-		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotSet, Set-XIOTarget
+		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotScheduler, Set-XIOSnapshotSet, Set-XIOTarget
 		issues w/ API documentation:
 			setting ConsistencyGroup:  specifying "cg-id" is optional (works with or without), but doc says, "Mandatory"
 			setting Initiator:  doc does not include "operating-system" property that can be set
 			setting InitiatorGroup:  specifying "ig-id" is optional (works with or without), but doc says, "Mandatory"
-			setting SnapshotScheduler:  doc says the property name is "time", but it is "schedule"
+			setting SnapshotScheduler:  changing "state" property is an exclusive operation (you cannot set "state" plus any other property at the same time) -- docs do not call this out
 			setting SnapshotSet:  specifying "snapshot-set-id" in JSON body is invalid, per the API error message returned like:  "message": "Command Syntax Error: Invalid property snapshot-set-id"
 			setting Target:  specifying "tar-id" is optional (works with or without), but doc says, "Mandatory"
 			setting ConsistencyGroup, InitiatorGroup, SnapshotSet:  specifying "cluster-id" in JSON body is invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
