@@ -633,6 +633,84 @@ function Set-XIOUserAccount {
 
 
 <#	.Description
+	Modify an XtremIO Volume
+	.Example
+	Set-XIOVolume -Volume (Get-XIOVolume myVolume) -Name myVolume_renamed
+	Set a new Name for the given Volume from the existing object itself
+	.Example
+	Get-XIOVolume myVolume | Set-XIOVolume -Name myVolume_renamed
+	Set a new Name for the given Volume from the existing object itself (via pipeline)
+	.Example
+	Get-XIOVolume myVolume0 | Set-XIOVolume -SizeTB 10 -AccessRightLevel Read_Access -SmallIOAlertEnabled:$false -VaaiTPAlertEnabled
+	Set the size and access level for the volume, disable small IO alerts, and enable VAAI thin provisioning alerts
+	.Outputs
+	XioItemInfo.Volume object for the modified object if successful
+#>
+function Set-XIOVolume {
+	[CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName="Default")]
+	[OutputType([XioItemInfo.Volume])]
+	param(
+		## Volume object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Volume]$Volume,
+		## New Name to set for the volume
+		[string]$Name,
+		## New, larger size in MB for the volume (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,147,483,648 MB)
+		[parameter(ParameterSetName="SizeByMB")][ValidateRange(1, ([int32]::MaxValue + 1))][Int64]$SizeMB,
+		## New, larger size in GB for the volume (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,097,152 GB)
+		[parameter(ParameterSetName="SizeByGB")][ValidateRange(1, ([int32]::MaxValue + 1)/1KB)][Int]$SizeGB,
+		## New, larger size in TB for the volume (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,048 TB)
+		[parameter(ParameterSetName="SizeByTB")][ValidateRange(1, 2048)][Int]$SizeTB,
+		## Switch:  Enable or disable small input/output alerts. To disable, use: -UnalignedIOAlertEnabled:$false
+		[Switch]$SmallIOAlertEnabled,
+		## Switch:  Enable or disable unaligned input/output alerts. To disable, use: -UnalignedIOAlertEnabled:$false
+		[Switch]$UnalignedIOAlertEnabled,
+		## Switch:  Enable or disable VAAI thin-provisioning alerts. To disable, use: -VaaiTPAlertEnabled:$false
+		[Switch]$VaaiTPAlertEnabled,
+		## Set the access level of the volume.  Volumes can have one of the following access right levels:
+		#	- No_Access:  All SCSI commands for accessing data on the Volume (read commands and write commands) fail, and all SCSI discovery commands (i.e. inquiries on Volume characteristics and not accessing the data on the Volume) succeed.
+		#	- Read_Access:  All SCSI write commands fail and all SCSI read commands and discovery commands succeed.
+		#	- Write_Access:  All commands succeed and the host can write to the Volume.
+		## One of "No_Access", "Read_Access", "Write_Access"
+		[ValidateSet("No_Access", "Read_Access", "Write_Access")][string]$AccessRightLevel
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number
+			"cluster-id" = $Volume.Cluster.Name
+			## Volume's current name or index number -- does it matter if this is passed or not?
+			"vol-id" = $Volume.Name
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["vol-name"] = $Name}
+		## if the size is being set
+		if ("SizeByMB", "SizeByGB", "SizeByTB" -contains $PSCmdlet.ParameterSetName) {
+			$strSizeWithUnitLabel = Switch ($PSCmdlet.ParameterSetName) {
+				"SizeByMB" {"${SizeMB}M"}
+				"SizeByGB" {"${SizeGB}G"}
+				"SizeByTB" {"${SizeTB}T"}
+			}
+			$hshSetItemSpec["vol-size"] = $strSizeWithUnitLabel
+		}
+		if ($PSBoundParameters.ContainsKey("SmallIOAlertEnabled")) {$hshSetItemSpec["small-io-alerts"] = $(if ($SmallIOAlertEnabled) {"enabled"} else {"disabled"})}
+		if ($PSBoundParameters.ContainsKey("UnalignedIOAlertEnabled")) {$hshSetItemSpec["unaligned-io-alerts"] = $(if ($UnalignedIOAlertEnabled) {"enabled"} else {"disabled"})}
+		if ($PSBoundParameters.ContainsKey("VaaiTPAlertEnabled")) {$hshSetItemSpec["vaai-tp-alerts"] = $(if ($VaaiTPAlertEnabled) {"enabled"} else {"disabled"})}
+		if ($PSBoundParameters.ContainsKey("AccessRightLevel")) {$hshSetItemSpec["vol-access"] = $AccessRightLevel.ToLower()}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			Uri = _Remove-ClusterNameQStringFromURI -URI $Volume.Uri
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Modify an XtremIO VolumeFolder. Not yet functional for XIOS v3.x and older
 	.Example
 	Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /mattTestFolder) -Caption mattTestFolder_renamed
