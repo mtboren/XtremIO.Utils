@@ -4,10 +4,13 @@ todo:
 	-this is also in prep for better pipelining, which will need to get Cluster info from pipeline object coming through (along with .ComputerName, right?)
 	-once added to Volume and Tag, update New-XIOConsistencyGroup to take it from Volume/Tag objects if those were passed as values to -Volume or -Tag?  Else, user has to specify the vol/tag _and_ the cluster, when that should be gleanable from the vol/tag objects themselves (right?)
 -enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Remove-XIOTagAssignment kind of cmdlet)
+-add type to -Credential param declaration for New-XIOUserAccount (none specified right now)
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -Volume object:  add VolSizeGB for ease of reading for when the volume size is less than 1TB
+-Alert object:  add .Cluster property from .sys-id, deprecate ClusterId, ClusterName properties
+-add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
@@ -224,11 +227,11 @@ doing:
 	-only geared towards XIOS v4 and up for now
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
-		no:  LdapConfig, Alert, AlertDefinition, EmailNotifier, SnmpNotifier
+		no:  LdapConfig, AlertDefinition, SnmpNotifier
 		yes:  Cluster, Snapshot
 	-done:
 	-needs "?cluster-id=blahh" ?
-		no:  Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
+		no: Set-XIOEmailNotifier, Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
 		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotScheduler, Set-XIOSnapshotSet, Set-XIOTarget, Set-XIOVolume
 		issues w/ API documentation:
 			setting ConsistencyGroup:  specifying "cg-id" is optional (works with or without), but doc says, "Mandatory"
@@ -236,6 +239,7 @@ doing:
 			setting InitiatorGroup:  specifying "ig-id" is optional (works with or without), but doc says, "Mandatory"
 			setting SnapshotScheduler:  changing "state" property is an exclusive operation (you cannot set "state" plus any other property at the same time) -- docs do not call this out
 			setting SnapshotSet:  specifying "snapshot-set-id" in JSON body is invalid, per the API error message returned like:  "message": "Command Syntax Error: Invalid property snapshot-set-id"
+			setting Alert:  specifying "command" property results in error from API.  Return message is:  "message": "Command Syntax Error: Invalid property command"
 			setting Target:  specifying "tar-id" is optional (works with or without), but doc says, "Mandatory"
 			setting ConsistencyGroup, InitiatorGroup, SnapshotSet:  specifying "cluster-id" in JSON body is invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
 			setting Initiator, Target fails so far w/ "cluster-name=<blahh>" in obj URL:  does not work regardless of the values passed in for "xxxxxxx-id" property, where "xxxxxxx" is "initiator", "tar" respectively (index, name, not passing "xxxxxxx-id" at all in JSON body).  Fails with web-exception message:  "message": "xxxxxxx_not_found".  And, the value in the XMS audit log is always:  xxxxxxx_id=["", "myxms01", "0"], when that should seemingly change to reflect the initiator/target being acted upon

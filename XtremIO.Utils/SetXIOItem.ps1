@@ -72,7 +72,7 @@ function Set-XIOItemInfo {
 				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem
 				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
 				## make a string to display the properties being set in the -WhatIf and -Confirm types of messages; replace any "password" values with asterisks
-				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"password": ') {$_ -replace '^(\s+"password":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
+				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"(proxy-)?password": ') {$_ -replace '^(\s+"(proxy-)?password":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
 				$strShouldProcessOutput = "Set following {0} propert{1} for '{2}' object named '{3}':`n$strPropertiesBeingSet`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
@@ -105,6 +105,45 @@ function Set-XIOItemInfo {
 	} ## end process
 } ## end function
 
+
+
+# <#	.Description
+# 	Modify an XtremIO Alert
+# 	.Example
+# 	Get-XIOAlert | Where-Object {$_.AlertCode -eq "0200302"} | Set-XIOAlert -Acknowledged
+# 	Acknowledge this given Alert
+# 	.Outputs
+# 	XioItemInfo.Alert object for the modified object if successful
+# #>
+# function Set-XIOAlert {
+# 	[CmdletBinding(SupportsShouldProcess=$true)]
+# 	[OutputType([XioItemInfo.Alert])]
+# 	param(
+# 		## Alert object to modify
+# 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Alert]$Alert,
+# 		## Switch:  Acknowledge this alert?
+# 		[parameter(Mandatory=$true)][Switch]$Acknowledged
+# 	) ## end param
+
+# 	Process {
+# 		## the API-specific pieces for modifying the XIO object's properties
+# 		$hshSetItemSpec = @{
+# 			"alert-id" = $Alert.Index
+# 			## it's not "command" or "acknowledge" or "acknowledged"; with none of these, the return message is:  "message": "Command Syntax Error: At least one property from the following list is mandatory: ['new-name','new-caption']"; have not had these succeed, yet
+# 			# command = $(if ($Acknowledged) {"acknowledged"} else {"not_ack"})
+# 			# state = $(if ($Acknowledged) {"acknowledged"} else {"not_ack"})
+# 		}
+
+# 		## the params to use in calling the helper function to actually modify the object
+# 		$hshParamsForSetItem = @{
+# 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+# 			XIOItemInfoObj = $Alert
+# 		} ## end hashtable
+
+# 		## call the function to actually modify this item
+# 		Set-XIOItemInfo @hshParamsForSetItem
+# 	} ## end process
+# } ## end function
 
 
 <#	.Description
@@ -142,6 +181,90 @@ function Set-XIOConsistencyGroup {
 		$hshParamsForSetItem = @{
 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
 			XIOItemInfoObj = $ConsistencyGroup
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO EmailNotifier
+	.Example
+	Get-XIOEmailNotifier | Set-XIOEmailNotifier -Sender myxms.dom.com -Recipient me@dom.com,someoneelse@dom.com
+	Modify this given EmailNotifier, changing the Sender and Recipient list of email addresses (overwrites the recipients list with this list)
+	.Example
+	Get-XIOEmailNotifier | Set-XIOEmailNotifier -CompanyName MyCompany -MailRelayServer mysmtp.dom.com
+	Modify this given EmailNotifier, changing the Company Name, and changing to use the given SMTP mail relay and mail relay credentials
+	.Example
+	Get-XIOEmailNotifier | Set-XIOEmailNotifier -ProxyServer myproxy.dom.com -ProxyServerPort 10101 -ProxyCredential (Get-Credential dom\myProxyUser) -Enable:$false
+	Modify this given EmailNotifier, changing it to use the given HTTP proxy and port, and proxy user credentials, and disabling the notifier
+	.Outputs
+	XioItemInfo.EmailNotifier object for the modified object if successful
+#>
+function Set-XIOEmailNotifier {
+	[CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName="Default")]
+	[OutputType([XioItemInfo.EmailNotifier])]
+	param(
+		## EmailNotifier object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.EmailNotifier]$EmailNotifier,
+		## Company Name
+		[string]$CompanyName,
+		## Contact details for this EmailNotifier
+		[string]$ContactDetail,
+		## Proxy-server name/address, if using HTTP transport
+		[parameter(Mandatory=$true, ParameterSetName="UsingHttpTransport")][string]$ProxyServer,
+		## Proxy-server credential, if using HTTP transport and if the proxy server requires credentials
+		[parameter(ParameterSetName="UsingHttpTransport")][System.Management.Automation.PSCredential]$ProxyCredential,
+		## Proxy-server port, if using HTTP transport
+		[parameter(ParameterSetName="UsingHttpTransport")][int]$ProxyServerPort,
+		## SMTP mail relay address, if using SMTP transport
+		[parameter(Mandatory=$true, ParameterSetName="UsingSmtpTransport")][string]$MailRelayServer,
+		## SMTP mail relay credential, if using SMTP transport and if the mail server requires credentials
+		[parameter(ParameterSetName="UsingSmtpTransport")][System.Management.Automation.PSCredential]$MailRelayCredential,
+		## List of recipient email addresses for notification emails. Overwrites current list of recipient email addresses
+		[string[]]$Recipient,
+		## Email address to use as "sender" address for notification emails
+		[string]$Sender,
+		## Switch:  Enable/disable EmailNotifier (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{}
+
+		if ($PSBoundParameters.ContainsKey("CompanyName")) {$hshSetItemSpec["company-name"] = $CompanyName}
+		if ($PSBoundParameters.ContainsKey("ContactDetail")) {$hshSetItemSpec["contact-details"] = $ContactDetail}
+		if ($PSBoundParameters.ContainsKey("Recipient")) {$hshSetItemSpec["recipient-list"] = $Recipient}
+		if ($PSBoundParameters.ContainsKey("Sender")) {$hshSetItemSpec["sender"] = $Sender}
+		if ($PSBoundParameters.ContainsKey("Enable")) {
+			$strEnableOrDisablePropertyToSet = if ($Enable) {"enable"} else {"disable"}
+			$hshSetItemSpec[$strEnableOrDisablePropertyToSet] = $true
+		} ## end if
+
+		## set the transport value based on the parameter set (if using Proxy, "http", if using Mail server, "smtp")
+		Switch ($PsCmdlet.ParameterSetName) {
+			"UsingHttpTransport" {
+				$hshSetItemSpec["transport"] = "http"
+				if ($PSBoundParameters.ContainsKey("ProxyServer")) {$hshSetItemSpec["proxy-address"] = $ProxyServer}
+				## this must be a quoted string, apparently
+				if ($PSBoundParameters.ContainsKey("ProxyServerPort")) {$hshSetItemSpec["proxy-port"] = '"{0}"' -f $ProxyServerPort.ToString()}
+				if ($PSBoundParameters.ContainsKey("ProxyCredential")) {$hshSetItemSpec["proxy-user"] = $ProxyCredential.UserName; $hshSetItemSpec["proxy-password"] = $ProxyCredential.GetNetworkCredential().Password}
+				break
+			} ## end case
+			"UsingSmtpTransport" {
+				$hshSetItemSpec["transport"] = "smtp"
+				if ($PSBoundParameters.ContainsKey("MailRelayServer")) {$hshSetItemSpec["mail-relay-address"] = $MailRelayServer}
+				if ($PSBoundParameters.ContainsKey("MailRelayCredential")) {$hshSetItemSpec["mail-user"] = $MailRelayCredential.UserName; $hshSetItemSpec["mail-password"] = $MailRelayCredential.GetNetworkCredential().Password}
+			} ## end case
+		} ## end switch
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $EmailNotifier
 		} ## end hashtable
 
 		## call the function to actually modify this item
