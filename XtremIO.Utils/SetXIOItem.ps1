@@ -72,8 +72,8 @@ function Set-XIOItemInfo {
 				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem
 				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
 				## make a string to display the properties being set in the -WhatIf and -Confirm types of messages; replace any "password" values with asterisks
-				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"(proxy-)?password": ') {$_ -replace '^(\s+"(proxy-)?password":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
-				$strShouldProcessOutput = "Set following {0} propert{1} for '{2}' object named '{3}':`n$strPropertiesBeingSet`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
+				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"((proxy-)?password|bindpw)": ') {$_ -replace '^(\s+"((proxy-)?password|bindpw)":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
+				$strShouldProcessOutput = "Set following {0} propert{1} for '{2}' object named '{3}':`n{4}`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name, $strPropertiesBeingSet
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
 					$hshParamsToSetXIOItem = @{
@@ -458,6 +458,75 @@ function Set-XIOInitiatorGroupFolder {
 		$hshParamsForSetItem = @{
 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
 			XIOItemInfoObj = $InitiatorGroupFolder
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO LdapConfig
+	.Example
+	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "DC=DOM,DC=COM"} | Set-XIOLdapConfig -RoleMapping "read_only:cn=grp0,dc=dom,dc=com","configuration:CN=user0,DC=dom.com"
+	Set the role mappings for this LdapConfig to be these two new role definitions (overwrites previous role-mapping values)
+	.Example
+	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "DC=DOM,DC=COM"} | Set-XIOLdapConfig -BindDN "cn=mybinder,dc=dom,dc=com" -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password") -SearchBaseDN "OU=tiptop,DC=DOM,DC=COM" -SearchFilter "sAMAccountName={username}" -LdapServerURL ldaps://prim.dom.com,ldaps://sec.dom.com -UserToDnRule "dom\{username}" -CacheExpire 8 -Timeout 30 -RoleMapping "admin:cn=grp0,dc=dom,dc=com","admin:cn=grp2,dc=dom,dc=com"
+	Set the given attributes of the LdapConfig item:  BindDN and password, the LDAP search base DN, the LDAP search filter, the LDAP server URLs (overwrites previous values with these values), the UserToDnRule value, the logon validity duration, and more.
+	.Outputs
+	XioItemInfo.LdapConfig object for the modified object if successful
+#>
+function Set-XIOLdapConfig {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.LdapConfig])]
+	param(
+		## LdapConfig object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.LdapConfig]$LdapConfig,
+		## Distinguished name for account with which to perform LDAP bind
+		[string]$BindDN,
+		## Password for LDAP bind account, in SecureString format.  Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password")
+		[System.Security.SecureString]$BindSecureStringPassword,
+		## Fully distinguished name of LDAP search base
+		[string]$SearchBaseDN,
+		## An LDAP expression that defines which user object attribute is checked against which part of the user input.  Example:  "sAMAccountName={username}".  For more information, see the "Configuring the LDAP Users Authentication" section of the "EMC XtremIO Storage Array User Guide" document
+		[string]$SearchFilter,
+		## LDAP server URL(s). Example:  "ldaps://myldap.dom.com", "ldaps://mybackupldap.dom.com"
+		[string[]]$LdapServerURL,
+		## Rule that modifies the user's input before the LDAP search is performed, for simplified login by users. The rule can append a prefix or a suffix to the user's input to save typing
+		[string]$UserToDnRule,
+		## Number of hours (1 to 24) before the cached user authentication expires and re-authentication is required
+		[ValidateRange(1,24)][int]$CacheExpire,
+		## The time in seconds (at user logon) before switching to the secondary LDAP server or failing the request following the LDAP server's failure to reply
+		[int]$Timeout,
+		## CA public SSL certificate string in PEM format (starts with "-----BEGIN CERTIFICATE-----" line)
+		[ValidateLength(16,2048)][string]$CAPublicCertData,
+		## Role mapping for users/groups. Can provide multple, like:  -RoleMapping "<roleName>:CN=group0,OU=ou0,DC=dom,DC=com","<roleName>:CN=group1,OU=ou2,DC=dom,DC=com".  Valid role names are "read_only", "configuration", and "admin".  Overwrites previous role definitions for this LdapConfig
+		[string[]]$RoleMapping
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## LdapConfig's index
+			"ldap-config-id" = $LdapConfig.Index
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("BindDN")) {$hshSetItemSpec["binddn"] = $BindDN}
+		if ($PSBoundParameters.ContainsKey("BindSecureStringPassword")) {$hshSetItemSpec["bindpw"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BindSecureStringPassword))}
+		if ($PSBoundParameters.ContainsKey("SearchBaseDN")) {$hshSetItemSpec["search-base"] = $SearchBaseDN}
+		if ($PSBoundParameters.ContainsKey("SearchFilter")) {$hshSetItemSpec["search-filter"] = $SearchFilter}
+		if ($PSBoundParameters.ContainsKey("LdapServerURL")) {$hshSetItemSpec["server-urls"] = $LdapServerURL}
+		if ($PSBoundParameters.ContainsKey("UserToDnRule")) {$hshSetItemSpec["user-to-dn-rule"] = $UserToDnRule}
+		if ($PSBoundParameters.ContainsKey("CacheExpire")) {$hshSetItemSpec["cache-expire-hours"] = $CacheExpire}
+		if ($PSBoundParameters.ContainsKey("Timeout")) {$hshSetItemSpec["timeout"] = $Timeout}
+		if ($PSBoundParameters.ContainsKey("CAPublicCertData")) {$hshSetItemSpec["ca-cert-data"] = $CAPublicCertData}
+		if ($PSBoundParameters.ContainsKey("RoleMapping")) {$hshSetItemSpec["roles"] = $RoleMapping}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $LdapConfig
 		} ## end hashtable
 
 		## call the function to actually modify this item
