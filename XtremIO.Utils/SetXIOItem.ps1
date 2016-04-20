@@ -72,7 +72,7 @@ function Set-XIOItemInfo {
 				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem
 				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
 				## make a string to display the properties being set in the -WhatIf and -Confirm types of messages; replace any "password" values with asterisks
-				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"((proxy-)?password|bindpw)": ') {$_ -replace '^(\s+"((proxy-)?password|bindpw)":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
+				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"((proxy-)?password|bindpw|auth-key|priv-key)": ') {$_ -replace '^(\s+"((proxy-)?password|bindpw|auth-key|priv-key)":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
 				$strShouldProcessOutput = "Set following {0} propert{1} for '{2}' object named '{3}':`n{4}`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name, $strPropertiesBeingSet
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
@@ -690,6 +690,78 @@ function Set-XIOSnapshotSet {
 		$hshParamsForSetItem = @{
 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
 			XIOItemInfoObj = $SnapshotSet
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO SnmpNotifier
+	.Example
+	Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -Enable:$false
+	Modify this given SnmpNotifier, disabling the notifier
+	.Example
+	Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -PrivacyKey (Read-Host -AsSecureString "priv key") -SnmpVersion v3 -AuthenticationKey (Read-Host -AsSecureString "auth key") -PrivacyProtocol DES -AuthenticationProtocol MD5 -UserName admin2 -Recipient testdest0.dom.com,testdest1.dom.comw
+	Set the SnmpNotifier to use SNMP v3, set the privacy- and authentication keys after reading them as secure strings from user, set the privacy- and authentication protocols and the SNMP v3 username, and overwrite the trap-recipient list with the two new server names
+	.Outputs
+	XioItemInfo.SnmpNotifier object for the modified object if successful
+#>
+function Set-XIOSnmpNotifier {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SnmpNotifier])]
+	param(
+		## SnmpNotifier object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnmpNotifier]$SnmpNotifier,
+		## SNMP community string to use
+		[string]$Community,
+		## Port to which to send SNMP traps
+		[int]$Port,
+		## Version of SNMP to use. One of v1, v2c, or v3
+		[ValidateSet("v1", "v2c","v3")][string]$SnmpVersion,
+		## SNMP v3 authentication key in SecureString format. The actual key length (not the length of the SecureString value) should be from 8 to 64 characters.
+		# Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -AuthenticationKey (Read-Host -AsSecureString -Prompt "Enter some password")
+		[System.Security.SecureString]$AuthenticationKey,
+		## SNMP v3 authentication protocol. One of MD5, SHA, or No_Auth
+		[ValidateSet("MD5", "SHA", "No_Auth")][string]$AuthenticationProtocol,
+		## SNMP v3 privacy key in SecureString format. The actual key length (not the length of the SecureString value) should be from 8 to 64 characters.
+		# Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -PrivacyKey (Read-Host -AsSecureString -Prompt "Enter some password")
+		[System.Security.SecureString]$PrivacyKey,
+		## SNMP v3 privacy protocol. One of DES, AES128, or No_Priv
+		[ValidateSet("DES", "AES128", "No_Priv")][string]$PrivacyProtocol,
+		## SNMP v3 username
+		[string]$UserName,
+		## Target SNMP server(s) to which to send traps.  From one to six values, and this will be the new set of recipient values for the SnmpNotifier (overwrites previous recipient list)
+		[ValidateCount(1,6)][string[]]$Recipient,
+		## Switch:  Enable/disable SnmpNotifier (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{}
+
+		if ($PSBoundParameters.ContainsKey("Enable")) {
+			$strEnableOrDisablePropertyToSet = if ($Enable) {"enable"} else {"disable"}
+			$hshSetItemSpec[$strEnableOrDisablePropertyToSet] = $true
+		} ## end if
+
+		if ($PSBoundParameters.ContainsKey("Community")) {$hshSetItemSpec["community"] = $Community}
+		if ($PSBoundParameters.ContainsKey("Port")) {$hshSetItemSpec["port"] = $Port}
+		if ($PSBoundParameters.ContainsKey("SnmpVersion")) {$hshSetItemSpec["version"] = $SnmpVersion}
+		if ($PSBoundParameters.ContainsKey("AuthenticationKey")) {$hshSetItemSpec["auth-key"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($AuthenticationKey))}
+		if ($PSBoundParameters.ContainsKey("AuthenticationProtocol")) {$hshSetItemSpec["auth-protocol"] = $AuthenticationProtocol.ToLower()}
+		if ($PSBoundParameters.ContainsKey("PrivacyKey")) {$hshSetItemSpec["priv-key"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($PrivacyKey))}
+		if ($PSBoundParameters.ContainsKey("PrivacyProtocol")) {$hshSetItemSpec["priv-protocol"] = $PrivacyProtocol.ToLower()}
+		if ($PSBoundParameters.ContainsKey("UserName")) {$hshSetItemSpec["username"] = $UserName}
+		if ($PSBoundParameters.ContainsKey("Recipient")) {$hshSetItemSpec["recipient-list"] = $Recipient}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $SnmpNotifier
 		} ## end hashtable
 
 		## call the function to actually modify this item
