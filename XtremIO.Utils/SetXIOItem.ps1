@@ -147,6 +147,59 @@ function Set-XIOItemInfo {
 
 
 <#	.Description
+	Modify an XtremIO AlertDefinition
+	.Example
+	Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Enable
+	Set the given AlertDefinition to be enabled.
+	.Example
+	Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Severity Major -ClearanceMode Ack_Required -SendToCallHome:$false
+	Set the given AlertDefinition to be of Severity major, with the given ClearanceMode, and disable send-to-call-home for this alert type.
+	.Outputs
+	XioItemInfo.AlertDefinition object for the modified object if successful
+#>
+function Set-XIOAlertDefinition {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.AlertDefinition])]
+	param(
+		## AlertDefinition object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.AlertDefinition]$AlertDefinition,
+		## Clearance mode (should the alert, when triggered, auto clear, or is acknowledgement required?)
+		[ValidateSet("Auto_Clear", "Ack_Required")][string]$ClearanceMode,
+		## Severity of this alert type. One of Clear, Information, Minor, Major, or Critical
+		[XioItemInfo.Enums.General.AlertDefSeverity]$Severity,
+		## Switch:  Send alert to call-home when triggered? (enable via -SendToCallHome, disable via -SendToCallHome:$false)
+		[Switch]$SendToCallHome,
+		## Switch:  Enable/disable AlertDefinition (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## AlertDefinition's type
+			"alert-type" = $AlertDefinition.AlertType
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("Enable")) {
+			$hshSetItemSpec["activity-mode"] = $(if ($Enable) {"enabled"} else {"disabled"})
+		} ## end if
+		if ($PSBoundParameters.ContainsKey("ClearanceMode")) {$hshSetItemSpec["clearance-mode"] = $ClearanceMode.ToLower()}
+		if ($PSBoundParameters.ContainsKey("Severity")) {$hshSetItemSpec["severity"] = $Severity.ToString().ToLower()}
+		if ($PSBoundParameters.ContainsKey("SendToCallHome")) {$hshSetItemSpec["send-to-call-home"] = $(if ($SendToCallHome) {"yes"} else {"no"})}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $AlertDefinition
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Modify an XtremIO ConsistencyGroup
 	.Example
 	Set-XIOConsistencyGroup -ConsistencyGroup (Get-XIOConsistencyGroup myConsistencyGroup0) -Name newConsistencyGroupName0

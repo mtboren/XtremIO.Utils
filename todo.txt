@@ -227,11 +227,11 @@ doing:
 	-only geared towards XIOS v4 and up for now
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
-		no:  LdapConfig, AlertDefinition, SnmpNotifier
+		no:  LdapConfig, SnmpNotifier
 		yes:  Cluster, Snapshot
 	-done:
 	-needs "?cluster-id=blahh" ?
-		no: Set-XIOEmailNotifier, Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
+		no: Set-XIOAlertDefinition, Set-XIOEmailNotifier, Set-XIOInitiatorGroupFolder, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
 		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotScheduler, Set-XIOSnapshotSet, Set-XIOTarget, Set-XIOVolume
 		issues w/ API documentation:
 			setting ConsistencyGroup:  specifying "cg-id" is optional (works with or without), but doc says, "Mandatory"

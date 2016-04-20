@@ -1139,5 +1139,7 @@ namespace XioItemInfo.Enums.Tag {
 namespace XioItemInfo.Enums.General {
 	// Operating System "types", as used by Initiator objects
 	public enum OSType {Linux, Windows, ESX, Solaris, AIX, HPUX, Other}
+	// AlertDefinition severity levels
+	public enum AlertDefSeverity {Clear, Information, Minor, Major, Critical}
 } // end namespace
 "@
