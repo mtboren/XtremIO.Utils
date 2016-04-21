@@ -888,6 +888,7 @@ function _New-Object_fromItemTypeAndContent {
 					ConsistencyState = $oContent."consistency-state"
 					## available in 3.x, but went away in v4.0.0-54 (beta) and v4.0.1-7; if not present on this object (due to say, older or newer XIOS/API version on this appliance), the data reduction rate _is_ either the dedupe ratio or the dedupe ratio * compression factor, if compression factor is not $null
 					DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
+					DebugCreationTimeoutLevel = $oContent."debug-create-timeout"
 					DedupeRatio = $dblDedupeRatio
 					EncryptionMode = $oContent."encryption-mode"
 					EncryptionSupported = $oContent."encryption-supported"
@@ -911,6 +912,7 @@ function _New-Object_fromItemTypeAndContent {
 					NumSSD = $oContent."num-of-ssds"
 					NumVol = $oContent."num-of-vols"
 					NumXenv = $oContent."num-of-xenvs"
+					ObfuscateDebugInformation = $(if ($null -ne $oContent."obfuscate-debug") {"enabled" -eq $oContent."obfuscate-debug"})
 					OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{

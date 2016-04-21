@@ -229,7 +229,7 @@ doing:
 -make sure that Set-XioItemInfo is solid, then work on:
 	-needs "?cluster-id=blahh" ?
 		no:
-		yes:  Cluster, Snapshot
+		yes:  Snapshot
 	-done:
 	-needs "?cluster-id=blahh" ?
 		no: Set-XIOAlertDefinition, Set-XIOEmailNotifier, Set-XIOInitiatorGroupFolder, Set-XIOLdapConfig, Set-XIOSnmpNotifier, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
@@ -241,6 +241,7 @@ doing:
 			setting SnapshotScheduler:  changing "state" property is an exclusive operation (you cannot set "state" plus any other property at the same time) -- docs do not call this out
 			setting SnapshotSet:  specifying "snapshot-set-id" in JSON body is invalid, per the API error message returned like:  "message": "Command Syntax Error: Invalid property snapshot-set-id"
 			setting Alert:  specifying "command" property results in error from API.  Return message is:  "message": "Command Syntax Error: Invalid property command"
+			setting Cluster object property seemingly not allowed, but is outlined in API doc. Returned info from call:  "message": "Method not allowed"
 			setting Target:  specifying "tar-id" is optional (works with or without), but doc says, "Mandatory"
 			setting ConsistencyGroup, InitiatorGroup, SnapshotSet:  specifying "cluster-id" in JSON body is invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
 			setting Initiator, Target fails so far w/ "cluster-name=<blahh>" in obj URL:  does not work regardless of the values passed in for "xxxxxxx-id" property, where "xxxxxxx" is "initiator", "tar" respectively (index, name, not passing "xxxxxxx-id" at all in JSON body).  Fails with web-exception message:  "message": "xxxxxxx_not_found".  And, the value in the XMS audit log is always:  xxxxxxx_id=["", "mycluster01", "0"], when that should seemingly change to reflect the initiator/target being acted upon
@@ -250,6 +251,7 @@ doing:
 
 
 done for version 0.next (after v0.12.0):
+-added properties to Cluster return obj for DebugCreationTimeoutLevel, ObfuscateDebugInformation
 
 
 ## things below here are in changelog/readme
