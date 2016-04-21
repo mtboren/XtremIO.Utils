@@ -950,32 +950,32 @@ function Set-XIOUserAccount {
 
 
 <#	.Description
-	Modify an XtremIO Volume
+	Modify an XtremIO Volume or Snapshot
 	.Example
 	Set-XIOVolume -Volume (Get-XIOVolume myVolume) -Name myVolume_renamed
 	Set a new Name for the given Volume from the existing object itself
 	.Example
-	Get-XIOVolume myVolume | Set-XIOVolume -Name myVolume_renamed
-	Set a new Name for the given Volume from the existing object itself (via pipeline)
+	Get-XIOSnapshot myVolume.snapshot0 | Set-XIOVolume -Name myVolume.snapshot0_old
+	Set a new Name for the given Snapshot from the existing object itself (via pipeline)
 	.Example
 	Get-XIOVolume myVolume0 | Set-XIOVolume -SizeTB 10 -AccessRightLevel Read_Access -SmallIOAlertEnabled:$false -VaaiTPAlertEnabled
 	Set the size and access level for the volume, disable small IO alerts, and enable VAAI thin provisioning alerts
 	.Outputs
-	XioItemInfo.Volume object for the modified object if successful
+	XioItemInfo.Volume or XioItemInfo.Snapshot (depending on the source object) object for the modified object if successful
 #>
 function Set-XIOVolume {
 	[CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName="Default")]
-	[OutputType([XioItemInfo.Volume])]
+	[OutputType([XioItemInfo.Volume],[XioItemInfo.Snapshot])]
 	param(
-		## Volume object to modify
+		## Volume or Snapshot object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Volume]$Volume,
-		## New Name to set for the volume
+		## New Name to set for the volume or snapshot
 		[string]$Name,
-		## New, larger size in MB for the volume (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,147,483,648 MB)
+		## New, larger size in MB for the volume or snapshot (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,147,483,648 MB)
 		[parameter(ParameterSetName="SizeByMB")][ValidateRange(1, ([int32]::MaxValue + 1))][Int64]$SizeMB,
-		## New, larger size in GB for the volume (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,097,152 GB)
+		## New, larger size in GB for the volume or snapshot (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,097,152 GB)
 		[parameter(ParameterSetName="SizeByGB")][ValidateRange(1, ([int32]::MaxValue + 1)/1KB)][Int]$SizeGB,
-		## New, larger size in TB for the volume (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,048 TB)
+		## New, larger size in TB for the volume or snapshot (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,048 TB)
 		[parameter(ParameterSetName="SizeByTB")][ValidateRange(1, 2048)][Int]$SizeTB,
 		## Switch:  Enable or disable small input/output alerts. To disable, use: -UnalignedIOAlertEnabled:$false
 		[Switch]$SmallIOAlertEnabled,
@@ -983,7 +983,7 @@ function Set-XIOVolume {
 		[Switch]$UnalignedIOAlertEnabled,
 		## Switch:  Enable or disable VAAI thin-provisioning alerts. To disable, use: -VaaiTPAlertEnabled:$false
 		[Switch]$VaaiTPAlertEnabled,
-		## Set the access level of the volume.  Volumes can have one of the following access right levels:
+		## Set the access level of the volume or snapshot.  Volumes/Snapshots can have one of the following access right levels:
 		#	- No_Access:  All SCSI commands for accessing data on the Volume (read commands and write commands) fail, and all SCSI discovery commands (i.e. inquiries on Volume characteristics and not accessing the data on the Volume) succeed.
 		#	- Read_Access:  All SCSI write commands fail and all SCSI read commands and discovery commands succeed.
 		#	- Write_Access:  All commands succeed and the host can write to the Volume.
