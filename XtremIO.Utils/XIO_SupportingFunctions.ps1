@@ -593,6 +593,30 @@ function _Get-BooleanFromVariousValue {
 } ## end fn
 
 
+function _Remove-ClusterNameQStringFromURI {
+<#	.Description
+	Helper function to try to remove the "&cluster-name=myclus01&" tidbit from a URI string
+#>
+	param(
+		[parameter(Mandatory=$true)][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+	)
+
+	process {
+		$uriThisURI = [System.Uri]$URI
+		## if the Query portion of the URI doesn't have "cluster-name=" in it, just return the URI
+		if ($uriThisURI.Query -notlike "*cluster-name=*") {$URI}
+		else {
+			## get just the URI path (the URI, chopping off the query string, if any)
+			$strUriPath = $uriThisURI.GetLeftPart([System.UriPartial]::Path)
+			## take the "cluster-name=<something>" out of the query string by trimming the leading "?", splitting on "&", and returning items that don't match "^cluster-name=.+"
+			$strQStringKeyValsMinusClusterName = "{0}" -f (($uriThisURI.Query.TrimStart("?").Split("&") | Where-Object {$_ -notmatch "^cluster-name=.+"}) -join "&")
+			## return the original URI path and, if there was any remaining query string key/value pairs, the "?..restOfQstringHere" string
+			return "${strUriPath}{0}" -f $(if (-not [System.String]::IsNullOrEmpty($strQStringKeyValsMinusClusterName)) {"?$strQStringKeyValsMinusClusterName"})
+		}
+	}
+}
+
+
 function _New-XioClusterObjFromSysId {
 <#	.Description
 	Helper function to create a new XioItemInfo.Cluster object from the .sys-id property of an object (even if $null)
@@ -864,6 +888,7 @@ function _New-Object_fromItemTypeAndContent {
 					ConsistencyState = $oContent."consistency-state"
 					## available in 3.x, but went away in v4.0.0-54 (beta) and v4.0.1-7; if not present on this object (due to say, older or newer XIOS/API version on this appliance), the data reduction rate _is_ either the dedupe ratio or the dedupe ratio * compression factor, if compression factor is not $null
 					DataReduction = $(if ($null -ne $oContent."data-reduction-ratio") {$oContent."data-reduction-ratio"} else {if ($null -ne $oContent."compression-factor") {$dblDedupeRatio * $oContent."compression-factor"} else {$dblDedupeRatio}})
+					DebugCreationTimeoutLevel = $oContent."debug-create-timeout"
 					DedupeRatio = $dblDedupeRatio
 					EncryptionMode = $oContent."encryption-mode"
 					EncryptionSupported = $oContent."encryption-supported"
@@ -887,6 +912,7 @@ function _New-Object_fromItemTypeAndContent {
 					NumSSD = $oContent."num-of-ssds"
 					NumVol = $oContent."num-of-vols"
 					NumXenv = $oContent."num-of-xenvs"
+					ObfuscateDebugInformation = $(if ($null -ne $oContent."obfuscate-debug") {"enabled" -eq $oContent."obfuscate-debug"})
 					OverallEfficiency = $(if ($oContent."space-saving-ratio") {"{0}:1" -f ([Math]::Round(1/$oContent."space-saving-ratio", 0))})
 					PerformanceInfo = New-Object -Type PSObject -Property ([ordered]@{
 						Current = New-Object -Type PSObject -Property ([ordered]@{

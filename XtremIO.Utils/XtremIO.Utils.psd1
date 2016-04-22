@@ -81,10 +81,10 @@ AliasesToExport = '*'
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = 'XtremIO.Utils.psd1', 'XtremIO.Utils.init.ps1', 
-               'XtremIO_UtilsMod.psm1', 'XIO_SupportingFunctions.ps1', 
-               'GetXIOItem.ps1', 'NewXIOItem.ps1', 'OtherXIOMgmt.ps1', 
-               'XioInfo.format.ps1xml', 'configItems.ps1'
+FileList = 'XtremIO.Utils.psd1', 'XtremIO.Utils.init.ps1',
+               'XtremIO_UtilsMod.psm1', 'XIO_SupportingFunctions.ps1',
+               'GetXIOItem.ps1', 'NewXIOItem.ps1', 'OtherXIOMgmt.ps1',
+               'SetXIOItem.ps1', 'XioInfo.format.ps1xml', 'configItems.ps1'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess
 # PrivateData = ''
