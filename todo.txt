@@ -222,39 +222,9 @@ todo:
 
 doing:
 
-done for version 0.next (after v0.12.0):
-[feat_SetItems]
--for Set-XioItemInfo:
-	-need piece that makes proper URI w/ given method
-	-only accept XioItemInfo objects for now
-	-only geared towards XIOS v4 and up for now
--make sure that Set-XioItemInfo is solid, then work on:
-	-needs "?cluster-id=blahh" ?
-		no: Set-XIOAlertDefinition, Set-XIOEmailNotifier, Set-XIOInitiatorGroupFolder, Set-XIOLdapConfig, Set-XIOSnmpNotifier, Set-XIOSyslogNotifier, Set-XIOTag, Set-XIOUserAccount, Set-XIOVolumeFolder
-		yes:  Set-XIOConsistencyGroup, Set-XIOInitiator, Set-XIOInitiatorGroup, Set-XIOSnapshotScheduler, Set-XIOSnapshotSet, Set-XIOTarget, Set-XIOVolume
-		issues w/ API documentation:
-			setting ConsistencyGroup:  specifying "cg-id" is optional (works with or without), but doc says, "Mandatory"
-			setting Initiator:  doc does not include "operating-system" property that can be set
-			setting InitiatorGroup:  specifying "ig-id" is optional (works with or without), but doc says, "Mandatory"
-			setting SnapshotScheduler:  changing "state" property is an exclusive operation (you cannot set "state" plus any other property at the same time) -- docs do not call this out
-			setting SnapshotSet:  specifying "snapshot-set-id" in JSON body is invalid, per the API error message returned like:  "message": "Command Syntax Error: Invalid property snapshot-set-id"
-			setting Alert:  specifying "command" property results in error from API.  Return message is:  "message": "Command Syntax Error: Invalid property command"
-			setting Cluster object property seemingly not allowed, but is outlined in API doc. Returned info from call:  "message": "Method not allowed"
-			setting Target:  specifying "tar-id" is optional (works with or without), but doc says, "Mandatory"
-			setting ConsistencyGroup, InitiatorGroup, SnapshotSet:  specifying "cluster-id" in JSON body is invalid, per the API error message returned:  "message": "Command Syntax Error: Invalid property cluster-id"
-			setting Initiator, Target fails so far w/ "cluster-name=<blahh>" in obj URL:  does not work regardless of the values passed in for "xxxxxxx-id" property, where "xxxxxxx" is "initiator", "tar" respectively (index, name, not passing "xxxxxxx-id" at all in JSON body).  Fails with web-exception message:  "message": "xxxxxxx_not_found".  And, the value in the XMS audit log is always:  xxxxxxx_id=["", "mycluster01", "0"], when that should seemingly change to reflect the initiator/target being acted upon
-		issues w/ API:
-			setting Initiator property fails if "cluster-name=<something>" is in URI:  does not work regardless of the values passed in for "initiator-id" property (index, name, or not passing "initiator-id" at all in JSON body).  Fails with web-exception message:  "message": "initiator_not_found".  And, the value in the XMS audit log is always:  initiator_id=["", "mycluster01", "0"], when that should seemingly change to reflect the initiator being acted upon; same behavior for Scheduler, Target, Volume
-	-updated Set-XIOVolume to show that it can be used to set properties for either a Volume _or_ a Snapshot (no discreet Set-XIOSnapshot, as the properties are _exactly_ the same as for Set-XIOVolume)
--once done, un-exported Set-XIOItemInfo (re-export some day?)
--added properties to Cluster return obj for DebugCreationTimeoutLevel, ObfuscateDebugInformation
+done for version 0.next (after v0.14.0):
 
 ## things below here are in changelog/readme
-
-
-
-
-
 
 done for previous versions:  moved to done.txt
 
@@ -269,6 +239,7 @@ merge branches into dev
 rev module version
 test
 update changelog/readme
+commit to dev
 merge to master
 move "Latest" tag to master commit
 add version-specific tag

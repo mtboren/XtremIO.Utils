@@ -1,6 +1,14 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v0.14.0
+22 Apr 2016
+
+Now, with Set-XIO* cmdlets!  This release brings a bevy of new Set-XIO* cmdlets:  sixteen (16) of them, to be exact.  This provides coverage for setting properties of objects with settable properties -- woo-hoo!  The details for this release:
+
+- \[new] Set-XIO* cmdlets:  `Set-XIOAlertDefinition`, `Set-XIOConsistencyGroup`, `Set-XIOEmailNotifier`, `Set-XIOInitiator`, `Set-XIOInitiatorGroup`, `Set-XIOInitiatorGroupFolder`, `Set-XIOLdapConfig`, `Set-XIOSnapshotScheduler`, `Set-XIOSnapshotSet`, `Set-XIOSnmpNotifier`, `Set-XIOSyslogNotifier`, `Set-XIOTag`, `Set-XIOTarget`, `Set-XIOUserAccount`, `Set-XIOVolume`, `Set-XIOVolumeFolder`.  These all accept from pipeline the object upon which to operate for maximum ease of use.
+- \[new] A couple of new properties for `Cluster` objects:  `DebugCreationTimeoutLevel`, `ObfuscateDebugInformation`
+
 ### v0.12.0
 08 Apr 2016
 
