@@ -469,10 +469,10 @@ function Set-XIOInitiatorGroupFolder {
 <#	.Description
 	Modify an XtremIO LdapConfig
 	.Example
-	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "DC=DOM,DC=COM"} | Set-XIOLdapConfig -RoleMapping "read_only:cn=grp0,dc=dom,dc=com","configuration:CN=user0,DC=dom.com"
+	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -RoleMapping "read_only:cn=grp0,dc=dom,dc=com","configuration:cn=user0,dc=dom,dc=com"
 	Set the role mappings for this LdapConfig to be these two new role definitions (overwrites previous role-mapping values)
 	.Example
-	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "DC=DOM,DC=COM"} | Set-XIOLdapConfig -BindDN "cn=mybinder,dc=dom,dc=com" -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password") -SearchBaseDN "OU=tiptop,DC=DOM,DC=COM" -SearchFilter "sAMAccountName={username}" -LdapServerURL ldaps://prim.dom.com,ldaps://sec.dom.com -UserToDnRule "dom\{username}" -CacheExpire 8 -Timeout 30 -RoleMapping "admin:cn=grp0,dc=dom,dc=com","admin:cn=grp2,dc=dom,dc=com"
+	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -BindDN "cn=mybinder,dc=dom,dc=com" -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password") -SearchBaseDN "OU=tiptop,dc=dom,dc=com" -SearchFilter "sAMAccountName={username}" -LdapServerURL ldaps://prim.dom.com,ldaps://sec.dom.com -UserToDnRule "dom\{username}" -CacheExpire 8 -Timeout 30 -RoleMapping "admin:cn=grp0,dc=dom,dc=com","admin:cn=grp2,dc=dom,dc=com"
 	Set the given attributes of the LdapConfig item:  BindDN and password, the LDAP search base DN, the LDAP search filter, the LDAP server URLs (overwrites previous values with these values), the UserToDnRule value, the logon validity duration, and more.
 	.Outputs
 	XioItemInfo.LdapConfig object for the modified object if successful
@@ -501,7 +501,7 @@ function Set-XIOLdapConfig {
 		[int]$Timeout,
 		## CA public SSL certificate string in PEM format (starts with "-----BEGIN CERTIFICATE-----" line)
 		[ValidateLength(16,2048)][string]$CAPublicCertData,
-		## Role mapping for users/groups. Can provide multple, like:  -RoleMapping "<roleName>:CN=group0,OU=ou0,DC=dom,DC=com","<roleName>:CN=group1,OU=ou2,DC=dom,DC=com".  Valid role names are "read_only", "configuration", and "admin".  Overwrites previous role definitions for this LdapConfig
+		## Role mapping for users/groups. Can provide multple, like:  -RoleMapping "<roleName>:cn=group0,ou=ou0,dc=dom,dc=com","<roleName>:cn=group1,ou=ou2,dc=dom,dc=com".  Valid role names are "read_only", "configuration", and "admin".  Overwrites previous role definitions for this LdapConfig
 		[string[]]$RoleMapping
 	) ## end param
 
@@ -704,7 +704,7 @@ function Set-XIOSnapshotSet {
 	Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -Enable:$false
 	Modify this given SnmpNotifier, disabling the notifier
 	.Example
-	Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -PrivacyKey (Read-Host -AsSecureString "priv key") -SnmpVersion v3 -AuthenticationKey (Read-Host -AsSecureString "auth key") -PrivacyProtocol DES -AuthenticationProtocol MD5 -UserName admin2 -Recipient testdest0.dom.com,testdest1.dom.comw
+	Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -PrivacyKey (Read-Host -AsSecureString "priv key") -SnmpVersion v3 -AuthenticationKey (Read-Host -AsSecureString "auth key") -PrivacyProtocol DES -AuthenticationProtocol MD5 -UserName admin2 -Recipient testdest0.dom.com,testdest1.dom.com
 	Set the SnmpNotifier to use SNMP v3, set the privacy- and authentication keys after reading them as secure strings from user, set the privacy- and authentication protocols and the SNMP v3 username, and overwrite the trap-recipient list with the two new server names
 	.Outputs
 	XioItemInfo.SnmpNotifier object for the modified object if successful

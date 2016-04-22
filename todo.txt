@@ -265,10 +265,10 @@ done for previous versions:  moved to done.txt
 
 
 ## release items
+merge branches into dev
 rev module version
 test
 update changelog/readme
-
 merge to master
 move "Latest" tag to master commit
 add version-specific tag
