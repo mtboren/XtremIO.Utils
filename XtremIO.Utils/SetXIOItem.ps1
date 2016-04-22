@@ -1,17 +1,17 @@
 <#	.Description
 	Function to set XtremIO item info using REST API with XtremIO XMS appliance.  Generally used as supporting function to the rest of the Set-XIO* cmdlets, but can be used directly, too, if needed
 	.Example
-	Set-XIOItemInfo -Name /mattTestFolder -ItemType volume-folder -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -Cluster myCluster0
+	Set-XIOItemInfo -Name /testFolder -ItemType volume-folder -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -Cluster myCluster0
 	Set a new name for the given VolumeFolder, using the hashtable that has a "caption" key/value pair for the new name
-	An example of the hastable is:  $hshTmpSpecForNewVolFolderName = @{"caption" = "mattTestFolder_renamed"}
+	An example of the hastable is:  $hshTmpSpecForNewVolFolderName = @{"caption" = "testFolder_renamed"}
 	.Example
 	Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -URI https://somexms.dom.com/api/json/types/volume-folders/10
 	Set a new name for the given VolumeFolder by specifying the object's URI, using the hashtable that has a "caption" key/value pair for the new name
 	.Example
-	Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -XIOItemInfoObj (Get-XIOVolumeFolder /mattTestFolder)
+	Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -XIOItemInfoObj (Get-XIOVolumeFolder /testFolder)
 	Set a new name for the given VolumeFolder from the existing object itself, using the hashtable that has a "caption" key/value pair for the new name
 	.Example
-	Get-XIOVolumeFolder /mattTestFolder | Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json)
+	Get-XIOVolumeFolder /testFolder | Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json)
 	Set a new name for the given VolumeFolder from the existing object itself (via pipeline), using the hashtable that has a "caption" key/value pair for the new name
 	.Outputs
 	XioItemInfo object for the newly updated object if successful
@@ -1030,10 +1030,10 @@ function Set-XIOVolume {
 <#	.Description
 	Modify an XtremIO VolumeFolder. Not yet functional for XIOS v3.x and older
 	.Example
-	Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /mattTestFolder) -Caption mattTestFolder_renamed
+	Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /testFolder) -Caption testFolder_renamed
 	Set a new caption for the given VolumeFolder from the existing object itself
 	.Example
-	Get-XIOVolumeFolder /mattTestFolder | Set-XIOVolumeFolder -Caption mattTestFolder_renamed
+	Get-XIOVolumeFolder /testFolder | Set-XIOVolumeFolder -Caption testFolder_renamed
 	Set a new caption for the given VolumeFolder from the existing object itself (via pipeline)
 	.Outputs
 	XioItemInfo.VolumeFolder object for the modified object if successful
