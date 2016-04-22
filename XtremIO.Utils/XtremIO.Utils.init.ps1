@@ -128,6 +128,7 @@ namespace XioItemInfo {
 		public String ConfigurableVolumeType;
 		public String ConsistencyState;
 		public System.Nullable<Decimal> DataReduction;
+		public String DebugCreationTimeoutLevel;
 		public System.Nullable<Decimal> DedupeRatio;
 		public String EncryptionMode;
 		public System.Nullable<Int32> ExpansionDataTransferPct;
@@ -150,6 +151,7 @@ namespace XioItemInfo {
 		public System.Nullable<Int32> NumSSD;
 		public System.Nullable<Int32> NumVol;
 		public System.Nullable<Int32> NumXenv;
+		public System.Nullable<Boolean> ObfuscateDebugInformation;
 		public String OverallEfficiency;
 		public Object PerformanceInfo;
 		public String SharedMemEfficiencyLevel;
@@ -1139,5 +1141,7 @@ namespace XioItemInfo.Enums.Tag {
 namespace XioItemInfo.Enums.General {
 	// Operating System "types", as used by Initiator objects
 	public enum OSType {Linux, Windows, ESX, Solaris, AIX, HPUX, Other}
+	// AlertDefinition severity levels
+	public enum AlertDefSeverity {Clear, Information, Minor, Major, Critical}
 } // end namespace
 "@

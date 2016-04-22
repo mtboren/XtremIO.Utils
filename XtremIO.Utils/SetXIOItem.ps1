@@ -1,57 +1,51 @@
 <#	.Description
-	Function to set XtremIO item info using REST API with XtremIO XMS appliance
+	Function to set XtremIO item info using REST API with XtremIO XMS appliance.  Generally used as supporting function to the rest of the Set-XIO* cmdlets, but can be used directly, too, if needed
+	.Example
+	Set-XIOItemInfo -Name /testFolder -ItemType volume-folder -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -Cluster myCluster0
+	Set a new name for the given VolumeFolder, using the hashtable that has a "caption" key/value pair for the new name
+	An example of the hastable is:  $hshTmpSpecForNewVolFolderName = @{"caption" = "testFolder_renamed"}
+	.Example
+	Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -URI https://somexms.dom.com/api/json/types/volume-folders/10
+	Set a new name for the given VolumeFolder by specifying the object's URI, using the hashtable that has a "caption" key/value pair for the new name
+	.Example
+	Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json) -XIOItemInfoObj (Get-XIOVolumeFolder /testFolder)
+	Set a new name for the given VolumeFolder from the existing object itself, using the hashtable that has a "caption" key/value pair for the new name
+	.Example
+	Get-XIOVolumeFolder /testFolder | Set-XIOItemInfo -SpecForSetItem ($hshTmpSpecForNewVolFolderName | ConvertTo-Json)
+	Set a new name for the given VolumeFolder from the existing object itself (via pipeline), using the hashtable that has a "caption" key/value pair for the new name
 	.Outputs
-	PSCustomObject
+	XioItemInfo object for the newly updated object if successful
 #>
 function Set-XIOItemInfo {
 	[CmdletBinding(DefaultParameterSetName="ByComputerName", SupportsShouldProcess=$true, ConfirmImpact=[System.Management.Automation.Confirmimpact]::High)]
 	param(
 		## XMS appliance address to which to connect
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName_arr,
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Name(s) of cluster in which resides the object whose properties to set
+		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")][string[]]$Cluster,
 		## Item type for which to set info
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")]
-		[ValidateSet("ig-folder", "initiator-group", "initiator", "volume", "volume-folder")]
-		[string]$ItemType_str,
+		[ValidateSet("ig-folder", "initiator-group", "initiator", "syslog-notifier", "tag", "user-account", "volume", "volume-folder")]
+		[string]$ItemType,
 		## Item name for which to set info
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string]$Name,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("ItemName")][string]$Name,
 		## JSON for the body of the POST WebRequest, for specifying the properties for modifying the XIO object
-		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForSetItem_str,
+		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForSetItem,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## XioItemInfo object whose property to set
 		[parameter(Position=0,ParameterSetName="ByXioItemInfoObj",ValueFromPipeline)][ValidateNotNullOrEmpty()][PSObject]$XIOItemInfoObj
 	) ## end param
 
-
-<# general process:
--get item
-	-Switch (ParamSet)
-		ByComputerName
-			-get the item by name
-				-if not valid, error
-		SpecifyFullUri
-			-get item by URI
-				-if not valid, error
-		ByXioItemInfoObj
-			-continue on
--try to PUT request
-	-takes the URI and the JSON
-
-#>
-<#	.Description
-	Set properties of an XtremIO item, like a volume, initiator group, etc.  Used as helper function to the Set-XIO* functions that are each for modifying items of a specific type
-	.Outputs
-	XioItemInfo object for the newly updated object if successful
-#>
 	Begin {
 		## string to add to messages written by this function; function name in square brackets
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## get the XIO connections to use, either from ComputerName param, or from the URI
 		$arrXioConnectionsToUse = Get-XioConnectionsToUse -ComputerName $(
 			Switch ($PSCmdlet.ParameterSetName) {
-				"ByComputerName" {$ComputerName_arr; break}
-				"SpecifyFullUri" {([System.Uri]($URI_str)).DnsSafeHost; break}
+				"ByComputerName" {$ComputerName; break}
+				"SpecifyFullUri" {([System.Uri]($URI)).DnsSafeHost; break}
 				"ByXioItemInfoObj" {$XIOItemInfoObj.ComputerName}
 			})
 	} ## end begin
@@ -61,31 +55,31 @@ function Set-XIOItemInfo {
 		$oExistingXioItem = Switch ($PSCmdlet.ParameterSetName) {
 				{"ByComputerName","SpecifyFullUri" -contains $_} {
 					## make hashtable of params for the Get call (that verifies that such an object exists); remove any extra params that were copied in that are not used for the Get call, or where the param name is not quite the same in the subsequent function being called
-					$PSBoundParameters.Keys | Where-Object {"SpecForSetItem_str","WhatIf" -notcontains $_} | Foreach-Object -begin {$hshParamsForGetItem = @{}} -process {$hshParamsForGetItem[$_] = $PSBoundParameters[$_]}
+					$PSBoundParameters.Keys | Where-Object {"SpecForSetItem","WhatIf" -notcontains $_} | Foreach-Object -begin {$hshParamsForGetItem = @{}} -process {$hshParamsForGetItem[$_] = $PSBoundParameters[$_]}
 					Get-XIOItemInfo @hshParamsForGetItem; break
 				} ## end case
 				"ByXioItemInfoObj" {$XIOItemInfoObj; break}
 			} ## end switch
-		## if such an item does not exist, write a warning and stop
-		if ($null -eq $oExistingXioItem) {Write-Warning "Item of name '$Name' and type '$ItemType_str' does not exist on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"; break;} ## end if
-		## if more than one such an item exists, write a warning and stop
-		if (($oExistingXioItem | Measure-Object).Count -ne 1) {Write-Warning "More than one item like name '$Name' and of type '$ItemType_str' found on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"; break;} ## end if
+		## if such an item does not exist, throw error and stop
+		if ($null -eq $oExistingXioItem) {Throw "Item of name '$Name' and type '$ItemType' does not exist on '$($arrXioConnectionsToUse.ComputerName -join ", ")'. Taking no action"} ## end if
+		## if more than one such an item exists, throw error and stop
+		if (($oExistingXioItem | Measure-Object).Count -ne 1) {Throw "More than one item like name '$Name' and of type '$ItemType' found on '$($arrXioConnectionsToUse.ComputerName -join ", ")'"} ## end if
 		## else, actually try to set properties on the object
 		else {
 			$arrXioConnectionsToUse | Foreach-Object {
 				$oThisXioConnection = $_
 				## the Set items' specification, from JSON; PSCustomObject with properties/values to be set
-				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem_str
+				$oSetSpecItem = ConvertFrom-Json -InputObject $SpecForSetItem
 				$intNumPropertyToSet = ($oSetSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
-				$strShouldProcessOutput = "Set {0} propert{1} for '{2}' object named '{3}'" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name
+				## make a string to display the properties being set in the -WhatIf and -Confirm types of messages; replace any "password" values with asterisks
+				$strPropertiesBeingSet = ($SpecForSetItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())} | Foreach-Object {if ($_ -match '^\s+"((proxy-)?password|bindpw|auth-key|priv-key)": ') {$_ -replace '^(\s+"((proxy-)?password|bindpw|auth-key|priv-key)":\s+)".+"', ('$1'+("*"*10))} else {$_}}) -join "`n"
+				$strShouldProcessOutput = "Set following {0} propert{1} for '{2}' object named '{3}':`n{4}`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name, $strPropertiesBeingSet
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
 					$hshParamsToSetXIOItem = @{
-						## make URI
 						Uri = $oExistingXioItem.Uri
 						## JSON contents for body, for the params for creating the new XIO object
-						Body = $SpecForSetItem_str
-						## set method
+						Body = $SpecForSetItem
 						Method = "Put"
 						## do something w/ creds to make Headers
 						Headers = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $oThisXioConnection.Credential)}
@@ -93,11 +87,12 @@ function Set-XIOItemInfo {
 
 					## try request
 					try {
-						Write-Debug "$strLogEntry_ToAdd hshParamsToSetXIOItem: `n$(dWrite-ObjectToTableString -ObjectToStringify $hshParamsToSetXIOItem)"
+						## when Method is Put or when there is a body to the request, seems to ignore cert errors by default, so no need to change cert-handling behavior here based on -TrustAllCert value
 						$oWebReturn = Invoke-WebRequest @hshParamsToSetXIOItem
 					} ## end try
-					## catch, write-error, break
-					catch {Write-Error $_; break}
+					catch {
+						_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToSetXIOItem['Uri'] -ErrorRecord $_
+					} ## end catch
 					## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
 					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Put"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Put"]["StatusDescription"])) {
 						Write-Verbose "$strLogEntry_ToAdd Item updated successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
@@ -112,9 +107,934 @@ function Set-XIOItemInfo {
 
 
 
+# <#	.Description
+# 	Modify an XtremIO Alert
+# 	.Example
+# 	Get-XIOAlert | Where-Object {$_.AlertCode -eq "0200302"} | Set-XIOAlert -Acknowledged
+# 	Acknowledge this given Alert
+# 	.Outputs
+# 	XioItemInfo.Alert object for the modified object if successful
+# #>
+# function Set-XIOAlert {
+# 	[CmdletBinding(SupportsShouldProcess=$true)]
+# 	[OutputType([XioItemInfo.Alert])]
+# 	param(
+# 		## Alert object to modify
+# 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Alert]$Alert,
+# 		## Switch:  Acknowledge this alert?
+# 		[parameter(Mandatory=$true)][Switch]$Acknowledged
+# 	) ## end param
+
+# 	Process {
+# 		## the API-specific pieces for modifying the XIO object's properties
+# 		$hshSetItemSpec = @{
+# 			"alert-id" = $Alert.Index
+# 			## it's not "command" or "acknowledge" or "acknowledged"; with none of these, the return message is:  "message": "Command Syntax Error: At least one property from the following list is mandatory: ['new-name','new-caption']"; have not had these succeed, yet
+# 			# command = $(if ($Acknowledged) {"acknowledged"} else {"not_ack"})
+# 			# state = $(if ($Acknowledged) {"acknowledged"} else {"not_ack"})
+# 		}
+
+# 		## the params to use in calling the helper function to actually modify the object
+# 		$hshParamsForSetItem = @{
+# 			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+# 			XIOItemInfoObj = $Alert
+# 		} ## end hashtable
+
+# 		## call the function to actually modify this item
+# 		Set-XIOItemInfo @hshParamsForSetItem
+# 	} ## end process
+# } ## end function
+
+
 <#	.Description
-	Modify an XtremIO volume-folder
+	Modify an XtremIO AlertDefinition
 	.Example
+	Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Enable
+	Set the given AlertDefinition to be enabled.
+	.Example
+	Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Severity Major -ClearanceMode Ack_Required -SendToCallHome:$false
+	Set the given AlertDefinition to be of Severity major, with the given ClearanceMode, and disable send-to-call-home for this alert type.
+	.Outputs
+	XioItemInfo.AlertDefinition object for the modified object if successful
+#>
+function Set-XIOAlertDefinition {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.AlertDefinition])]
+	param(
+		## AlertDefinition object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.AlertDefinition]$AlertDefinition,
+		## Clearance mode (should the alert, when triggered, auto clear, or is acknowledgement required?)
+		[ValidateSet("Auto_Clear", "Ack_Required")][string]$ClearanceMode,
+		## Severity of this alert type. One of Clear, Information, Minor, Major, or Critical
+		[XioItemInfo.Enums.General.AlertDefSeverity]$Severity,
+		## Switch:  Send alert to call-home when triggered? (enable via -SendToCallHome, disable via -SendToCallHome:$false)
+		[Switch]$SendToCallHome,
+		## Switch:  Enable/disable AlertDefinition (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## AlertDefinition's type
+			"alert-type" = $AlertDefinition.AlertType
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("Enable")) {
+			$hshSetItemSpec["activity-mode"] = $(if ($Enable) {"enabled"} else {"disabled"})
+		} ## end if
+		if ($PSBoundParameters.ContainsKey("ClearanceMode")) {$hshSetItemSpec["clearance-mode"] = $ClearanceMode.ToLower()}
+		if ($PSBoundParameters.ContainsKey("Severity")) {$hshSetItemSpec["severity"] = $Severity.ToString().ToLower()}
+		if ($PSBoundParameters.ContainsKey("SendToCallHome")) {$hshSetItemSpec["send-to-call-home"] = $(if ($SendToCallHome) {"yes"} else {"no"})}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $AlertDefinition
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO ConsistencyGroup
+	.Example
+	Set-XIOConsistencyGroup -ConsistencyGroup (Get-XIOConsistencyGroup myConsistencyGroup0) -Name newConsistencyGroupName0
+	Rename the given ConsistencyGroup to have the new name.
+	.Example
+	Get-XIOConsistencyGroup -Name myConsistencyGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOConsistencyGroup -Name newConsistencyGroupName0
+	Get the given ConsistencyGroup from the specified cluster managed by the specified XMS, and set its name to a new value.
+	.Outputs
+	XioItemInfo.ConsistencyGroup object for the modified object if successful
+#>
+function Set-XIOConsistencyGroup {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.ConsistencyGroup])]
+	param(
+		## ConsistencyGroup object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.ConsistencyGroup]$ConsistencyGroup,
+		## New name to set for this ConsistencyGroup
+		[parameter(Mandatory=$true)][string]$Name
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			# "cluster-id" = $ConsistencyGroup.Cluster.Name
+			"new-name" = $Name
+			## ConsistencyGroup's current name or index number -- seems to not matter if this is passed or not
+			# "cg-id" = $ConsistencyGroup.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $ConsistencyGroup
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO EmailNotifier
+	.Example
+	Get-XIOEmailNotifier | Set-XIOEmailNotifier -Sender myxms.dom.com -Recipient me@dom.com,someoneelse@dom.com
+	Modify this given EmailNotifier, changing the Sender and Recipient list of email addresses (overwrites the recipients list with this list)
+	.Example
+	Get-XIOEmailNotifier | Set-XIOEmailNotifier -CompanyName MyCompany -MailRelayServer mysmtp.dom.com
+	Modify this given EmailNotifier, changing the Company Name, and changing to use the given SMTP mail relay and mail relay credentials
+	.Example
+	Get-XIOEmailNotifier | Set-XIOEmailNotifier -ProxyServer myproxy.dom.com -ProxyServerPort 10101 -ProxyCredential (Get-Credential dom\myProxyUser) -Enable:$false
+	Modify this given EmailNotifier, changing it to use the given HTTP proxy and port, and proxy user credentials, and disabling the notifier
+	.Outputs
+	XioItemInfo.EmailNotifier object for the modified object if successful
+#>
+function Set-XIOEmailNotifier {
+	[CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName="Default")]
+	[OutputType([XioItemInfo.EmailNotifier])]
+	param(
+		## EmailNotifier object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.EmailNotifier]$EmailNotifier,
+		## Company Name
+		[string]$CompanyName,
+		## Contact details for this EmailNotifier
+		[string]$ContactDetail,
+		## Proxy-server name/address, if using HTTP transport
+		[parameter(Mandatory=$true, ParameterSetName="UsingHttpTransport")][string]$ProxyServer,
+		## Proxy-server credential, if using HTTP transport and if the proxy server requires credentials
+		[parameter(ParameterSetName="UsingHttpTransport")][System.Management.Automation.PSCredential]$ProxyCredential,
+		## Proxy-server port, if using HTTP transport
+		[parameter(ParameterSetName="UsingHttpTransport")][int]$ProxyServerPort,
+		## SMTP mail relay address, if using SMTP transport
+		[parameter(Mandatory=$true, ParameterSetName="UsingSmtpTransport")][string]$MailRelayServer,
+		## SMTP mail relay credential, if using SMTP transport and if the mail server requires credentials
+		[parameter(ParameterSetName="UsingSmtpTransport")][System.Management.Automation.PSCredential]$MailRelayCredential,
+		## List of recipient email addresses for notification emails. Overwrites current list of recipient email addresses
+		[string[]]$Recipient,
+		## Email address to use as "sender" address for notification emails
+		[string]$Sender,
+		## Switch:  Enable/disable EmailNotifier (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{}
+
+		if ($PSBoundParameters.ContainsKey("CompanyName")) {$hshSetItemSpec["company-name"] = $CompanyName}
+		if ($PSBoundParameters.ContainsKey("ContactDetail")) {$hshSetItemSpec["contact-details"] = $ContactDetail}
+		if ($PSBoundParameters.ContainsKey("Recipient")) {$hshSetItemSpec["recipient-list"] = $Recipient}
+		if ($PSBoundParameters.ContainsKey("Sender")) {$hshSetItemSpec["sender"] = $Sender}
+		if ($PSBoundParameters.ContainsKey("Enable")) {
+			$strEnableOrDisablePropertyToSet = if ($Enable) {"enable"} else {"disable"}
+			$hshSetItemSpec[$strEnableOrDisablePropertyToSet] = $true
+		} ## end if
+
+		## set the transport value based on the parameter set (if using Proxy, "http", if using Mail server, "smtp")
+		Switch ($PsCmdlet.ParameterSetName) {
+			"UsingHttpTransport" {
+				$hshSetItemSpec["transport"] = "http"
+				if ($PSBoundParameters.ContainsKey("ProxyServer")) {$hshSetItemSpec["proxy-address"] = $ProxyServer}
+				## this must be a quoted string, apparently
+				if ($PSBoundParameters.ContainsKey("ProxyServerPort")) {$hshSetItemSpec["proxy-port"] = '"{0}"' -f $ProxyServerPort.ToString()}
+				if ($PSBoundParameters.ContainsKey("ProxyCredential")) {$hshSetItemSpec["proxy-user"] = $ProxyCredential.UserName; $hshSetItemSpec["proxy-password"] = $ProxyCredential.GetNetworkCredential().Password}
+				break
+			} ## end case
+			"UsingSmtpTransport" {
+				$hshSetItemSpec["transport"] = "smtp"
+				if ($PSBoundParameters.ContainsKey("MailRelayServer")) {$hshSetItemSpec["mail-relay-address"] = $MailRelayServer}
+				if ($PSBoundParameters.ContainsKey("MailRelayCredential")) {$hshSetItemSpec["mail-user"] = $MailRelayCredential.UserName; $hshSetItemSpec["mail-password"] = $MailRelayCredential.GetNetworkCredential().Password}
+			} ## end case
+		} ## end switch
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $EmailNotifier
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO Initiator
+	.Example
+	Set-XIOInitiator -Initiator (Get-XIOInitiator myInitiator0) -Name newInitiatorName0 -OperatingSystem ESX
+	Rename the given Initiator to have the new name, and set its OperatingSystem property to ESX.
+	.Example
+	Get-XIOInitiator -Name myInitiator0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOInitiator -Name newInitiatorName0 -PortAddress 10:00:00:00:00:00:00:54
+	Get the given Initiator from the specified cluster managed by the specified XMS, set its name and port address to a new values.
+	.Outputs
+	XioItemInfo.Initiator object for the modified object if successful
+#>
+function Set-XIOInitiator {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Initiator])]
+	param(
+		## Initiator object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Initiator]$Initiator,
+		## New name to set for this Initiator
+		[String]$Name,
+		## The initiator's port address.  The following rules apply:
+		#-For FC initiators, any of the following formats are allowed ("X" is a hexadecimal digit – uppercase and lower case are allowed):
+		#	XX:XX:XX:XX:XX:XX:XX:XX
+		#	XXXXXXXXXXXXXXXX
+		#	0xXXXXXXXXXXXXXXXX
+		#-For iSCSI initiators, IQN and EUI formats are allowed
+		#-Two initiators cannot share the same port address
+		#-You cannot specify an FC address for an iSCSI target and vice-versa
+		[string][ValidateScript({$_ -match "^((0x)?[0-9a-f]{16}|(([0-9a-f]{2}:){7}[0-9a-f]{2}))$"})][string]$PortAddress,
+		## The operating system of the host whose HBA this Initiator involves. One of Linux, Windows, ESX, Solaris, AIX, HPUX, or Other
+		[XioItemInfo.Enums.General.OSType]$OperatingSystem
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			"cluster-id" = $Initiator.Cluster.Name
+			## Initiator's current name or index number -- seems to not matter if this is passed or not
+			"initiator-id" = $Initiator.Name
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("Name"))	{$hshSetItemSpec["initiator-name"] = $Name}
+		if ($PSBoundParameters.ContainsKey("OperatingSystem"))	{$hshSetItemSpec["operating-system"] = $OperatingSystem.ToString().ToLower()}
+		if ($PSBoundParameters.ContainsKey("PortAddress"))	{$hshSetItemSpec["port-address"] = $PortAddress}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			## for this particular obj type, API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
+			Uri = _Remove-ClusterNameQStringFromURI -URI $Initiator.Uri
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO InitiatorGroup
+	.Example
+	Set-XIOInitiatorGroup -InitiatorGroup (Get-XIOInitiatorGroup myInitiatorGroup0) -Name newInitiatorGroupName0
+	Rename the given InitiatorGroup to have the new name.
+	.Example
+	Get-XIOInitiatorGroup -Name myInitiatorGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOInitiatorGroup -Name newInitiatorGroupName0
+	Get the given InitiatorGroup from the specified cluster managed by the specified XMS, and set its name to a new value.
+	.Outputs
+	XioItemInfo.InitiatorGroup object for the modified object if successful
+#>
+function Set-XIOInitiatorGroup {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.InitiatorGroup])]
+	param(
+		## InitiatorGroup object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.InitiatorGroup]$InitiatorGroup,
+		## New name to set for this InitiatorGroup
+		[parameter(Mandatory=$true)][string]$Name
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			# "cluster-id" = $InitiatorGroup.Cluster.Name
+			"new-name" = $Name
+			## InitiatorGroup's current name or index number -- seems to not matter if this is passed or not
+			# "ig-id" = $InitiatorGroup.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $InitiatorGroup
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO IgFolder. Not yet functional for XIOS v3.x and older
+	.Example
+	Set-XIOInitiatorGroupFolder -InitiatorGroupFolder (Get-XIOInitiatorGroupFolder /myIgFolder) -Caption myIgFolder_renamed
+	Set a new caption for the given IgFolder from the existing object itself
+	.Example
+	Get-XIOInitiatorGroupFolder /myIgFolder | Set-XIOInitiatorGroupFolder -Caption myIgFolder_renamed
+	Set a new caption for the given IgFolder from the existing object itself (via pipeline)
+	.Outputs
+	XioItemInfo.IgFolder object for the modified object if successful
+#>
+function Set-XIOInitiatorGroupFolder {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.IgFolder])]
+	param(
+		## IgFolder object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.IgFolder]$InitiatorGroupFolder,
+		## New caption to set for initiator group folder
+		[parameter(Mandatory=$true)][string]$Caption
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			caption = $Caption
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $InitiatorGroupFolder
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO LdapConfig
+	.Example
+	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -RoleMapping "read_only:cn=grp0,dc=dom,dc=com","configuration:cn=user0,dc=dom,dc=com"
+	Set the role mappings for this LdapConfig to be these two new role definitions (overwrites previous role-mapping values)
+	.Example
+	Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -BindDN "cn=mybinder,dc=dom,dc=com" -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password") -SearchBaseDN "OU=tiptop,dc=dom,dc=com" -SearchFilter "sAMAccountName={username}" -LdapServerURL ldaps://prim.dom.com,ldaps://sec.dom.com -UserToDnRule "dom\{username}" -CacheExpire 8 -Timeout 30 -RoleMapping "admin:cn=grp0,dc=dom,dc=com","admin:cn=grp2,dc=dom,dc=com"
+	Set the given attributes of the LdapConfig item:  BindDN and password, the LDAP search base DN, the LDAP search filter, the LDAP server URLs (overwrites previous values with these values), the UserToDnRule value, the logon validity duration, and more.
+	.Outputs
+	XioItemInfo.LdapConfig object for the modified object if successful
+#>
+function Set-XIOLdapConfig {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.LdapConfig])]
+	param(
+		## LdapConfig object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.LdapConfig]$LdapConfig,
+		## Distinguished name for account with which to perform LDAP bind
+		[string]$BindDN,
+		## Password for LDAP bind account, in SecureString format.  Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password")
+		[System.Security.SecureString]$BindSecureStringPassword,
+		## Fully distinguished name of LDAP search base
+		[string]$SearchBaseDN,
+		## An LDAP expression that defines which user object attribute is checked against which part of the user input.  Example:  "sAMAccountName={username}".  For more information, see the "Configuring the LDAP Users Authentication" section of the "EMC XtremIO Storage Array User Guide" document
+		[string]$SearchFilter,
+		## LDAP server URL(s). Example:  "ldaps://myldap.dom.com", "ldaps://mybackupldap.dom.com"
+		[string[]]$LdapServerURL,
+		## Rule that modifies the user's input before the LDAP search is performed, for simplified login by users. The rule can append a prefix or a suffix to the user's input to save typing
+		[string]$UserToDnRule,
+		## Number of hours (1 to 24) before the cached user authentication expires and re-authentication is required
+		[ValidateRange(1,24)][int]$CacheExpire,
+		## The time in seconds (at user logon) before switching to the secondary LDAP server or failing the request following the LDAP server's failure to reply
+		[int]$Timeout,
+		## CA public SSL certificate string in PEM format (starts with "-----BEGIN CERTIFICATE-----" line)
+		[ValidateLength(16,2048)][string]$CAPublicCertData,
+		## Role mapping for users/groups. Can provide multple, like:  -RoleMapping "<roleName>:cn=group0,ou=ou0,dc=dom,dc=com","<roleName>:cn=group1,ou=ou2,dc=dom,dc=com".  Valid role names are "read_only", "configuration", and "admin".  Overwrites previous role definitions for this LdapConfig
+		[string[]]$RoleMapping
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## LdapConfig's index
+			"ldap-config-id" = $LdapConfig.Index
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("BindDN")) {$hshSetItemSpec["binddn"] = $BindDN}
+		if ($PSBoundParameters.ContainsKey("BindSecureStringPassword")) {$hshSetItemSpec["bindpw"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($BindSecureStringPassword))}
+		if ($PSBoundParameters.ContainsKey("SearchBaseDN")) {$hshSetItemSpec["search-base"] = $SearchBaseDN}
+		if ($PSBoundParameters.ContainsKey("SearchFilter")) {$hshSetItemSpec["search-filter"] = $SearchFilter}
+		if ($PSBoundParameters.ContainsKey("LdapServerURL")) {$hshSetItemSpec["server-urls"] = $LdapServerURL}
+		if ($PSBoundParameters.ContainsKey("UserToDnRule")) {$hshSetItemSpec["user-to-dn-rule"] = $UserToDnRule}
+		if ($PSBoundParameters.ContainsKey("CacheExpire")) {$hshSetItemSpec["cache-expire-hours"] = $CacheExpire}
+		if ($PSBoundParameters.ContainsKey("Timeout")) {$hshSetItemSpec["timeout"] = $Timeout}
+		if ($PSBoundParameters.ContainsKey("CAPublicCertData")) {$hshSetItemSpec["ca-cert-data"] = $CAPublicCertData}
+		if ($PSBoundParameters.ContainsKey("RoleMapping")) {$hshSetItemSpec["roles"] = $RoleMapping}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $LdapConfig
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO SnapshotScheduler
+	.Example
+	Set-XIOSnapshotScheduler -SnapshotScheduler (Get-XIOSnapshotScheduler mySnapshotScheduler0) -Suffix someSuffix0 -SnapshotRetentionCount 20
+	Set the given properties of this SnapshotScheduler:  change its Suffix value and the number of snapshots to retain
+	.Example
+	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
+	Get the given SnapshotScheduler and set its snapshot retention duration to three years, and the snapshot types to "Regular" (read/write)
+	.Example
+	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Interval (New-TimeSpan -Hours 54 -Minutes 21)
+	Get the given SnapshotScheduler and change the interval at which it takes snapshots to be every 54 hours and 21 minutes
+	.Example
+	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -ExplicitDay Everyday -ExplicitTimeOfDay (Get-Date 2am) -RelatedObject (Get-XIOConsistencyGroup -Name myConsistencyGrp0)
+	Get the given SnapshotScheduler and set its schedule to be everyday at 2am, and change the object of which to take a snapshot to be items in the given ConsistencyGroup
+	.Example
+	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOSnapshotScheduler -Enable:$false
+	Get the given SnapshotScheduler from the specified cluster managed by the specified XMS, and disable it (see NOTES for more information on -Enable parameter)
+	.Notes
+	While the parameter sets of this cmdlet will allow for specifying the "-Enable" parameter along with a few other parameters, doing so will result in an error.  Due to the way the API handles the enabling/disabling of a SnapshotScheduler, the -Enable (or -Enable:$false) operation must be done with no other parameters (aside from, of course, the -SnapshotScheduler parameter that will specify the object to enable/disable).  This may change when either the API supports concurrent opertions involving enable/disable, or if the Enable-SnapshotScheduler and Disable-SnapshotScheduler cmdlets come to be (preferrably the former).
+	.Outputs
+	XioItemInfo.SnapshotScheduler object for the modified object if successful
+#>
+function Set-XIOSnapshotScheduler {
+	[CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName="Default")]
+	[OutputType([XioItemInfo.SnapshotScheduler])]
+	param(
+		## SnapshotScheduler object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnapshotScheduler]$SnapshotScheduler,
+		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, or ConsistencyGroup
+		[ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet])})]
+		[PSObject]$RelatedObject,
+		## The timespan to wait between each run of the scheduled snapshot action (maximum is 72 hours). Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(ParameterSetName="ByTimespanInterval")][ValidateScript({$_ -le (New-TimeSpan -Hours 72)})][System.TimeSpan]$Interval,
+		## The day of the week on which to take the scheduled snapshot (or, every day).  Expects the name of the day of the week, or "Everyday". Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule")]
+		[ValidateSet('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Everyday')][string]$ExplicitDay,
+		## The hour and minute to use for the explicit schedule, along with the explicit day of the week. Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
+		[parameter(Mandatory=$true,ParameterSetName="ByExplicitSchedule")][System.DateTime]$ExplicitTimeOfDay,
+		## Number of Snapshots to be saved. Use either this parameter or -SnapshotRetentionDuration. With either retention Count or Duration, the oldest snapshot age to be kept is 5 years. And, the maximum count is 511 snapshots
+		[parameter(ParameterSetName="SpecifySnapNum")][ValidateRange(1,511)][int]$SnapshotRetentionCount,
+		## The timespan for which a Snapshot should be saved. When the defined timespan has elapsed, the XtremIO cluster automatically removes the Snapshot.  Use either this parameter or -SnapshotRetentionCount
+		##   The minimum value is 1 minute, and the maximum value is 5 years
+		[parameter(ParameterSetName="SpecifySnapAge")]
+		[ValidateScript({($_ -ge (New-TimeSpan -Minutes 1)) -and ($_ -le (New-TimeSpan -Days (5*365)))})][System.TimeSpan]$SnapshotRetentionDuration,
+		## Switch:  Snapshot Scheduler enabled-state. To enable the SnapshotScheduler, use -Enable.  To disable, use -Enable:$false. When enabling/disabling, one can apparently not make other changes, as the API uses a different method in the backend on the XMS ("resume_scheduler" and "suspend_scheduler" instead of "modify_scheduler").  See Notes section below for further information
+		[parameter(ParameterSetName="EnableDisable")][Switch]$Enable,
+		## Type of snapshot to create:  "Regular" (readable/writable) or "ReadOnly"
+		[ValidateSet("Regular","ReadOnly")][string]$SnapshotType = "Regular",
+		## String to injected into the resulting snapshot's name. For example, a value of "mySuffix" will result in a snapshot named something like "<baseVolumeName>.mySuffix.<someTimestamp>"
+		[string]$Suffix
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## excluding Cluster's name or index number -- SnapshotScheduler objects do not have the property, as the API does not provide the "sys-id" property from which to get the info
+			# "cluster-id" = $SnapshotScheduler.Cluster.Name
+			## SnapshotScheduler's current name or index number; using index (which is rare), but due to the fact that SnapshotSchedulers are made via API with an empty name (no means by which to set name via API), index is actually preferrable in this rare case
+			"scheduler-id" = $SnapshotScheduler.Index
+		} ## end hashtable
+
+		## set the scheduler type and schedule (time) string, based on the ParameterSetName
+		#    time is either (Hours:Minutes:Seconds) for interval or (NumberOfDayOfTheWeek:Hour:Minute) for explicit
+		Switch($PsCmdlet.ParameterSetName) {
+			"ByTimespanInterval" {
+				$hshSetItemSpec["scheduler-type"] = "interval"
+				## (Hours:Minutes:Seconds)
+				$hshSetItemSpec["time"] = $("{0}:{1}:{2}" -f [System.Math]::Floor($Interval.TotalHours), $Interval.Minutes, $Interval.Seconds)
+				break
+			} ## end case
+			"ByExplicitSchedule" {
+				$hshSetItemSpec["scheduler-type"] = "explicit"
+				## (NumberOfDayOfTheWeek:Hour:Minute), with 0-7 for NumberOfDayOfTheWeek, and 0 meaning "everyday"
+				$intNumberOfDayOfTheWeek = if ($ExplicitDay -eq "Everyday") {0}
+					## else, get the value__ for this name in the DayOfWeek enum, and add one (DayOfWeek is zero-based index, this XIO construct is 1-based for day names, with "0" being used as "everyday")
+					else {([System.Enum]::GetValues([System.DayOfWeek]) | Where-Object {$_.ToString() -eq $ExplicitDay}).value__ + 1}
+				$hshSetItemSpec["time"] = $("{0}:{1}:{2}" -f $intNumberOfDayOfTheWeek, $ExplicitTimeOfDay.Hour, $ExplicitTimeOfDay.Minute)
+				break
+			} ## end case
+			"SpecifySnapNum" {
+				$hshSetItemSpec["snapshots-to-keep-number"] = $SnapshotRetentionCount
+				break
+			}
+			"SpecifySnapAge" {
+				$hshSetItemSpec["snapshots-to-keep-time"] = [System.Math]::Floor($SnapshotRetentionDuration.TotalMinutes)
+			}
+		} ## end switch
+
+		if ($PSBoundParameters.ContainsKey("RelatedObject")) {
+			## type of snapsource:  Volume, SnapshotSet, ConsistencyGroup
+			$strSnapshotSourceObjectTypeAPIValue = Switch ($RelatedObject.GetType().FullName) {
+				"XioItemInfo.Volume" {"Volume"; break}
+				## API requires "SnapSet" string for this
+				"XioItemInfo.SnapshotSet" {"SnapSet"; break}
+				## not yet supported by API per API error (even though API reference says "Tag List", too)
+				# "XioItemInfo.Tag" {"Tag"; break}
+				"XioItemInfo.ConsistencyGroup" {"ConsistencyGroup"}
+			} ## end switch
+
+			## name of snaphot source; need to be single item array if taglist?; could use index, too, it seems, but why would we?
+			$hshSetItemSpec["snapshot-object-id"] = $RelatedObject.Name
+			$hshSetItemSpec["snapshot-object-type"] = $strSnapshotSourceObjectTypeAPIValue
+		}
+		if ($PSBoundParameters.ContainsKey("Enable")) {$hshSetItemSpec["state"] = $(if ($Enable) {'enabled'} else {'user_disabled'})}
+		if ($PSBoundParameters.ContainsKey("SnapshotType")) {$hshSetItemSpec["snapshot-type"] = $SnapshotType.ToLower()}
+		if ($PSBoundParameters.ContainsKey("Suffix")) {$hshSetItemSpec["suffix"] = $Suffix}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			## for this particular obj type, API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
+			Uri = _Remove-ClusterNameQStringFromURI -URI $SnapshotScheduler.Uri
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO SnapshotSet
+	.Example
+	Set-XIOSnapshotSet -SnapshotSet (Get-XIOSnapshotSet mySnapshotSet0) -Name newSnapsetName0
+	Rename the given SnapshotSet to have the new name.
+	.Example
+	Get-XIOSnapshotSet -Name mySnapshotSet0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOSnapshotSet -Name newSnapsetName0
+	Get the given SnapshotSet from the specified cluster managed by the specified XMS, and set its name to a new value.
+	.Outputs
+	XioItemInfo.SnapshotSet object for the modified object if successful
+#>
+function Set-XIOSnapshotSet {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SnapshotSet])]
+	param(
+		## SnapshotSet object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnapshotSet]$SnapshotSet,
+		## New name to set for this SnapshotSet
+		[parameter(Mandatory=$true)][string]$Name
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
+			# "cluster-id" = $SnapshotSet.Cluster.Name
+			"new-name" = $Name
+			## SnapshotSet's current name or index number -- not a valid property per the error the API returns
+			# "snapshot-set-id" = $SnapshotSet.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $SnapshotSet
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO SnmpNotifier
+	.Example
+	Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -Enable:$false
+	Modify this given SnmpNotifier, disabling the notifier
+	.Example
+	Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -PrivacyKey (Read-Host -AsSecureString "priv key") -SnmpVersion v3 -AuthenticationKey (Read-Host -AsSecureString "auth key") -PrivacyProtocol DES -AuthenticationProtocol MD5 -UserName admin2 -Recipient testdest0.dom.com,testdest1.dom.com
+	Set the SnmpNotifier to use SNMP v3, set the privacy- and authentication keys after reading them as secure strings from user, set the privacy- and authentication protocols and the SNMP v3 username, and overwrite the trap-recipient list with the two new server names
+	.Outputs
+	XioItemInfo.SnmpNotifier object for the modified object if successful
+#>
+function Set-XIOSnmpNotifier {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SnmpNotifier])]
+	param(
+		## SnmpNotifier object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnmpNotifier]$SnmpNotifier,
+		## SNMP community string to use
+		[string]$Community,
+		## Port to which to send SNMP traps
+		[int]$Port,
+		## Version of SNMP to use. One of v1, v2c, or v3
+		[ValidateSet("v1", "v2c","v3")][string]$SnmpVersion,
+		## SNMP v3 authentication key in SecureString format. The actual key length (not the length of the SecureString value) should be from 8 to 64 characters.
+		# Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -AuthenticationKey (Read-Host -AsSecureString -Prompt "Enter some password")
+		[System.Security.SecureString]$AuthenticationKey,
+		## SNMP v3 authentication protocol. One of MD5, SHA, or No_Auth
+		[ValidateSet("MD5", "SHA", "No_Auth")][string]$AuthenticationProtocol,
+		## SNMP v3 privacy key in SecureString format. The actual key length (not the length of the SecureString value) should be from 8 to 64 characters.
+		# Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -PrivacyKey (Read-Host -AsSecureString -Prompt "Enter some password")
+		[System.Security.SecureString]$PrivacyKey,
+		## SNMP v3 privacy protocol. One of DES, AES128, or No_Priv
+		[ValidateSet("DES", "AES128", "No_Priv")][string]$PrivacyProtocol,
+		## SNMP v3 username
+		[string]$UserName,
+		## Target SNMP server(s) to which to send traps.  From one to six values, and this will be the new set of recipient values for the SnmpNotifier (overwrites previous recipient list)
+		[ValidateCount(1,6)][string[]]$Recipient,
+		## Switch:  Enable/disable SnmpNotifier (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{}
+
+		if ($PSBoundParameters.ContainsKey("Enable")) {
+			$strEnableOrDisablePropertyToSet = if ($Enable) {"enable"} else {"disable"}
+			$hshSetItemSpec[$strEnableOrDisablePropertyToSet] = $true
+		} ## end if
+
+		if ($PSBoundParameters.ContainsKey("Community")) {$hshSetItemSpec["community"] = $Community}
+		if ($PSBoundParameters.ContainsKey("Port")) {$hshSetItemSpec["port"] = $Port}
+		if ($PSBoundParameters.ContainsKey("SnmpVersion")) {$hshSetItemSpec["version"] = $SnmpVersion}
+		if ($PSBoundParameters.ContainsKey("AuthenticationKey")) {$hshSetItemSpec["auth-key"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($AuthenticationKey))}
+		if ($PSBoundParameters.ContainsKey("AuthenticationProtocol")) {$hshSetItemSpec["auth-protocol"] = $AuthenticationProtocol.ToLower()}
+		if ($PSBoundParameters.ContainsKey("PrivacyKey")) {$hshSetItemSpec["priv-key"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($PrivacyKey))}
+		if ($PSBoundParameters.ContainsKey("PrivacyProtocol")) {$hshSetItemSpec["priv-protocol"] = $PrivacyProtocol.ToLower()}
+		if ($PSBoundParameters.ContainsKey("UserName")) {$hshSetItemSpec["username"] = $UserName}
+		if ($PSBoundParameters.ContainsKey("Recipient")) {$hshSetItemSpec["recipient-list"] = $Recipient}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $SnmpNotifier
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO SyslogNotifier
+	.Example
+	Set-XIOSyslogNotifier -SyslogNotifier (Get-XIOSyslogNotifier) -Enable:$false
+	Disable the given SyslogNotifier
+	.Example
+	Get-XIOSyslogNotifier | Set-XIOSyslogNotifier -Enable -Target syslog0.dom.com,syslog1.dom.com:515
+	Enable the SyslogNotifier and set two targets, one that will use the default port of 514 (as none was specified), and one that will use custom port 515
+	.Outputs
+	XioItemInfo.SyslogNotifier object for the modified object if successful
+#>
+function Set-XIOSyslogNotifier {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.SyslogNotifier])]
+	param(
+		## SyslogNotifier object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SyslogNotifier]$SyslogNotifier,
+		## Switch:  Enable/disable SyslogNotifier (enable via -Enable, disable via -Enable:$false)
+		[Switch]$Enable,
+		## For when enabling the SyslogNotifier, the syslog target(s) to use.  If none specified, the existing Targets for the SyslogNotifier will be retained/used, if any (if none already in use, will throw error with informative message).
+		[String[]]$Target
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = if ($Enable) {
+			@{
+				enable = $true
+				## if someone specified the target(s), use them; else, pass the .Target value from the existing SyslogNotifier object
+				targets = $(if ($PSBoundParameters.ContainsKey("Target")) {$Target} else {if (($SyslogNotifier.Target | Measure-Object).Count -gt 0) {$SyslogNotifier.Target} else {Throw "No Target specified and this SyslogNotifier had none to start with.  SyslogNotifier must have one or more targets when enabled. Please specify a Target"}})
+			}
+		} else {@{disable = $true}}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $SyslogNotifier
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO Tag
+	.Example
+	Set-XIOTag -Tag (Get-XIOTag /InitiatorGroup/myTag) -Caption myTag_renamed
+	Set a new caption for the given Tag from the existing object itself
+	.Example
+	Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed
+	Set a new caption for the given Tag from the existing object itself (via pipeline)
+	.Outputs
+	XioItemInfo.Tag object for the modified object if successful
+#>
+function Set-XIOTag {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Tag])]
+	param(
+		## Tag object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Tag]$Tag,
+		## New caption to set for Tag
+		[parameter(Mandatory=$true)][string]$Caption
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			caption = $Caption
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $Tag
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO Target
+	.Example
+	Set-XIOTarget -Target (Get-XIOTarget X1-SC2-iscsi1) -MTU 9000
+	Set the given Target to have 9000 as its MTU value
+	.Example
+	Get-XIOTarget -Name X1-SC2-iscsi1 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOTarget -MTU 1500
+	Get the given Target from the specified cluster managed by the specified XMS, and set its MTU value back to 1500 (effectively "disabling" jumbo frames for it).
+	.Outputs
+	XioItemInfo.Target object for the modified object if successful
+#>
+function Set-XIOTarget {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.Target])]
+	param(
+		## Target object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Target]$Target,
+		## MTU value to set for this Target
+		[parameter(Mandatory=$true)][ValidateRange(1500,9KB)]$MTU
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number
+			"cluster-id" = $Target.Cluster.Name
+			mtu = $MTU
+			## Target's current name or index number -- does it matter if this is passed or not?
+			"tar-id" = $Target.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			## for this particular obj type, API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
+			Uri = _Remove-ClusterNameQStringFromURI -URI $Target.Uri
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO UserAccount
+	.Example
+	Get-XIOUserAccount -Name someUser0 | Set-XIOUserAccount -UserName someUser0_renamed -SecureStringPassword (Read-Host -AsSecureString)
+	Change the username for this UserAccount, and set the password to the new value (without showing the password in clear-text)
+	.Example
+	Set-XIOUserAccount -UserAccount (Get-XIOUserAccount someUser0) -InactivityTimeout 0 -Role read_only
+	Disable the inactivity timeout value for this UserAccount, and set the user's role to read_only
+	.Outputs
+	XioItemInfo.UserAccount object for the modified object if successful
+#>
+function Set-XIOUserAccount {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.UserAccount])]
+	param(
+		## UserAccount object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.UserAccount]$UserAccount,
+		## The new username to set for this UserAccount
+		[string]$UserName,
+		## Password in SecureString format.  Easily made by something like the following, which will prompt for entering password, does not display it in clear text, and results in a SecureString to be used:  -SecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password")
+		[parameter(ParameterSetName="SpecifySecureStringPassword")][System.Security.SecureString]$SecureStringPassword,
+		## Public key for UserAccount; use either -SecureStringPassword or -UserPublicKey
+		[parameter(ParameterSetName="SpecifyPublicKey")][ValidateLength(16,2048)][string]$UserPublicKey,
+		## User role.  One of 'read_only', 'configuration', 'admin', or 'technician'. To succeed in adding a user with "technician" role, seems that you may need to authenticated to the XMS _as_ a technician first (as administrator does not succeed)
+		[ValidateSet('read_only', 'configuration', 'admin', 'technician')]$Role,
+		## Inactivity timeout in minutes. Provide value of zero ("0") to specify "no timeout" for this UserAccount
+		[int]$InactivityTimeout
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{}
+
+		if ($PSBoundParameters.ContainsKey("UserName")) {$hshSetItemSpec["usr-name"] = $UserName}
+		if ($PSBoundParameters.ContainsKey("Role")) {$hshSetItemSpec["role"] = $Role}
+		if ($PSBoundParameters.ContainsKey("SecureStringPassword")) {$hshSetItemSpec["password"] = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureStringPassword))}
+		if ($PSBoundParameters.ContainsKey("UserPublicKey")) {$hshSetItemSpec["public-key"] = $UserPublicKey}
+		if ($PSBoundParameters.ContainsKey("InactivityTimeout")) {$hshSetItemSpec["inactivity-timeout"] = $InactivityTimeout}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $UserAccount
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO Volume or Snapshot
+	.Example
+	Set-XIOVolume -Volume (Get-XIOVolume myVolume) -Name myVolume_renamed
+	Set a new Name for the given Volume from the existing object itself
+	.Example
+	Get-XIOSnapshot myVolume.snapshot0 | Set-XIOVolume -Name myVolume.snapshot0_old
+	Set a new Name for the given Snapshot from the existing object itself (via pipeline)
+	.Example
+	Get-XIOVolume myVolume0 | Set-XIOVolume -SizeTB 10 -AccessRightLevel Read_Access -SmallIOAlertEnabled:$false -VaaiTPAlertEnabled
+	Set the size and access level for the volume, disable small IO alerts, and enable VAAI thin provisioning alerts
+	.Outputs
+	XioItemInfo.Volume or XioItemInfo.Snapshot (depending on the source object) object for the modified object if successful
+#>
+function Set-XIOVolume {
+	[CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName="Default")]
+	[OutputType([XioItemInfo.Volume],[XioItemInfo.Snapshot])]
+	param(
+		## Volume or Snapshot object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Volume]$Volume,
+		## New Name to set for the volume or snapshot
+		[string]$Name,
+		## New, larger size in MB for the volume or snapshot (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,147,483,648 MB)
+		[parameter(ParameterSetName="SizeByMB")][ValidateRange(1, ([int32]::MaxValue + 1))][Int64]$SizeMB,
+		## New, larger size in GB for the volume or snapshot (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,097,152 GB)
+		[parameter(ParameterSetName="SizeByGB")][ValidateRange(1, ([int32]::MaxValue + 1)/1KB)][Int]$SizeGB,
+		## New, larger size in TB for the volume or snapshot (decreasing volume size is not supported, at least not via the API). Maximum volume size is 2PB (2,048 TB)
+		[parameter(ParameterSetName="SizeByTB")][ValidateRange(1, 2048)][Int]$SizeTB,
+		## Switch:  Enable or disable small input/output alerts. To disable, use: -UnalignedIOAlertEnabled:$false
+		[Switch]$SmallIOAlertEnabled,
+		## Switch:  Enable or disable unaligned input/output alerts. To disable, use: -UnalignedIOAlertEnabled:$false
+		[Switch]$UnalignedIOAlertEnabled,
+		## Switch:  Enable or disable VAAI thin-provisioning alerts. To disable, use: -VaaiTPAlertEnabled:$false
+		[Switch]$VaaiTPAlertEnabled,
+		## Set the access level of the volume or snapshot.  Volumes/Snapshots can have one of the following access right levels:
+		#	- No_Access:  All SCSI commands for accessing data on the Volume (read commands and write commands) fail, and all SCSI discovery commands (i.e. inquiries on Volume characteristics and not accessing the data on the Volume) succeed.
+		#	- Read_Access:  All SCSI write commands fail and all SCSI read commands and discovery commands succeed.
+		#	- Write_Access:  All commands succeed and the host can write to the Volume.
+		## One of "No_Access", "Read_Access", "Write_Access"
+		[ValidateSet("No_Access", "Read_Access", "Write_Access")][string]$AccessRightLevel
+	) ## end param
+
+	Process {
+		## the API-specific pieces for modifying the XIO object's properties
+		$hshSetItemSpec = @{
+			## Cluster's name or index number
+			"cluster-id" = $Volume.Cluster.Name
+			## Volume's current name or index number -- does it matter if this is passed or not?
+			"vol-id" = $Volume.Name
+		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["vol-name"] = $Name}
+		## if the size is being set
+		if ("SizeByMB", "SizeByGB", "SizeByTB" -contains $PSCmdlet.ParameterSetName) {
+			$strSizeWithUnitLabel = Switch ($PSCmdlet.ParameterSetName) {
+				"SizeByMB" {"${SizeMB}M"}
+				"SizeByGB" {"${SizeGB}G"}
+				"SizeByTB" {"${SizeTB}T"}
+			}
+			$hshSetItemSpec["vol-size"] = $strSizeWithUnitLabel
+		}
+		if ($PSBoundParameters.ContainsKey("SmallIOAlertEnabled")) {$hshSetItemSpec["small-io-alerts"] = $(if ($SmallIOAlertEnabled) {"enabled"} else {"disabled"})}
+		if ($PSBoundParameters.ContainsKey("UnalignedIOAlertEnabled")) {$hshSetItemSpec["unaligned-io-alerts"] = $(if ($UnalignedIOAlertEnabled) {"enabled"} else {"disabled"})}
+		if ($PSBoundParameters.ContainsKey("VaaiTPAlertEnabled")) {$hshSetItemSpec["vaai-tp-alerts"] = $(if ($VaaiTPAlertEnabled) {"enabled"} else {"disabled"})}
+		if ($PSBoundParameters.ContainsKey("AccessRightLevel")) {$hshSetItemSpec["vol-access"] = $AccessRightLevel.ToLower()}
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForSetItem = @{
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			Uri = _Remove-ClusterNameQStringFromURI -URI $Volume.Uri
+		} ## end hashtable
+
+		## call the function to actually modify this item
+		Set-XIOItemInfo @hshParamsForSetItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Modify an XtremIO VolumeFolder. Not yet functional for XIOS v3.x and older
+	.Example
+	Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /testFolder) -Caption testFolder_renamed
+	Set a new caption for the given VolumeFolder from the existing object itself
+	.Example
+	Get-XIOVolumeFolder /testFolder | Set-XIOVolumeFolder -Caption testFolder_renamed
+	Set a new caption for the given VolumeFolder from the existing object itself (via pipeline)
 	.Outputs
 	XioItemInfo.VolumeFolder object for the modified object if successful
 #>
@@ -122,46 +1042,41 @@ function Set-XIOVolumeFolder {
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.VolumeFolder])]
 	param(
-		## XMS appliance to use
-		[parameter(Position=0)][string[]]$ComputerName_arr,
-		## New name to set for volume
-		[parameter(Mandatory=$true)][string]$Name,
-		## Volume Folder to modify; either a VolumeFolder object or the name of the Volume folder to modify
-		[parameter(Mandatory=$true,ValueFromPipeline=$true)][ValidateScript({
-			_Test-TypeOrString -Object $_ -Type ([XioItemInfo.VolumeFolder])
-		})]
-		[PSObject]$VolumeFolder,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		## Volume Folder object to modify
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.VolumeFolder]$VolumeFolder,
+		## New caption to set for volume folder
+		[parameter(Mandatory=$true)][string]$Caption
 	) ## end param
 
 	Begin {
 		## this item type (singular)
-		$strThisItemType = "volume-folder"
+		# $strThisItemType = "volume-folder"
 	} ## end begin
 
 	Process {
 		## the API-specific pieces for modifying the XIO object's properties
+		## set argument name based on XIOS version (not functional yet -- not yet testing XIOS version, so always defaults to older-than-v4 right now)
+## INCOMPLETE for older-than-v4 XIOS:  still need to do the determination for $intXiosMajorVersion; on hold while working on addint XIOSv4 object support
+		# $strNewCaptionArgName = if ($intXiosMajorVersion -lt 4) {"new-caption"} else {"caption"}
+		$strNewCaptionArgName = "caption"
 		$hshSetItemSpec = @{
-			"new-caption" = $Name
+			$strNewCaptionArgName = $Caption
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{
-			SpecForSetItem_str = $hshSetItemSpec | ConvertTo-Json
+			SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+			## not needed while not supporting object-by-name for Set command
+			# ItemType = $strThisItemType
+			# ComputerName = $ComputerName
 		} ## end hashtable
 
-		Switch ($PsCmdlet.ParameterSetName) {
-			"SpecifyFullUri" {$hshParamsForSetItem["URI_str"] = $URI_str; break}
-			default {
-				if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder}
-				else {$hshParamsForSetItem["ItemName"] = $VolumeFolder}
-				$hshParamsForSetItem["ComputerName"] = $ComputerName_arr
-				$hshParamsForSetItem["ItemType_str"] = $strThisItemType
-			} ## end case
-		} ## end switch
+		## check if specifying object by name or by object (object-by-name not currently implemented)
+		# if ($VolumeFolder -is [XioItemInfo.VolumeFolder]) {$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder}
+		# else {$hshParamsForSetItem["ItemName"] = $VolumeFolder}
+		$hshParamsForSetItem["XIOItemInfoObj"] = $VolumeFolder
+
 		## call the function to actually modify this item
-		#Set-XIOItem @hshParamsForSetItem
+		Set-XIOItemInfo @hshParamsForSetItem
 	} ## end process
 } ## end function

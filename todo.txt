@@ -3,9 +3,14 @@ todo:
 	-for Volume: update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 	-this is also in prep for better pipelining, which will need to get Cluster info from pipeline object coming through (along with .ComputerName, right?)
 	-once added to Volume and Tag, update New-XIOConsistencyGroup to take it from Volume/Tag objects if those were passed as values to -Volume or -Tag?  Else, user has to specify the vol/tag _and_ the cluster, when that should be gleanable from the vol/tag objects themselves (right?)
+-enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Remove-XIOTagAssignment kind of cmdlet)
+-add type to -Credential param declaration for New-XIOUserAccount (none specified right now)
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+-Volume object:  add VolSizeGB for ease of reading for when the volume size is less than 1TB
+-Alert object:  add .Cluster property from .sys-id, deprecate ClusterId, ClusterName properties
+-investigate adding New-XIOLdapConfig (the POST how-to is not specified in the API reference -- present but not documented? -- if not, add cmdlet once (if ever) this method is supported for this object type)
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
@@ -28,22 +33,13 @@ todo:
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
--add Set-, Remove- cmdlets
-	Set-XIO*:
-		-make sure that Set-XioItemInfo is solid, then work on:
-		Initiator:  'port-address', 'initiator-name'
-			for future (once supporitng iSCSI in this PSModule):  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
-		InitiatorGroup:  'initiator-group-name'
-		InitiatorGroupFolder:  'new-caption'
-		Volume:	 'vol-size', 'vol-name', 'small-io-alerts', 'unaligned-io-alerts', 'vaai-tp-alerts'
-		VolumeFolder:  'new-caption'
-		-once done, un-export Set-XIOItemInfo?  Or, leave it exported?
+-add Remove- cmdlets
 	Remove-XIO*:
-		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot
+		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot, TagAssignment
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 -for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
--add pipelining abilities for things like:
+-add pipelining abilities for things like (add their tests at the same time!):
 	Get-XIODAE | Get-XIODAEController
 	Get-XIODAEController | Get-XIODAE
 	Get-XIODAEPsu | Get-XIODAE
@@ -142,23 +138,6 @@ todo:
 		-Storage Controller object:
 			-hw-revision
 	-also, others listed on p198 of v3.0.1 REST API guide
--item types for which to add support in module:
-	## old and new APIs
-	iscsi-portals
-	iscsi-routes
--add ability to create ISCSI initiators via New-XIOInitiator
-	-the overall params for creating new initiator, per CLI:
-		cluster-authentication-password         No                  CHAP Authentication Cluster Passwordstring
-		cluster-authentication-user-name        No                  CHAP Authentication Cluster User Namestring
-		cluster-discovery-password              No                  CHAP Discovery Cluster Password
-		cluster-discovery-user-name             No                  CHAP Discovery Cluster User Namestring
-		ig-id                                   Yes                 IG ID                         name or index
-		initiator-authentication-password       No                  CHAP Authentication Initiator Passwordstring
-		initiator-authentication-user-name      No                  CHAP Authentication Initiator User Namestring
-		initiator-discovery-password            No                  CHAP Discovery Initiator Password
-		initiator-discovery-user-name           No                  CHAP Discovery Initiator User Namestring
-		initiator-name                          No                  Initiator Name                string
-		port-address                            Yes                 Port Address                  string
 -change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
 -address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  InitiatorGroupFolder objects have an IOPS property that may actually have no value, but that gets cast to an Int in the SupportingFunctions, and becomes "0" for the returned object
 	-need to make these nullable? (can we?)
@@ -209,7 +188,15 @@ todo:
 -for when dropping support for legacy XIOS/API (XIOS 2 & 3, API v1)
 	-remove PerformanceInfo property from IGFolder, VolumeFolder (and remove Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance cmdlets)
 	-remove the Nullable aspect of .Cluster properties in the type def (v2 API objects should always have the .sys-id property on objects for which code tries to make .Cluster value from said property)
+-item types for which to add support in module:
+	iscsi-portals
+	iscsi-routes
+-add ability to create ISCSI initiators via New-XIOInitiator
+-add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
+-for future (once supporitng iSCSI in this PSModule), add ability to set following properties via Set-XIOInitiator:  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
+-?add ability to specify -Tag for when creating new objects that support "tag-list" property via API (like New-XIOInitiatorGroup, for example); or, just stick w/ adding new Tag assignments via dedicated cmdlet?
+-?for Set-XIO* cmdlets other than Set-XIOItemInfo, add ability to specify object by name and cluster?  Currently just supports by-object
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
 -?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
@@ -235,16 +222,9 @@ todo:
 
 doing:
 
-
-done for version 0.next (after v0.12.0):
-
+done for version 0.next (after v0.14.0):
 
 ## things below here are in changelog/readme
-
-
-
-
-
 
 done for previous versions:  moved to done.txt
 
@@ -255,10 +235,11 @@ done for previous versions:  moved to done.txt
 
 
 ## release items
+merge branches into dev
 rev module version
 test
 update changelog/readme
-
+commit to dev
 merge to master
 move "Latest" tag to master commit
 add version-specific tag
