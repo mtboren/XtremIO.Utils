@@ -93,6 +93,42 @@ function Remove-XIOItemInfo {
 
 
 <#	.Description
+	Remove an XtremIO IGFolder (InitiatorGroup folder). In modern XIOS versions, InitiatorGroups(s) that might reside in the IGFolder are not disturbed by the removal, they just have a new parent folder (the root IGFolder).  However, in some older XIOS versions, the folder must be empty before removal (verified to be the case in XIOS v2.4).
+	.Example
+	Get-XIOInitiatorGroupFolder /someFolder/someDeeperFolderToRemove | Remove-XIOInitiatorGroupFolder
+	Removes the given InitiatorGroupFolder, "someDeeperFolderToRemove".
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOInitiatorGroupFolder {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## InitiatorGroupFolder object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.IGFolder]$InitiatorGroupFolder
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			## IGFolder's ig-folder-name (name or index, but, using name, of course, because by-index is no fun); though, it appears that the API might be gleaning the folder-id from the URI, and not using the folder name
+			"ig-folder-name" = $InitiatorGroupFolder.Name
+			## FYI:  API may replace this with "ig", at least in older XIOS
+			"folder-type" = "InitiatorGroup"
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $InitiatorGroupFolder
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Remove an XtremIO UserAccount
 	.Example
 	Get-XIOUserAccount someUser0 | Remove-XIOUserAccount
@@ -108,7 +144,7 @@ function Remove-XIOUserAccount {
 	) ## end param
 
 	Process {
-		## the API-specific pieces for modifying the XIO object's properties
+		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			## UserAccount's user-id (name or index, but, using name, of course, because by-index is no fun)
 			"user-id" = $UserAccount.Name
@@ -118,6 +154,42 @@ function Remove-XIOUserAccount {
 		$hshParamsForRemoveItem = @{
 			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
 			XIOItemInfoObj = $UserAccount
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Remove an XtremIO VolumeFolder. Volume(s) that might reside in the VolumeFolder are not disturbed by the removal, they just have a new parent folder (the root VolumeFolder)
+	.Example
+	Get-XIOVolumeFolder /someFolder/someDeeperFolderToRemove | Remove-XIOVolumeFolder
+	Removes the given VolumeFolder, "someDeeperFolderToRemove".
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOVolumeFolder {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## VolumeFolder object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.VolumeFolder]$VolumeFolder
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			## VolumeFolder's folder-name (name or index, but, using name, of course, because by-index is no fun); though, it appears that the API might be gleaning the folder-id from the URI, and not using the folder name
+			"folder-name" = $VolumeFolder.Name
+			## FYI:  API may replace this with "vol", at least in older XIOS
+			"folder-type" = "Volume"
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $VolumeFolder
 		} ## end hashtable
 
 		## call the function to actually remove this item

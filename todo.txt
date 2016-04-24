@@ -225,9 +225,9 @@ should do next:
 doing:
 [feat_RemoveItems]
 -add Remove-XIO* cmdlets:
-	ConsistencyGroup, Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume, VolumeFolder
+	ConsistencyGroup, Initiator, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume
 	done:
-	Remove-XIOUserAccount
+	Remove-XIOInitiatorGroupFolder, Remove-XIOUserAccount, Remove-XIOVolumeFolder
 
 
 done for version 0.next (after v0.14.0):
