@@ -20,7 +20,7 @@ $hshModManifestParams = @{
 	## specifies script (.ps1) files that run in the caller's session state when the module is imported. You can use these scripts to prepare an environment, just as you might use a login script
 	ScriptsToProcess = $null
 	#VariablesToExport = ''
-	FileList = "XtremIO.Utils.psd1","XtremIO.Utils.init.ps1","XtremIO_UtilsMod.psm1","XIO_SupportingFunctions.ps1","GetXIOItem.ps1","NewXIOItem.ps1","OtherXIOMgmt.ps1","SetXIOItem.ps1","XioInfo.format.ps1xml","configItems.ps1"
+	FileList = "XtremIO.Utils.psd1","XtremIO.Utils.init.ps1","XtremIO_UtilsMod.psm1","XIO_SupportingFunctions.ps1","GetXIOItem.ps1","NewXIOItem.ps1","OtherXIOMgmt.ps1","RemoveXIOItem.ps1","SetXIOItem.ps1","XioInfo.format.ps1xml","configItems.ps1"
 	Verbose = $true
 }
 ## using -PassThru so as to pass the generated module manifest contents to a var for later output as ASCII (instead of having a .psd1 file of default encoding, Unicode)

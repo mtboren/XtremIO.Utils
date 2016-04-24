@@ -35,9 +35,6 @@ todo:
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
--add Remove- cmdlets
-	Remove-XIO*:
-		ConsistencyGroup, Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, TagAssignment, UserAccount, Volume, VolumeFolder
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 -for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
@@ -221,12 +218,17 @@ todo:
 
 
 
+should do next:
+	-mega pipelining
+	-straggler release (odds/ends plus New-XIOTagAssignment, Remove-XIOTagAssignment)
 
 doing:
-could do:
-	-mega pipelining
-	-straggler release (odds/ends plus New-XIOTagAssignment)
-	-Remove-XIO* cmdlets
+[feat_RemoveItems]
+-add Remove-XIO* cmdlets:
+	ConsistencyGroup, Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume, VolumeFolder
+	done:
+	Remove-XIOUserAccount
+
 
 done for version 0.next (after v0.14.0):
 

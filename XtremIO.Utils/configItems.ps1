@@ -18,6 +18,11 @@ $hshCfg = @{
 			StatusCode = 200
 			StatusDescription = "Ok"
 		} ## end hashtable
+		## expected returns for successful item deletion via Delete method (in Remove-* cmdlets)
+		Delete = @{
+			StatusCode = 200
+			StatusDescription = "Ok"
+		} ## end hashtable
 	} ## end hashtable
 	## filespec of encrypted credential file
 	EncrCredFilespec = "${env:temp}\xioCred_by_${env:username}_on_${env:computername}.enc.xml"
