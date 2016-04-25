@@ -169,6 +169,43 @@ function Remove-XIOSnapshotScheduler {
 
 
 <#	.Description
+	Remove an XtremIO SnapshotSet and its associated Snapshots.
+	.Example
+	Get-XIOSnapshotSet mySnapSet0 | Remove-XIOSnapshotSet
+	Removes the given SnapshotSet, and deletes the Snapshots that were part of the SnapshotSet
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOSnapshotSet {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## SnapshotSet object to remove (and whose Snapshots to delete in the process)
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnapshotSet]$SnapshotSet
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			"cluster-id" = $SnapshotSet.Cluster.Name
+			## SnapshotSet's snapshot-set-id (name or index, but, using name, of course, because by-index is no fun)
+			"snapshot-set-id" = $SnapshotSet.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			# XIOItemInfoObj = $SnapshotSet
+			## for this particular obj type, API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
+			Uri = _Remove-ClusterNameQStringFromURI -URI $SnapshotSet.Uri
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Remove an XtremIO Tag.  Does not disturb objects that are tagged with the Tag being removed, except that they no longer have that Tag associated with them.
 	.Example
 	Get-XIOTag /Volume/myVolTag0 | Remove-XIOTag

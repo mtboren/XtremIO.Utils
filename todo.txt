@@ -49,6 +49,7 @@ todo:
 	Get-XIOLocalDisk | Get-XIOStorageController
 	Get-XIOSlot | Get-XIOSsd
 	Get-XIOSnapshotSet | Get-XIO[Volume|Snapshot]
+	Get-XIOSnapshotScheduler | Get-XIO[Volume|Snapshot]
 	Get-XIO[Volume|Snapshot] | Get-XIOSnapshot
 		-need to update Volume and Snapshot objects:
 			DestSnapList property to be list of Snapshot <id,name,index> objects instead of list of arrays of strings
@@ -231,12 +232,13 @@ doing:
 	InitiatorGroup -- work if part of LunMap?  What happens to initiators in it if removing IG?
 	LunMap,
 	Snapshot -- work if "child" snapshots, or if subject of SnapshotScheduler?
-	SnapshotSet -- work if anything affiliated w/ it?
 	Volume -- what if part of LunMap, or if subject of SnapshotScheduler?
 
 	done:
-	Remove-XIOInitiatorGroupFolder, Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet), Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
+	Remove-XIOInitiatorGroupFolder, Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet), Remove-XIOSnapshotSet (deletes associated Snapshots, too), Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
 
+	issues with API:
+		for removing Scheduler:  "remove-snapshot-sets" property not valid, but is used internally seemingly for removing associated SnapshotSets when deleting Scheduler via GUI
 
 done for version 0.next (after v0.14.0):
 
