@@ -129,6 +129,80 @@ function Remove-XIOInitiatorGroupFolder {
 
 
 <#	.Description
+	Remove an XtremIO SnapshotScheduler.  API does not yet support deleting the associated SnapshotSets.
+	.Example
+	Get-XIOSnapshotScheduler myScheduler0 | Remove-XIOSnapshotScheduler
+	Removes the given SnapshotScheduler, but leaves intact any SnapshotSets that it created and that are still present
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOSnapshotScheduler {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## SnapshotScheduler object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.SnapshotScheduler]$SnapshotScheduler
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			## API doc says that cluster-id is valid, but the SnapshotScheduler does not have a Cluster property (no sys-id property returned via API)
+			# "cluster-id" = <something>
+			## Events show this param, but API does not accept it (ignores it, it seems)
+			# "remove-snapshot-sets" = ($true -eq $DeleteRelatedSnapshotSet)
+			## SnapshotScheduler's scheduler-id (name or index, but, using name, of course, because by-index is no fun)
+			"scheduler-id" = $SnapshotScheduler.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			# XIOItemInfoObj = $SnapshotScheduler
+			## for this particular obj type, API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
+			Uri = _Remove-ClusterNameQStringFromURI -URI $SnapshotScheduler.Uri
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Remove an XtremIO Tag.  Does not disturb objects that are tagged with the Tag being removed, except that they no longer have that Tag associated with them.
+	.Example
+	Get-XIOTag /Volume/myVolTag0 | Remove-XIOTag
+	Removes the given Tag.
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOTag {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## Tag object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Tag]$Tag
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			## Tag's tag-id (name or index, but, using name, of course, because by-index is no fun)
+			"tag-id" = $Tag.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $Tag
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Remove an XtremIO UserAccount
 	.Example
 	Get-XIOUserAccount someUser0 | Remove-XIOUserAccount

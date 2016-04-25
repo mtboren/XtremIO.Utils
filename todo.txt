@@ -6,6 +6,7 @@ todo:
 -enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Get-XIOTagAssignment and Remove-XIOTagAssignment kind of cmdlets)
 -enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup?)
 -add type to -Credential param declaration for New-XIOUserAccount (none specified right now)
+-add -Color param to New-XIOTag (seems to be supported per events, but not listed in API doc)
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
@@ -225,9 +226,16 @@ should do next:
 doing:
 [feat_RemoveItems]
 -add Remove-XIO* cmdlets:
-	ConsistencyGroup, Initiator, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume
+	ConsistencyGroup -- what happens to volumes that were in it?
+	Initiator -- work if part of LunMap?
+	InitiatorGroup -- work if part of LunMap?  What happens to initiators in it if removing IG?
+	LunMap,
+	Snapshot -- work if "child" snapshots, or if subject of SnapshotScheduler?
+	SnapshotSet -- work if anything affiliated w/ it?
+	Volume -- what if part of LunMap, or if subject of SnapshotScheduler?
+
 	done:
-	Remove-XIOInitiatorGroupFolder, Remove-XIOUserAccount, Remove-XIOVolumeFolder
+	Remove-XIOInitiatorGroupFolder, Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet), Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
 
 
 done for version 0.next (after v0.14.0):
