@@ -129,6 +129,41 @@ function Remove-XIOInitiatorGroupFolder {
 
 
 <#	.Description
+	Remove an XtremIO Initiator.
+	.Example
+	Get-XIOInitiator myInitiator0 | Remove-XIOInitiator
+	Removes the given Initiator.
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOInitiator {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## Initiator object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Initiator]$Initiator
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			"cluster-id" = $Initiator.Cluster.Name
+			## Initiator's initiator-id (name or index, but, using name, of course, because by-index is no fun)
+			"initiator-id" = $Initiator.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $Initiator
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Remove an XtremIO LunMap
 	.Example
 	Get-XIOLunMap -Volume myVolume0 -InitiatorGroup myIG0 | Remove-XIOLunMap
