@@ -129,6 +129,44 @@ function Remove-XIOInitiatorGroupFolder {
 
 
 <#	.Description
+	Remove an XtremIO LunMap
+	.Example
+	Get-XIOLunMap -Volume myVolume0 -InitiatorGroup myIG0 | Remove-XIOLunMap
+	Gets the LunMap for the given Volume and InitiatorGroup and removes said LunMap.
+	.Example
+	Get-XIOLunMap -Volume myVolume10 | Remove-XIOLunMap
+	Gets all of the LunMaps for the given Volume, and remove each one of the LunMaps.
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOLunMap {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## LunMap object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.LunMap]$LunMap
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			"cluster-id" = $LunMap.Cluster.Name
+			## LunMap's luns-map-id (index in this case)
+			"luns-map-id" = $LunMap.Index
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $LunMap
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Remove an XtremIO SnapshotScheduler.  API does not yet support deleting the associated SnapshotSets.
 	.Example
 	Get-XIOSnapshotScheduler myScheduler0 | Remove-XIOSnapshotScheduler

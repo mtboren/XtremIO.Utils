@@ -230,12 +230,11 @@ doing:
 	ConsistencyGroup -- what happens to volumes that were in it?
 	Initiator -- work if part of LunMap?
 	InitiatorGroup -- work if part of LunMap?  What happens to initiators in it if removing IG?
-	LunMap,
-	Snapshot -- work if "child" snapshots, or if subject of SnapshotScheduler?
-	Volume -- what if part of LunMap, or if subject of SnapshotScheduler?
+	Snapshot -- work if "child" snapshots, or if subject of SnapshotScheduler, or if part of SnapshotSet? What if it is the last Snapshot in the SnapshotSet -- does the SnapshotSet go, too?
+	Volume -- what if part of LunMap, or if subject of SnapshotScheduler, or if part of SnapshotSet? What if it is the last Snapshot in the SnapshotSet -- does the SnapshotSet go, too??
 
 	done:
-	Remove-XIOInitiatorGroupFolder, Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet), Remove-XIOSnapshotSet (deletes associated Snapshots, too), Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
+	Remove-XIOInitiatorGroupFolder, Remove-XIOLunMap, Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet), Remove-XIOSnapshotSet (deletes associated Snapshots, too), Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
 
 	issues with API:
 		for removing Scheduler:  "remove-snapshot-sets" property not valid, but is used internally seemingly for removing associated SnapshotSets when deleting Scheduler via GUI
