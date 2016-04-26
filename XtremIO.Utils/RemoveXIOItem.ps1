@@ -93,6 +93,41 @@ function Remove-XIOItemInfo {
 
 
 <#	.Description
+	Remove an XtremIO ConsistencyGroup.  Does not disturb the Volumes that are a part of the ConsistencyGroup -- they are left intact / untouched.
+	.Example
+	Get-XIOConsistencyGroup myConsistencyGroup0 | Remove-XIOConsistencyGroup
+	Removes the given ConsistencyGroup, leaving the related volumes intact on the array.
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOConsistencyGroup {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## ConsistencyGroup object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.ConsistencyGroup]$ConsistencyGroup
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			"cluster-id" = $ConsistencyGroup.Cluster.Name
+			## ConsistencyGroup's cg-id (name or index, but, using name, of course, because by-index is no fun)
+			"cg-id" = $ConsistencyGroup.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $ConsistencyGroup
+		} ## end hashtable
+
+		## call the function to actually remove this item
+		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Remove an XtremIO IGFolder (InitiatorGroup folder). In modern XIOS versions, InitiatorGroups(s) that might reside in the IGFolder are not disturbed by the removal, they just have a new parent folder (the root IGFolder).  However, in some older XIOS versions, the folder must be empty before removal (verified to be the case in XIOS v2.4).
 	.Example
 	Get-XIOInitiatorGroupFolder /someFolder/someDeeperFolderToRemove | Remove-XIOInitiatorGroupFolder
