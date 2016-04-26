@@ -164,6 +164,48 @@ function Remove-XIOInitiator {
 
 
 <#	.Description
+	Remove an XtremIO InitiatorGroup and any Initiators that are a part of the InitiatorGroup.  InitiatorGroup must not be a part of a LunMap.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
+	.Example
+	Get-XIOInitiatorGroup myInitiatorGroup0 | Remove-XIOInitiatorGroup
+	Removes the given InitiatorGroup and all of the Initiators that were a part of it.
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOInitiatorGroup {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## InitiatorGroup object to remove
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.InitiatorGroup]$InitiatorGroup
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			"cluster-id" = $InitiatorGroup.Cluster.Name
+			## InitiatorGroup's ig-id (name or index, but, using name, of course, because by-index is no fun)
+			"ig-id" = $InitiatorGroup.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $InitiatorGroup
+		} ## end hashtable
+
+		if ($arrLunMaps_thisIG = Get-XIOLunMap -InitiatorGroup $InitiatorGroup.Name -Property InitiatorGroup,VolumeName,LunId -Cluster $InitiatorGroup.Cluster.Name) {
+			$intNumLunMap_thisIG = ($arrLunMaps_thisIG | Measure-Object).Count
+			$Exception_InitiatorGroupIsPartOfLunMap = New-Object -Type System.Exception("InitiatorGroup '{0}' is a part of {1} LunMap{2} (LunId{2} '{3}'). Will not attempt to remove InitiatorGroup." -f $InitiatorGroup.Name, $intNumLunMap_thisIG, $(if ($intNumLunMap_thisIG -gt 1) {"s"}), ($arrLunMaps_thisIG.LunId -join ", "))
+			Throw $Exception_InitiatorGroupIsPartOfLunMap
+		} ## end if
+		else {
+			## call the function to actually remove this item
+			Remove-XIOItemInfo @hshParamsForRemoveItem
+		} ## end else
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Remove an XtremIO LunMap
 	.Example
 	Get-XIOLunMap -Volume myVolume0 -InitiatorGroup myIG0 | Remove-XIOLunMap
