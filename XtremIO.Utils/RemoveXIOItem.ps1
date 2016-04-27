@@ -319,7 +319,7 @@ function Remove-XIOSnapshotScheduler {
 
 
 <#	.Description
-	Remove an XtremIO SnapshotSet and its associated Snapshots.
+	Remove an XtremIO SnapshotSet and deletes its associated Snapshots.
 	.Example
 	Get-XIOSnapshotSet mySnapSet0 | Remove-XIOSnapshotSet
 	Removes the given SnapshotSet, and deletes the Snapshots that were part of the SnapshotSet
@@ -419,6 +419,64 @@ function Remove-XIOUserAccount {
 
 		## call the function to actually remove this item
 		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Delete an XtremIO Volume or Snapshot.  Volume/snapshot must not be a part of a LunMap, or be the subject of a SnapshotScheduler.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
+	.Notes
+	Behavior of this cmdlet if the Volume/Snapshot:
+	-is part of LunMap:  does not delete Volume/Snapshot; user must first remove given
+	   LunMap (though API does support the forceful removal, removing the LunMap, too)
+	-is the subject of SnapshotScheduler:  does not delete; user must first remove given SnapshotScheduler
+	-is part of SnapshotSet:  this Remove-XIOVolume call leaves SnapshotSet alone unless this was the last
+	   Volume/Snapshot in the SnapshotSet
+	-is the last Snapshot in the SnapshotSet:  XMS deletes the SnapshotSet, too
+	-has a child Snapshot:  that child Snapshot gets the AncestorVolume property value of the Volume/Snapshot
+	   being deleted, if any (else, $null); If all of the ancestor Volumes of the Snapshot are deleted, the
+	   Snapshot becomes _just_ a Volume, no longer a Snapshot object (though, it still is a part of a
+	   SnapshotSet object)!
+	.Example
+	Get-XIOVolume myVolume0,myVolume1 | Remove-XIOVolume
+	Deletes the given Volume
+	.Example
+	Get-XIOSnapshot *myOldSnap-Apr* | Remove-XIOVolume
+	Deletes the given Snapshots.
+	.Outputs
+	No output upon successful removal
+#>
+function Remove-XIOVolume {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## Volume object to delete
+		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Volume]$Volume
+	) ## end param
+
+	Process {
+		## the API-specific pieces for specifying the XIO object to remove
+		$hshRemoveItemSpec = @{
+			"cluster-id" = $Volume.Cluster.Name
+			## Volume's vol-id (name or index, but, using name, of course, because by-index is no fun)
+			"vol-id" = $Volume.Name
+		} ## end hashtable
+
+		## the params to use in calling the helper function to actually modify the object
+		$hshParamsForRemoveItem = @{
+			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+			XIOItemInfoObj = $Volume
+		} ## end hashtable
+
+		### if either a part of a LunMap, or the subject of a SnapshotScheduler, do not delete Volume (cannot if part of SnapshotScheduler, but API _will_ allow if only a part of LunMap; will not allow via this cmdlet, though)
+		if ($arrLunMaps_thisVol = Get-XIOLunMap -Volume $Volume.Name -Property InitiatorGroup,VolumeName,LunId -Cluster $Volume.Cluster.Name) {
+			$intNumLunMap_thisIG = ($arrLunMaps_thisVol | Measure-Object).Count
+			$Exception_VolumeIsPartOfLunMap = New-Object -Type System.Exception("Volume '{0}' is a part of {1} LunMap{2} (LunId{2} '{3}'). Will not attempt to delete Volume." -f $Volume.Name, $intNumLunMap_thisIG, $(if ($intNumLunMap_thisIG -gt 1) {"s"}), ($arrLunMaps_thisVol.LunId -join ", "))
+			Throw $Exception_VolumeIsPartOfLunMap
+		} ## end if
+		else {
+			## call the function to actually remove this item
+			Remove-XIOItemInfo @hshParamsForRemoveItem
+		} ## end else
 	} ## end process
 } ## end function
 

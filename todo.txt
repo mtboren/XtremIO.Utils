@@ -12,6 +12,8 @@ todo:
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 -Volume object:  add VolSizeGB for ease of reading for when the volume size is less than 1TB
 -Alert object:  add .Cluster property from .sys-id, deprecate ClusterId, ClusterName properties
+-update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
+-once pipelining supports getting SnapshotScheduler by Volume/Snapshot, add bit to Remove-XIOVolume that checks first if Volume/Snapshot is part of a SnapshotScheduler, throwing an error if so (instead of the current behavior that does not check and that results in an error from the API call, "cannot_remove_volume_that_has_a_scheduler")
 -investigate adding New-XIOLdapConfig (the POST how-to is not specified in the API reference -- present but not documented? -- if not, add cmdlet once (if ever) this method is supported for this object type)
 	-same for adding Remove-XIOLdapConfig (the DELETE how-to is not specified in the API reference)
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
@@ -226,23 +228,22 @@ should do next:
 
 doing:
 [feat_RemoveItems]
--add Remove-XIO* cmdlets:
-	Snapshot -- work if "child" snapshots, or if subject of SnapshotScheduler, or if part of SnapshotSet? What if it is the last Snapshot in the SnapshotSet -- does the SnapshotSet go, too?
-	Volume -- what if part of LunMap, or if subject of SnapshotScheduler, or if part of SnapshotSet? What if it is the last Snapshot in the SnapshotSet -- does the SnapshotSet go, too??
+-test on XIOS 2.4, 4.0-multicluster, with multiple XIO connections, and in PSv5
 
-	done:
+
+done for version 0.next (after v0.14.0):
+-add Remove-XIO* cmdlets:
 	Remove-XIOConsistencyGroup -- what happens to volumes that were in it? _not_ deleted
 	Remove-XIOInitiator, Remove-XIOInitiatorGroupFolder, Remove-XIOLunMap, Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
 	Remove-XIOInitiatorGroup -- work if part of LunMap? "No".  What happens to initiators in it if removing IG? "Removes Initiators"
 	Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet)
 	Remove-XIOSnapshotSet (deletes associated Snapshots, too)
-
-	issues with API:
-		for removing Scheduler:  "remove-snapshot-sets" property not valid, but is used internally seemingly for removing associated SnapshotSets when deleting Scheduler via GUI
--test on XIOS 2.4, 4.0-multicluster
-
-
-done for version 0.next (after v0.14.0):
+	Remove-XIOVolume --
+		-If part of LunMap:  fail in GUI, but success via API (it removes the LunMap, too) -- emulating the GUI behavior in the cmdlet (does not delete Volume/Snapshot if part of a LunMap; user must first remove given LunMap)
+		-If subject of SnapshotScheduler:  fail (cannot delete, must first remove given SnapshotScheduler)
+		-If part of SnapshotSet:  leaves SnapshotSet alone unless this was the last Snapshot in the SnapshotSet
+		-If it is the last Snapshot in the SnapshotSet:  XMS deletes the SnapshotSet, too
+		-If child Snapshots of this Volume/Snapshot:  Those child Snapshots get the AncestorVolume of the Volume/Snapshot being deleted, if any (else, $null); and, then, if all of the ancestor Volumes of the Snapshot are deleted, the Snapshot becomes _just_ a Volume, no longer a Snapshot object (though, it still is a part of a SnapshotSet object)!
 
 ## things below here are in changelog/readme
 
