@@ -9,36 +9,75 @@
 
 ## string to append (including a GUID) to all new objects created, to avoid any naming conflicts
 $strNameToAppend = "_testItemToDelete_{0}" -f [System.Guid]::NewGuid().Guid.Replace("-","")
+## bogus OUI for making sure that the addresses of the intiators created here do not conflict with any real-world addresses
+$strInitiatorAddrPrefix = "EE:EE:EE"
+## hashtable to keep the variables that hold the newly created objects, so that these objects can be removed from the XMS later
+$hshXioObjsToRemove = @{}
 
-Write-Warning "no automatic tests yet defined for New-XIO* cmdlets"
+Write-Warning "no fully-automatic tests yet defined for New-XIO* and Remove-XIO* cmdlets"
 
+
+## test making new things; will capture the new items, and then remove them
+## should test against XIOS v3 (XIO API v1) and XIOS v4+ (XIO API v2), at least
 
 <#
-## test making new things; will need to capture the new items, and return them as items for tester to remove (or, auto-remove them?)
-## should test against XIOS v3 (XIO API v1) and XIOS v4+ (XIO API v2), at least
-$oNewIG0 = New-XIOInitiatorGroup -Name "testIG0$strNameToAppend"  ## without "-Cluster" in multicluster instance, fails
-## IG for XIOS older than v3 (testing the extra double-quotes needed in the older XIOS)
-$oNewIG1 = New-XIOInitiatorGroup -Name "testIG1$strNameToAppend" -ParentFolder / -InitiatorList @{'"myserver-hba2$strNameToAppend"' = '"10:00:00:00:00:00:00:F4"'; '"myserver-hba3$strNameToAppend"' = '"10:00:00:00:00:00:00:F5"'}
+Describe -Tags "New" -Name "New-XIOInitiatorGroup" {
+	It "Creates new, empty InitiatorGroup" {
+		## without "-Cluster" in multicluster instance, fails
+		$oNewIG0 = New-XIOInitiatorGroup -Name "testIG0$strNameToAppend" -ComputerName $strXmsComputerName
+		$hshXioObjsToRemove["InitiatorGroup"] += @($oNewIG0)
+		$oNewIG0 | Should BeOfType [XioItemInfo.InitiatorGroup]
+	}
+
+}
+<#
+	It "Creates a new InitiatorGroup with two new Initiators in it" {
+		## IG for XIOS older than v3 (testing the extra double-quotes needed in the older XIOS)
+		$oNewIG1 = New-XIOInitiatorGroup -Name "testIG1$strNameToAppend" -ParentFolder / -InitiatorList @{'"myserver-hba2$strNameToAppend"' = '"${strInitiatorAddrPrefix}:00:00:00:00:F4"'; '"myserver-hba3$strNameToAppend"' = '"${strInitiatorAddrPrefix}:00:00:00:00:F5"'}
+		## or, test w/o extra double-quotes if XIOS is v3 or newer
+		$oNewIG1 = New-XIOInitiatorGroup -Name "testIG1$strNameToAppend" -ParentFolder / -InitiatorList @{'"myserver-hba2$strNameToAppend"' = '"${strInitiatorAddrPrefix}:00:00:00:00:F4"'; '"myserver-hba3$strNameToAppend"' = '"${strInitiatorAddrPrefix}:00:00:00:00:F5"'}
+		$hshXioObjsToRemove["InitiatorGroup"] += @($oNewIG1)
+		$oNewIG1 | Should BeOfType [XioItemInfo.Initiator]
+		$oNewIG1 | Get-XIOInitiatorGroup | Foreach-Object {$_ | Should BeOfType [XioItemInfo.Initiator]}
+	}
+	It "Gets XIO cluster objects by default, and returns full response when so directed" {
+		$oFullResponse = Get-XIOItemInfo -ReturnFullResponse
+		$bLinkHrefIsAClusterType = $oFullResponse.links[0].href -like "https://${strXmsComputerName}/api/json/types/clusters/*"
+		$bLinkHrefHasContentAndLinksProperties = ($oFullResponse | Get-Member -Name content,links | Measure-Object).Count -eq 2
+		$bLinkHrefIsAClusterType | Should Be $true
+		$bLinkHrefHasContentAndLinksProperties | Should Be $true
+	}
+
+	It "Gets XIO type items from URI, and returns children types of given names" {
+		$arrChildrenInfo = Get-XIOItemInfo -Uri "https://${strXmsComputerName}/api/json/types" -ReturnFullResponse | Select-Object -ExpandProperty children
+		## the names should include these object type names; all of the -contains comparisons should be $true, so the Select-Object -Unique should return a single $true for the value
+		$bChildTypenamesAreExpected = Write-Output bricks, initiators, snapshots, volumes, xenvs | Foreach-Object {$arrChildrenInfo.name -contains $_} | Select-Object -Unique
+		$bChildTypenamesAreExpected | Should Be $true
+	}
+}
+
+
 ## IG for XIOS v3 and newer
-$oNewIG2 = New-XIOInitiatorGroup -Name "testIG2$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorList @{"myserver2-hba2$strNameToAppend" = "10:00:00:00:00:00:00:F6"; "myserver2-hba3$strNameToAppend" = "10:00:00:00:00:00:00:F7"}
+$oNewIG2 = New-XIOInitiatorGroup -Name "testIG2$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorList @{"myserver2-hba2$strNameToAppend" = "${strInitiatorAddrPrefix}:00:00:00:00:F6"; "myserver2-hba3$strNameToAppend" = "${strInitiatorAddrPrefix}:00:00:00:00:F7"}
 New-XIOInitiator -Name "mysvr0-hba2$strNameToAppend" -InitiatorGroup $oNewIG2.name -PortAddress 0x100000000000ab56
-New-XIOInitiator -Name "mysvr0-hba3$strNameToAppend" -InitiatorGroup $oNewIG2.name -PortAddress 10:00:00:00:00:00:00:54
-New-XIOInitiator -Name "mysvr0-hba4$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG2.name -PortAddress 10:00:00:00:00:00:00:55
-New-XIOInitiator -Name "mysvr0-hba5$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG2.name -PortAddress 10:00:00:00:00:00:00:56 -OperatingSystem ESX
+New-XIOInitiator -Name "mysvr0-hba3$strNameToAppend" -InitiatorGroup $oNewIG2.name -PortAddress ${strInitiatorAddrPrefix}:00:00:00:00:54
+New-XIOInitiator -Name "mysvr0-hba4$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG2.name -PortAddress ${strInitiatorAddrPrefix}:00:00:00:00:55
+New-XIOInitiator -Name "mysvr0-hba5$strNameToAppend" -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG2.name -PortAddress ${strInitiatorAddrPrefix}:00:00:00:00:56 -OperatingSystem ESX
 New-XIOInitiatorGroupFolder -Name "myIGFolder$strNameToAppend" -ParentFolder /
+<#
 $oNewVolFolder0 = New-XIOVolumeFolder -Name "myVolFolder$strNameToAppend" -ParentFolder /
 ## for single-cluster XMS connections
 $oNewVol0 = New-XIOVolume -Name "testvol03$strNameToAppend" -SizeGB 10
-$oNewVol1 = New-XIOVolume -ComputerName $strXmsComputerName -Name "testvol04$strNameToAppend" -SizeGB 5120 -ParentFolder $oNewVolFolder0.Name
+$oNewVol1 = New-XIOVolume -ComputerName $strXmsComputerName -Name "testvol04$strNameToAppend" -SizeGB 5 -ParentFolder $oNewVolFolder0.Name
 $oNewVol2 = New-XIOVolume -Name "testvol05$strNameToAppend" -SizeGB 5KB -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert
-#New-XIOLunMap -Volume $oNewVol0.Name -InitiatorGroup $oNewIG0.name,$oNewIG2.name -HostLunId 21
-#New-XIOLunMap -Volume $oNewVol1.Name -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG0.name,$oNewIG2.name -HostLunId 22
+#New-XIOLunMap -Volume $oNewVol0.Name -InitiatorGroup $oNewIG0.name,$oNewIG2.name -HostLunId 171
+#New-XIOLunMap -Volume $oNewVol1.Name -Cluster $strClusterNameToUse -InitiatorGroup $oNewIG0.name,$oNewIG2.name -HostLunId 172
 ## for multi-cluster XMS connections
 $oNewVol3 = New-XIOVolume -Name "testvol06$strNameToAppend" -SizeGB 10 -Cluster $strClusterNameToUse
 $oNewVol5 = New-XIOVolume -Name "testvol08$strNameToAppend" -SizeGB 5KB -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert -Cluster $strClusterNameToUse
 $arrNewVol_other = New-XIOVolume -Name "testvol10$strNameToAppend" -Cluster myxio05,myxio06 -SizeGB 1024
-New-XIOLunMap -Volume $oNewVol3.Name -InitiatorGroup $oNewIG1.name,$oNewIG2.name -HostLunId 121 -Cluster $strClusterNameToUse
-New-XIOLunMap -Volume $oNewVol5.Name -InitiatorGroup $oNewIG1.name,$oNewIG2.name -HostLunId 122 -Cluster $strClusterNameToUse
+New-XIOLunMap -Volume $oNewVol3.Name -InitiatorGroup $oNewIG1.name,$oNewIG2.name -HostLunId 173 -Cluster $strClusterNameToUse
+New-XIOLunMap -Volume $oNewVol5.Name -InitiatorGroup $oNewIG1.name,$oNewIG2.name -HostLunId 174 -Cluster $strClusterNameToUse
 New-XIOSnapshot -Volume $oNewVol3.Name,$oNewVol5.Name -SnapshotSuffix "snap$strNameToAppend"
 New-XIOSnapshot -Volume $oNewVol3.Name,$oNewVol5.Name -Cluster $strClusterNameToUse
 Get-XIOVolume -Name $oNewVol3.Name,$oNewVol5.Name | New-XIOSnapshot -Type ReadOnly
