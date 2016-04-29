@@ -60,7 +60,14 @@ function Remove-XIOItemInfo {
 				$intNumPropertyToSet = ($oRemoveSpecItem | Get-Member -Type NoteProperty | Measure-Object).Count
 				## make a string to display the properties being used for the removal in the -WhatIf and -Confirm types of messages
 				$strPropertiesOfObjToRemove = ($SpecForRemoveItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())}) -join "`n"
-				$strShouldProcessOutput = "Remove XIO '{2}' object named '{3}' with the following {0} propert{1}:`n{4}`n" -f $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $oExistingXioItem.GetType().Name, $oExistingXioItem.Name, $strPropertiesOfObjToRemove
+				## add a bit of object-type-specific info to the "ShouldProcess" message
+				$strShouldProcessOutput_firstPiece = Switch ($oExistingXioItem.GetType().Name) {
+					"LunMap" {"for Volume '{0}' and InitiatorGroup '{1}' (host LunId {2}), and" -f $oExistingXioItem.VolumeName, $oExistingXioItem.InitiatorGroup, $oExistingXioItem.LunId}
+					{"Volume","Snapshot" -contains $_} {"named '{0}', of size '{1}TB', and" -f $oExistingXioItem.Name, $oExistingXioItem.VolSizeTB}
+					default {"named '{0}'" -f $oExistingXioItem.Name}
+				} ## end switch
+				## make the overall ShouldProcess message
+				$strShouldProcessOutput = "Remove XIO '{0}' object {1} with the following {2} propert{3}:`n{4}`n" -f $oExistingXioItem.GetType().Name, $strShouldProcessOutput_firstPiece, $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $strPropertiesOfObjToRemove
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
 					$hshParamsToSetXIOItem = @{
