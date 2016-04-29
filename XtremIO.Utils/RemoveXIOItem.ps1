@@ -62,8 +62,9 @@ function Remove-XIOItemInfo {
 				$strPropertiesOfObjToRemove = ($SpecForRemoveItem.Trim("{}").Split("`n") | Where-Object {-not [System.String]::IsNullOrEmpty($_.Trim())}) -join "`n"
 				## add a bit of object-type-specific info to the "ShouldProcess" message
 				$strShouldProcessOutput_firstPiece = Switch ($oExistingXioItem.GetType().Name) {
-					"LunMap" {"for Volume '{0}' and InitiatorGroup '{1}' (host LunId {2}), and" -f $oExistingXioItem.VolumeName, $oExistingXioItem.InitiatorGroup, $oExistingXioItem.LunId}
-					{"Volume","Snapshot" -contains $_} {"named '{0}', of size '{1}TB', and" -f $oExistingXioItem.Name, $oExistingXioItem.VolSizeTB}
+					"InitiatorGroup" {"named '{0}'{1}" -f $oExistingXioItem.Name, $(if ($oExistingXioItem.NumInitiator -gt 0) {" (and its '{0}' Initiator{1})" -f $oExistingXioItem.NumInitiator, $(if ($oExistingXioItem.NumInitiator -gt 1) {"s"})}); break}
+					"LunMap" {"for Volume '{0}' and InitiatorGroup '{1}' (host LunId {2}), and" -f $oExistingXioItem.VolumeName, $oExistingXioItem.InitiatorGroup, $oExistingXioItem.LunId; break}
+					{"Volume","Snapshot" -contains $_} {"named '{0}', of size '{1}TB', and" -f $oExistingXioItem.Name, $oExistingXioItem.VolSizeTB; break}
 					default {"named '{0}'" -f $oExistingXioItem.Name}
 				} ## end switch
 				## make the overall ShouldProcess message
@@ -101,6 +102,7 @@ function Remove-XIOItemInfo {
 
 <#	.Description
 	Remove an XtremIO ConsistencyGroup.  Does not disturb the Volumes that are a part of the ConsistencyGroup -- they are left intact / untouched.
+	ConsistencyGroup must not be the subject of a SnapshotScheduler.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
 	.Example
 	Get-XIOConsistencyGroup myConsistencyGroup0 | Remove-XIOConsistencyGroup
 	Removes the given ConsistencyGroup, leaving the related volumes intact on the array.
@@ -431,7 +433,7 @@ function Remove-XIOUserAccount {
 
 
 <#	.Description
-	Delete an XtremIO Volume or Snapshot.  Volume/snapshot must not be a part of a LunMap, or be the subject of a SnapshotScheduler.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
+	Delete an XtremIO Volume or Snapshot.  Volume/snapshot must not be a part of a LunMap or a ConsistencyGroup, or be the subject of a SnapshotScheduler.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
 	.Notes
 	Behavior of this cmdlet if the Volume/Snapshot:
 	-is part of LunMap:  does not delete Volume/Snapshot; user must first remove given
@@ -476,10 +478,15 @@ function Remove-XIOVolume {
 
 		### if either a part of a LunMap, or the subject of a SnapshotScheduler, do not delete Volume (cannot if part of SnapshotScheduler, but API _will_ allow if only a part of LunMap; will not allow via this cmdlet, though)
 		if ($arrLunMaps_thisVol = Get-XIOLunMap -Volume $Volume.Name -Property InitiatorGroup,VolumeName,LunId -Cluster $Volume.Cluster.Name) {
-			$intNumLunMap_thisIG = ($arrLunMaps_thisVol | Measure-Object).Count
-			$Exception_VolumeIsPartOfLunMap = New-Object -Type System.Exception("Volume '{0}' is a part of {1} LunMap{2} (LunId{2} '{3}'). Will not attempt to delete Volume." -f $Volume.Name, $intNumLunMap_thisIG, $(if ($intNumLunMap_thisIG -gt 1) {"s"}), ($arrLunMaps_thisVol.LunId -join ", "))
+			$intNumLunMap_thisVol = ($arrLunMaps_thisVol | Measure-Object).Count
+			$Exception_VolumeIsPartOfLunMap = New-Object -Type System.Exception("Volume '{0}' is a part of {1} LunMap{2} (LunId{2} '{3}'). Will not attempt to delete Volume." -f $Volume.Name, $intNumLunMap_thisVol, $(if ($intNumLunMap_thisVol -gt 1) {"s"}), ($arrLunMaps_thisVol.LunId -join ", "))
 			Throw $Exception_VolumeIsPartOfLunMap
 		} ## end if
+		elseif ($null -ne $Volume.ConsistencyGroup) {
+			$intNumConsistencyGroup_thisVol = ($Volume.ConsistencyGroup | Measure-Object).Count
+			$Exception_VolumeIsPartOfConsistencyGroup = New-Object -Type System.Exception("Volume '{0}' is a part of {1} ConsistencyGroup{2} '{3}'. Will not attempt to delete Volume." -f $Volume.Name, $intNumConsistencyGroup_thisVol, $(if ($intNumConsistencyGroup_thisVol -gt 1) {"s"}), ($Volume.ConsistencyGroup.Name -join ", "))
+			Throw $Exception_VolumeIsPartOfConsistencyGroup
+		} ## end elseif
 		else {
 			## call the function to actually remove this item
 			Remove-XIOItemInfo @hshParamsForRemoveItem

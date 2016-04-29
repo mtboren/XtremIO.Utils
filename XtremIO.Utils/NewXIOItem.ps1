@@ -525,7 +525,7 @@ function New-XIOTag {
 	Create a new UserAccount with the read_only role, and with the given username/password. Uses default inactivity timeout configured on the XMS
 	.Example
 	New-XIOUserAccount -UserName test_CfgUser -Role configuration -UserPublicKey $strThisPubKey -InactivityTimeout 45
-	Create a new UserAccount with the read_only role, and with the given username/password. Sets inactivity timeout of 45 minutes for this new user
+	Create a new UserAccount with the configuration role, and with the given username and PublicKey. Sets inactivity timeout of 45 minutes for this new user
 	.Outputs
 	XioItemInfo.UserAccount object for the newly created object if successful
 #>
