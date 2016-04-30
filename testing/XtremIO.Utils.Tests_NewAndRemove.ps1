@@ -23,7 +23,7 @@ Write-Warning "no fully-automatic tests yet defined for New-XIO* and Remove-XIO*
 
 ## test making new things; will capture the new items, and then remove them
 ## should test against XIOS v3 (XIO API v1) and XIOS v4+ (XIO API v2), at least
-<#
+
 Describe -Tags "New" -Name "New-XIOInitiatorGroup" {
 	It "Creates new, empty InitiatorGroup" {
 		## without "-Cluster" in multicluster instance, fails
@@ -108,7 +108,7 @@ Describe -Tags "New" -Name "New-XIOInitiator" {
 Describe -Tags "New" -Name "New-XIOInitiatorGroupFolder" {
 	It "Creates a new IGFolder" {
 		$oNewIGFolder = New-XIOInitiatorGroupFolder -Name "myIGFolder$strNameToAppend" -ParentFolder / -ComputerName $strXmsComputerName
-		$hshXioObjsToRemove["IGFolder"] += @($oNewIGFolder)
+		$hshXioObjsToRemove["InitiatorGroupFolder"] += @($oNewIGFolder)
 		$oNewIGFolder | Should BeOfType [XioItemInfo.IgFolder]
 	}
 }
@@ -336,7 +336,98 @@ Describe -Tags "New" -Name "New-XIOUserAccount" {
 	}
 }
 
+
+Describe -Tags "Remove" -Name "Remove-XIOInitiatorGroup_shouldThrow" {
+	Context "InitiatorGroup is part of a LunMap" {
+		It "Tries to remove an InitiatorGroup that is part of a LunMap, which should fail" {
+			## grab an IG from the hashtable that is in the parent scope, as the scopes between tests are unique; expects that at least one InitiatorGroup has been made in the course of this testing
+			$oTestIG = $hshXioObjsToRemove["InitiatorGroup"] | Select-Object -First 1
+			## update the InitiatorGroup object, to make sure that it has the current property values of the server-side object
+			$oUpdatedTestIGObj = Get-XIOInitiatorGroup -URI $oTestIG.Uri
+			{$oUpdatedTestIGObj | Remove-XIOInitiatorGroup} | Should Throw
+		}
+	}
+}
+
+
+## not in use for now
+# Describe -Tags "Remove" -Name "Remove-XIOVolume_shouldThrow" {
+# 	Context "Volume is part of a LunMap" {
+# 		It "Tries to remove an Volume that is part of a LunMap, which should fail" {
+# 			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique; expects that at least one Volume has been made in the course of this testing, and that this Volume is part of a LunMap
+# 			$oTestVolume = $hshXioObjsToRemove["Volume"] | Select-Object -First 1
+# 			## update the Volume object, to make sure that it has the current property values of the server-side object
+# 			$oUpdatedTestVolObj = Get-XIOVolume -URI $oTestVolume.Uri
+# 			$oUpdatedTestVolObj.LunMapList.Count | Should BeGreaterThan 0
+# 			{$oUpdatedTestVolObj | Remove-XIOVolume} | Should Throw
+# 		}
+# 	}
+
+# 	Context "Volume is part of a ConsistencyGroup" {
+# 		It "Tries to remove an Volume that is part of a ConsistencyGroup, which should fail" {
+# 			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique; expects that at least one Volume has been made in the course of this testing, and that this Volume is part of a ConsistencyGroup
+# 			$oTestVolume = $hshXioObjsToRemove["Volume"] | Select-Object -First 1
+# 			## update the Volume object, to make sure that it has the current property values of the server-side object
+# 			$oUpdatedTestVolObj = Get-XIOVolume -URI $oTestVolume.Uri
+# 			$oUpdatedTestVolObj.ConsistencyGroup.Count | Should BeGreaterThan 0
+# 			{$oUpdatedTestVolObj | Remove-XIOVolume} | Should Throw
+# 		}
+# 	}
+
+# 	Context "Volume is part of a SnapshotScheduler" {
+# 		It "Tries to remove an Volume that is part of a SnapshotScheduler, which should fail" {
+# 			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique; expects that at least one Volume has been made in the course of this testing, and that this Volume is part of a SnapshotScheduler
+# 			$oTestVolume = $hshXioObjsToRemove["Volume"] | Select-Object -First 1
+# 			{$oTestVolume | Remove-XIOVolume} | Should Throw
+# 		}
+# 	}
+# }
+
+## For the removal of all objects that were created while testing the New-XIO* cmdlets above:
+## the order in which types should be removed, so as to avoid removal issues (say, due to a Volume being part of a LunMap, and the likes)
+# should then remove in particular order of:
+#	SnapshotScheduler (so then can remove ConsistencyGroups, SnapshotSets, and Volumes),
+#	ConsistencyGroup (so can then remove Volumes),
+#	LunMap (so can then remove InitiatorGroups),
+#	Snapshot (so that all Snapshots are still Snapshots, instead of having been transformed into Volumes by action of having all ancestor volumes removed),
+#	Initiator (so that they still exist, vs. having been indirectly removed by having removed InitiatorGroups)
+#	then <all the rest>
+$arrTypeSpecificRemovalOrder = Write-Output SnapshotScheduler ConsistencyGroup LunMap Snapshot Initiator
+## then, the order-specific types, plus the rest of the types that were created during the New-XIO* testing, so as to be sure to removal all of the new test objects created:
+$arrOverallTypeToRemove_InOrder = $arrTypeSpecificRemovalOrder + @($hshXioObjsToRemove.Keys | Where-Object {($_ -ne "NewObjSuffixForThisTest") -and ($arrTypeSpecificRemovalOrder -notcontains $_)})
+
+## for each of the types to remove, and in order, if there were objects of this type created, remove them
+$arrOverallTypeToRemove_InOrder | Foreach-Object {
+	$strThisTypeToRemove = $_
+	Describe -Tags "Remove" -Name "Remove-XIO$strThisTypeToRemove" {
+		It "Removes a $strThisTypeToRemove (all that were created in New-XIO* testing)" {
+			## grab the objects from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$arrTestObjToRemove = $hshXioObjsToRemove[$strThisTypeToRemove]
+			$intNumObjToRemove = ($arrTestObjToRemove | Measure-Object).Count
+			Write-Verbose -Verbose ("will attempt to remove {0} '{1}' object{2}" -f $intNumObjToRemove, $strThisTypeToRemove, $(if ($intNumObjToRemove -ne 1) {"s"}))
+			## should remove without issue; need to use "Remove-XIOVolume" for removing Snapshots, since that cmdlet is for removing both Volumes and Snapshots
+			$strCmdletNounPortion = if ($strThisTypeToRemove -eq "Snapshot") {"Volume"} else {$strThisTypeToRemove}
+			$arrTestObjToRemove | Foreach-Object {
+				$oThisObjToRemove = $_
+				{Invoke-Command -ScriptBlock {& "Remove-XIO$strCmdletNounPortion" $oThisObjToRemove}} | Should Not Throw
+			} ## end foreach-object
+			## trying to get the objects with the given URIs should now fail, as those objects should have been removed
+			$arrTestObjToRemove | Foreach-Object {
+				$oThisObjToRemove = $_
+				{Invoke-Command -ScriptBlock {& "Get-XIO$strThisTypeToRemove" -URI $oThisObjToRemove.URI -Verbose:$false}} | Should Throw
+			} ## end foreach-object
+		} ## end it
+	} ## end describe
+} ## end foreach-object
+
+
 $hshXioObjsToRemove
+
+<#
+## for removes:
+## removing a ConsistencyGroup that is part of a SnapshotScheduler should Throw!
+## for removing Tags, should either remove leaf Tags first, or, if removing parent tags first that had child Tags, do not later try to remove child Tag (they'll already be gone)
+#>
 
 
 <#
@@ -357,12 +448,4 @@ $arrNewVol_other = New-XIOVolume -Name "testvol10$strNameToAppend" -Cluster myxi
 #Get-XIOTag /Volume/myCoolVolTag* | New-XIOSnapshot -Type ReadOnly -NewSnapshotSetName "SnapSet6$strNameToAppend"
 ## Create a new ConsistencyGroup that contains the volumes on XIO cluster "myCluster0" that are tagged with either "someImportantVolsTag" or "someImportantVolsTag2"
 #New-XIOConsistencyGroup -Name myConsGrp3 -Tag (Get-XIOTag /Volume/someImportantVolsTag,/Volume/someImportantVolsTag2) -Cluster myCluster0
-
-## for removes:
-## removing an InitiatorGroup or Volume that is part of a LunMap should Throw!
-## removing a Volume that is part of a ConsistencyGroup should Throw!
-## removing a Volume that is part of a SnapshotScheduler should Throw!
-## removing a ConsistencyGroup that is part of a SnapshotScheduler should Throw!
-## should then remove in particular order of:  SnapshotScheduler (so then can remove ConsistencyGroups, SnapshotSets, and Volumes), ConsistencyGroups (so can then remove Volumes), then LunMap (so can then remove InitiatorGroups), then Snapshot (so that all Snapshots are still Snapshots, instead of having been transformed into Volumes by action of having all ancestor volumes removed), then <all the rest>, except if doing InitiatorGroups before Initiators, Initiators will already be gone
-## for removing Tags, should either remove leaf Tags first, or, if removing parent tags first that had child Tags, do not later try to remove child Tag (they'll already be gone)
 #>
