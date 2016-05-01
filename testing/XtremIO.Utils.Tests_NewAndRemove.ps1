@@ -9,19 +9,25 @@
 
 ## string to append (including a GUID) to all new objects created, to avoid any naming conflicts
 $strNameToAppend = "_testItemToDelete_{0}" -f [System.Guid]::NewGuid().Guid.Replace("-","")
+Write-Verbose -Verbose "Suffix used for new objects for this test:  $strNameToAppend"
 ## bogus OUI for making sure that the addresses of the intiators created here do not conflict with any real-world addresses
 $strInitiatorAddrPrefix = "EE:EE:EE"
 ## random hex value to use for four hex-pairs in the port addresses, to avoid address conflicts if testing multiple times without removing newly created test objects (with particular port addresses)
 $strInitiatorRandomEightHexChar = "{0:x}" -f (Get-Random -Maximum ([Int64]([System.Math]::pow(16,8) - 1)))
 $strInitiatorRandomEightHexChar_ColonJoined = ($strInitiatorRandomEightHexChar -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
-## hashtable to keep the variables that hold the newly created objects, so that these objects can be removed from the XMS later
-$hshXioObjsToRemove = [ordered]@{NewObjSuffixForThisTest = $strNameToAppend}
+## hashtable to keep the variables that hold the newly created objects, so that these objects can be removed from the XMS later; making it a global variable, so that consumer has it for <anything they desire> after testing
+$global:hshXioObjsToRemove = [ordered]@{}
 $hshCommonParamsForNewObj = @{ComputerName =  $strXmsComputerName; Cluster = $strClusterNameToUse}
 
-Write-Warning "no fully-automatic tests yet defined for New-XIO* and Remove-XIO* cmdlets"
+Write-Warning "no fully-automatic tests yet defined for Remove-XIO* cmdlets -- they still require confirmation (for safety's sake)"
+
+Write-Verbose -Verbose "Getting current counts of each object type of interest, for comparison to counts after testing"
+## the types of interest
+$arrTypesToCount = Write-Output InitiatorGroup Initiator InitiatorGroupFolder VolumeFolder Volume ConsistencyGroup Snapshot SnapshotScheduler LunMap Tag UserAccount
+$arrTypesToCount | Foreach-Object -Begin {$hshTypeCounts_before = @{}} -Process {$hshTypeCounts_before[$_] = Invoke-Command -ScriptBlock {(& "Get-XIO$_" | Measure-Object).Count}}
 
 
-## test making new things; will capture the new items, and then remove them
+## test making new things; saves the new items in a hashtable, which is then used for the Remove-XIO* testing (which then removes them)
 ## should test against XIOS v3 (XIO API v1) and XIOS v4+ (XIO API v2), at least
 
 Describe -Tags "New" -Name "New-XIOInitiatorGroup" {
@@ -114,7 +120,7 @@ Describe -Tags "New" -Name "New-XIOInitiatorGroupFolder" {
 }
 
 
-Describe -Tags "New" -Name "New-XIOVolumeGroupFolder" {
+Describe -Tags "New" -Name "New-XIOVolumeFolder" {
 	It "Creates a new VolumeFolder" {
 		$oNewVolFolder = New-XIOVolumeFolder -Name "myVolFolder$strNameToAppend" -ParentFolder / -ComputerName $strXmsComputerName
 		$hshXioObjsToRemove["VolumeFolder"] += @($oNewVolFolder)
@@ -394,7 +400,7 @@ Describe -Tags "Remove" -Name "Remove-XIOInitiatorGroup_shouldThrow" {
 #	then <all the rest>
 $arrTypeSpecificRemovalOrder = Write-Output SnapshotScheduler ConsistencyGroup LunMap Snapshot Initiator
 ## then, the order-specific types, plus the rest of the types that were created during the New-XIO* testing, so as to be sure to removal all of the new test objects created:
-$arrOverallTypeToRemove_InOrder = $arrTypeSpecificRemovalOrder + @($hshXioObjsToRemove.Keys | Where-Object {($_ -ne "NewObjSuffixForThisTest") -and ($arrTypeSpecificRemovalOrder -notcontains $_)})
+$arrOverallTypeToRemove_InOrder = $arrTypeSpecificRemovalOrder + @($hshXioObjsToRemove.Keys | Where-Object {$arrTypeSpecificRemovalOrder -notcontains $_})
 
 ## for each of the types to remove, and in order, if there were objects of this type created, remove them
 $arrOverallTypeToRemove_InOrder | Foreach-Object {
@@ -407,6 +413,8 @@ $arrOverallTypeToRemove_InOrder | Foreach-Object {
 			Write-Verbose -Verbose ("will attempt to remove {0} '{1}' object{2}" -f $intNumObjToRemove, $strThisTypeToRemove, $(if ($intNumObjToRemove -ne 1) {"s"}))
 			## should remove without issue; need to use "Remove-XIOVolume" for removing Snapshots, since that cmdlet is for removing both Volumes and Snapshots
 			$strCmdletNounPortion = if ($strThisTypeToRemove -eq "Snapshot") {"Volume"} else {$strThisTypeToRemove}
+			## if these are the Tag objects, sort descending by the Tag CreationTime, so that the remove tests will try to remove the newest first (which should be any "nested" Tags first), so as to try to avoid getting in a test scenario where a child Tag is already deleted by the action of having deleted its parent Tag, so the test of deleting the child Tag would fail (Tag not found)
+			if ($strThisTypeToRemove -eq "Tag") {$arrTestObjToRemove = $arrTestObjToRemove | Sort-Object -Property CreationTime -Descending}
 			$arrTestObjToRemove | Foreach-Object {
 				$oThisObjToRemove = $_
 				{Invoke-Command -ScriptBlock {& "Remove-XIO$strCmdletNounPortion" $oThisObjToRemove}} | Should Not Throw
@@ -414,14 +422,30 @@ $arrOverallTypeToRemove_InOrder | Foreach-Object {
 			## trying to get the objects with the given URIs should now fail, as those objects should have been removed
 			$arrTestObjToRemove | Foreach-Object {
 				$oThisObjToRemove = $_
-				{Invoke-Command -ScriptBlock {& "Get-XIO$strThisTypeToRemove" -URI $oThisObjToRemove.URI -Verbose:$false}} | Should Throw
+				## try to get the object at the given URI -- should throw, along with write some verbose output, which is being redirect to Out-Null here (the Verbose stream is stream #4)
+				{Invoke-Command -ScriptBlock {& "Get-XIO$strThisTypeToRemove" -URI $oThisObjToRemove.URI 4>Out-Null}} | Should Throw
 			} ## end foreach-object
 		} ## end it
 	} ## end describe
 } ## end foreach-object
 
+Write-Verbose -Verbose "Getting final counts of each object type of interest, for comparison to counts from before testing"
+$arrTypesToCount | Foreach-Object -Begin {$hshTypeCounts_after = @{}} -Process {$hshTypeCounts_after[$_] = Invoke-Command -ScriptBlock {(& "Get-XIO$_" | Measure-Object).Count}}
+$arrObjTypeCountInfo = $arrTypesToCount | Foreach-Object {New-Object -Type PSObject -Property ([ordered]@{Type = $_; CountBefore = $hshTypeCounts_before.$_; CountAfter = $hshTypeCounts_after.$_; CountIsSame = ($hshTypeCounts_before.$_ -eq $hshTypeCounts_after.$_)})}
 
-$hshXioObjsToRemove
+Describe -Tags "Verification" -Name "VerificationAfterTesting" {
+	It "Checks that there are the same number of objects of the subject types after the testing as there were before testing began" {
+		$arrObjTypeCountInfo | Foreach-Object {
+			$thisObjTypeInfo = $_
+			$thisObjTypeInfo.CountIsSame | Should Be $true
+		}
+	}
+}
+
+Write-Verbose -Verbose "Counts of each subject type before and after testing:"
+$arrObjTypeCountInfo
+
+Write-Verbose -Verbose "Global variable named `$hshXioObjsToRemove contains info about all of the objects created during this testing"
 
 <#
 ## for removes:
