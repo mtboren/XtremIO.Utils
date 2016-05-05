@@ -1,3 +1,22 @@
+done for version 1.0.0:
+[feat_RemoveItems]
+-add Remove-XIO* cmdlets:
+	Remove-XIOConsistencyGroup -- what happens to volumes that were in it? _not_ deleted
+	Remove-XIOInitiator, Remove-XIOInitiatorGroupFolder, Remove-XIOLunMap, Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
+	Remove-XIOInitiatorGroup -- work if part of LunMap? "No".  What happens to initiators in it if removing IG? "Removes Initiators"
+	Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet)
+	Remove-XIOSnapshotSet (deletes associated Snapshots, too)
+	Remove-XIOVolume --
+		-If part of LunMap:  fail in GUI, but success via API (it removes the LunMap, too) -- emulating the GUI behavior in the cmdlet (does not delete Volume/Snapshot if part of a LunMap; user must first remove given LunMap)
+		-If subject of SnapshotScheduler:  fail (cannot delete, must first remove given SnapshotScheduler)
+		-If part of SnapshotSet:  leaves SnapshotSet alone unless this was the last Snapshot in the SnapshotSet
+		-If it is the last Snapshot in the SnapshotSet:  XMS deletes the SnapshotSet, too
+		-If child Snapshots of this Volume/Snapshot:  Those child Snapshots get the AncestorVolume of the Volume/Snapshot being deleted, if any (else, $null); and, then, if all of the ancestor Volumes of the Snapshot are deleted, the Snapshot becomes _just_ a Volume, no longer a Snapshot object (though, it still is a part of a SnapshotSet object)!
+-add Pester tests for New-XIO* and Remove-XIO* cmdlets (Remove-XIO* are still set to prompt for confirmation, for safety's sake)
+-add "num of each obj type before and after testing" kind of test, too (and some informational output)
+-fix issue where New-XIOSnapshotScheduler for multi-cluster XMS requires "cluster-id", but cmdlet was not passing it if not explicitly specified (now takes it from the RelatedObject's Cluster property if -Cluster not specified)
+
+
 done for version 0.14.0:
 [feat_SetItems]
 -for Set-XioItemInfo:

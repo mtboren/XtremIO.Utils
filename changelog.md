@@ -1,6 +1,15 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v1.0.0
+05 May 2016
+
+Oh, my -- v1.0.0! Added the other set of cmdlets still needed, the Remove-XIO* cmdlets.  And, while there is still a long list of things to add/update/enhance, this update brings the module to version 1.0 status.  Details for this release:
+
+- \[new] Remove-XIO* cmdlets:  `Remove-XIOConsistencyGroup`, `Remove-XIOInitiator`, `Remove-XIOInitiatorGroup`, `Remove-XIOInitiatorGroupFolder`, `Remove-XIOLunMap`, `Remove-XIOSnapshotScheduler`, `Remove-XIOSnapshotSet`, `Remove-XIOTag`, `Remove-XIOUserAccount`, `Remove-XIOVolume`, `Remove-XIOVolumeFolder`
+- \[new] Added [Pester](https://github.com/pester/Pester "Pester GitHub repo") tests for New-XIO* and Remove-XIO* cmdlets, with an additional test that verifies that the same number of XtremIO inventory objects exist after testing as did before testing -- to get a feel for whether any testing crumbs were left behind
+- \[bugfix] Fixed issue where `New-XIOSnapshotScheduler` for multi-cluster XMS requires `cluster-id` property in the JSON body, but the cmdlet was not passing it if not explicitly specified by user; the cmdlet now takes it from the `-RelatedObject`'s `Cluster` property if `-Cluster` parameter not specified
+
 ### v0.14.0
 22 Apr 2016
 

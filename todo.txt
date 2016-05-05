@@ -3,14 +3,23 @@ todo:
 	-for Volume: update New-XIOSnapshot to take cluster value from Volume object when Volume object taken from pipeline (and if that particular Volume has a Cluster property value)
 	-this is also in prep for better pipelining, which will need to get Cluster info from pipeline object coming through (along with .ComputerName, right?)
 	-once added to Volume and Tag, update New-XIOConsistencyGroup to take it from Volume/Tag objects if those were passed as values to -Volume or -Tag?  Else, user has to specify the vol/tag _and_ the cluster, when that should be gleanable from the vol/tag objects themselves (right?)
--enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Remove-XIOTagAssignment kind of cmdlet)
+-enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Get-XIOTagAssignment and Remove-XIOTagAssignment kind of cmdlets)
+-enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup?)
 -add type to -Credential param declaration for New-XIOUserAccount (none specified right now)
+-add -Color param to New-XIOTag (seems to be supported per events, but not listed in API doc)
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+-fix bug in New-XIOVolume:  when specifying both -ParentFolder and -Cluster, throws error:  "message": "Command Syntax Error: Invalid property parent-folder-id"
+	-either send ParentFolder property as part of tag_list value (need to test), or do not include -ParentFolder in same paramset as -Cluster?
+-fix bug in Get-XIOSnapshotScheduler when using by URI:  must have "?cluster-name=<blahh>" in the URI, or request returns error:  "message": "cluster_id_is_required"
+	-encountered when connected to multi-cluster XMS and creating new SnapshotScheduler
 -Volume object:  add VolSizeGB for ease of reading for when the volume size is less than 1TB
 -Alert object:  add .Cluster property from .sys-id, deprecate ClusterId, ClusterName properties
+-update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
+-once pipelining supports getting SnapshotScheduler by Volume/Snapshot, add bit to Remove-XIOVolume that checks first if Volume/Snapshot is part of a SnapshotScheduler, throwing an error if so (instead of the current behavior that does not check and that results in an error from the API call, "cannot_remove_volume_that_has_a_scheduler")
 -investigate adding New-XIOLdapConfig (the POST how-to is not specified in the API reference -- present but not documented? -- if not, add cmdlet once (if ever) this method is supported for this object type)
+	-same for adding Remove-XIOLdapConfig (the DELETE how-to is not specified in the API reference)
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
 -New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
@@ -33,9 +42,6 @@ todo:
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
--add Remove- cmdlets
-	Remove-XIO*:
-		Initiator, InitiatorGroup, InitiatorGroupFolder, LunMap, Volume, VolumeFolder, Snapshot, TagAssignment
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
 -for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
@@ -49,6 +55,7 @@ todo:
 	Get-XIOLocalDisk | Get-XIOStorageController
 	Get-XIOSlot | Get-XIOSsd
 	Get-XIOSnapshotSet | Get-XIO[Volume|Snapshot]
+	Get-XIOSnapshotScheduler | Get-XIO[Volume|Snapshot]
 	Get-XIO[Volume|Snapshot] | Get-XIOSnapshot
 		-need to update Volume and Snapshot objects:
 			DestSnapList property to be list of Snapshot <id,name,index> objects instead of list of arrays of strings
@@ -219,10 +226,13 @@ todo:
 
 
 
+should do next:
+	-mega pipelining
+	-straggler release (odds/ends plus New-XIOTagAssignment, Remove-XIOTagAssignment)
 
 doing:
 
-done for version 0.next (after v0.14.0):
+done for version next (after v0.14.0):
 
 ## things below here are in changelog/readme
 
@@ -237,14 +247,15 @@ done for previous versions:  moved to done.txt
 ## release items
 merge branches into dev
 rev module version
-test
+test in PSv4, PSv5, on XIOS 2.4, on XIOS 4.0-multicluster, and test with multiple XIO connections, if not already tested
 update changelog/readme
 commit to dev
 merge to master
 move "Latest" tag to master commit
-add version-specific tag
 make .zip of just PSModule files
-
+make Latest release on GitHub
+add version-specific tag
+make version-specific release on GitHub
 
 
 ## for observing property changes to handle between versions
