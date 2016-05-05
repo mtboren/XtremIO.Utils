@@ -88,7 +88,7 @@ function Remove-XIOItemInfo {
 					catch {
 						_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToSetXIOItem['Uri'] -ErrorRecord $_
 					} ## end catch
-					## if good, write-verbose the status and, if status is "Created", Get-XIOInfo on given HREF
+					## if good, write-verbose the status and, if status is of expected value, Get-XIOInfo on given HREF
 					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Delete"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Delete"]["StatusDescription"])) {
 						Write-Verbose "$strLogEntry_ToAdd Item removed successfully. StatusDescription: '$($oWebReturn.StatusDescription)'"
 					} ## end if
@@ -236,7 +236,7 @@ function Remove-XIOInitiatorGroup {
 			XIOItemInfoObj = $InitiatorGroup
 		} ## end hashtable
 
-		if ($arrLunMaps_thisIG = Get-XIOLunMap -InitiatorGroup $InitiatorGroup.Name -Property InitiatorGroup,VolumeName,LunId -Cluster $InitiatorGroup.Cluster.Name) {
+		if ($arrLunMaps_thisIG = Get-XIOLunMap -InitiatorGroup $InitiatorGroup.Name -Property InitiatorGroup,VolumeName,LunId -Cluster $InitiatorGroup.Cluster.Name -ComputerName $InitiatorGroup.ComputerName) {
 			$intNumLunMap_thisIG = ($arrLunMaps_thisIG | Measure-Object).Count
 			$Exception_InitiatorGroupIsPartOfLunMap = New-Object -Type System.Exception("InitiatorGroup '{0}' is a part of {1} LunMap{2} (LunId{2} '{3}'). Will not attempt to remove InitiatorGroup." -f $InitiatorGroup.Name, $intNumLunMap_thisIG, $(if ($intNumLunMap_thisIG -gt 1) {"s"}), ($arrLunMaps_thisIG.LunId -join ", "))
 			Throw $Exception_InitiatorGroupIsPartOfLunMap
@@ -316,9 +316,7 @@ function Remove-XIOSnapshotScheduler {
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForRemoveItem = @{
 			SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
-			# XIOItemInfoObj = $SnapshotScheduler
-			## for this particular obj type, API v2 in at least XIOS v4.0.2-80 does not deal well with URI that has "?cluster-name=myclus01" in it -- API tries to use the "name=myclus01" part when determining the ID of this object; so, removing that bit from this object's URI (if there)
-			Uri = _Remove-ClusterNameQStringFromURI -URI $SnapshotScheduler.Uri
+			XIOItemInfoObj = $SnapshotScheduler
 		} ## end hashtable
 
 		## call the function to actually remove this item
@@ -477,7 +475,7 @@ function Remove-XIOVolume {
 		} ## end hashtable
 
 		### if either a part of a LunMap, or the subject of a SnapshotScheduler, do not delete Volume (cannot if part of SnapshotScheduler, but API _will_ allow if only a part of LunMap; will not allow via this cmdlet, though)
-		if ($arrLunMaps_thisVol = Get-XIOLunMap -Volume $Volume.Name -Property InitiatorGroup,VolumeName,LunId -Cluster $Volume.Cluster.Name) {
+		if ($arrLunMaps_thisVol = Get-XIOLunMap -Volume $Volume.Name -Property InitiatorGroup,VolumeName,LunId -Cluster $Volume.Cluster.Name -ComputerName $Volume.ComputerName) {
 			$intNumLunMap_thisVol = ($arrLunMaps_thisVol | Measure-Object).Count
 			$Exception_VolumeIsPartOfLunMap = New-Object -Type System.Exception("Volume '{0}' is a part of {1} LunMap{2} (LunId{2} '{3}'). Will not attempt to delete Volume." -f $Volume.Name, $intNumLunMap_thisVol, $(if ($intNumLunMap_thisVol -gt 1) {"s"}), ($arrLunMaps_thisVol.LunId -join ", "))
 			Throw $Exception_VolumeIsPartOfLunMap

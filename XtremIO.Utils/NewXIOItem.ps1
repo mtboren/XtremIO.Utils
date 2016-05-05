@@ -985,6 +985,8 @@ function New-XIOSnapshotScheduler {
 		} ## end switch
 		## if Suffix was specified, add it to the config spec
 		if ($PSBoundParameters.ContainsKey("Suffix")) {$hshNewItemSpec["suffix"] = $Suffix}
+		## if Cluster not specified explicitly, add (else, subsequent New-XIOItem call adds it already)
+		if (-not $PSBoundParameters.ContainsKey("Cluster")) {$hshNewItemSpec["cluster-id"] = $RelatedObject.Cluster.Name}
 
 		## the params to use in calling the helper function to actually create the new object
 		$hshParamsForNewItem = @{
