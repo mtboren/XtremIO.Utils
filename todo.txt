@@ -13,6 +13,7 @@ todo:
 -fix bug in New-XIOVolume:  when specifying both -ParentFolder and -Cluster, throws error:  "message": "Command Syntax Error: Invalid property parent-folder-id"
 	-either send ParentFolder property as part of tag_list value (need to test), or do not include -ParentFolder in same paramset as -Cluster?
 -fix bug in Get-XIOSnapshotScheduler when using by URI:  must have "?cluster-name=<blahh>" in the URI, or request returns error:  "message": "cluster_id_is_required"
+	-encountered when connected to multi-cluster XMS and creating new SnapshotScheduler
 -Volume object:  add VolSizeGB for ease of reading for when the volume size is less than 1TB
 -Alert object:  add .Cluster property from .sys-id, deprecate ClusterId, ClusterName properties
 -update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
@@ -231,26 +232,7 @@ should do next:
 
 doing:
 
-done for version 0.next (after v0.14.0):
-[feat_RemoveItems]
--add Remove-XIO* cmdlets:
-	Remove-XIOConsistencyGroup -- what happens to volumes that were in it? _not_ deleted
-	Remove-XIOInitiator, Remove-XIOInitiatorGroupFolder, Remove-XIOLunMap, Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolumeFolder
-	Remove-XIOInitiatorGroup -- work if part of LunMap? "No".  What happens to initiators in it if removing IG? "Removes Initiators"
-	Remove-XIOSnapshotScheduler (API does not support removing associated SnapshotSets, yet)
-	Remove-XIOSnapshotSet (deletes associated Snapshots, too)
-	Remove-XIOVolume --
-		-If part of LunMap:  fail in GUI, but success via API (it removes the LunMap, too) -- emulating the GUI behavior in the cmdlet (does not delete Volume/Snapshot if part of a LunMap; user must first remove given LunMap)
-		-If subject of SnapshotScheduler:  fail (cannot delete, must first remove given SnapshotScheduler)
-		-If part of SnapshotSet:  leaves SnapshotSet alone unless this was the last Snapshot in the SnapshotSet
-		-If it is the last Snapshot in the SnapshotSet:  XMS deletes the SnapshotSet, too
-		-If child Snapshots of this Volume/Snapshot:  Those child Snapshots get the AncestorVolume of the Volume/Snapshot being deleted, if any (else, $null); and, then, if all of the ancestor Volumes of the Snapshot are deleted, the Snapshot becomes _just_ a Volume, no longer a Snapshot object (though, it still is a part of a SnapshotSet object)!
--add Pester tests for New-XIO* and Remove-XIO* cmdlets (Remove-XIO* are still set to prompt for confirmation, for safety's sake)
--add "num of each obj type before and after testing" kind of test, too (and some informational output)
--fix issue where New-XIOSnapshotScheduler for multi-cluster XMS requires "cluster-id", but cmdlet was not passing it if not explicitly specified (now takes it from the RelatedObject's Cluster property if -Cluster not specified)
--test in PSv5
--test on XIOS 2.4, test on 4.0-multicluster, test with multiple XIO connections
-
+done for version next (after v0.14.0):
 
 ## things below here are in changelog/readme
 
@@ -265,7 +247,7 @@ done for previous versions:  moved to done.txt
 ## release items
 merge branches into dev
 rev module version
-test
+test in PSv4, PSv5, on XIOS 2.4, on XIOS 4.0-multicluster, and test with multiple XIO connections, if not already tested
 update changelog/readme
 commit to dev
 merge to master
