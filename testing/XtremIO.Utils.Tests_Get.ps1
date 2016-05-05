@@ -72,6 +72,9 @@ Describe -Tags "Get" -Name "Get-XIOItemInfo" {
 		$arrChildrenInfo = Get-XIOItemInfo -Uri "https://${strXmsComputerName}/api/json/types" -ReturnFullResponse | Select-Object -ExpandProperty children
 		## the names should include these object type names; all of the -contains comparisons should be $true, so the Select-Object -Unique should return a single $true for the value
 		$bChildTypenamesAreExpected = Write-Output bricks, initiators, snapshots, volumes, xenvs | Foreach-Object {$arrChildrenInfo.name -contains $_} | Select-Object -Unique
+		## there should only be one type for this value -- a Boolean (not an array of Booleans, which would be $true and $false)
+		$bChildTypenamesAreExpected | Should BeOfType [System.Boolean]
+		## and, it should be $true
 		$bChildTypenamesAreExpected | Should Be $true
 	}
 }
