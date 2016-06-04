@@ -10,6 +10,8 @@ todo:
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+-fix bug in Get-XIOStorageController:  not returning valid LocalDisk info
+-fix order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
 -fix bug in New-XIOVolume:  when specifying both -ParentFolder and -Cluster, throws error:  "message": "Command Syntax Error: Invalid property parent-folder-id"
 	-either send ParentFolder property as part of tag_list value (need to test), or do not include -ParentFolder in same paramset as -Cluster?
 -fix bug in Get-XIOSnapshotScheduler when using by URI:  must have "?cluster-name=<blahh>" in the URI, or request returns error:  "message": "cluster_id_is_required"
@@ -22,7 +24,9 @@ todo:
 	-same for adding Remove-XIOLdapConfig (the DELETE how-to is not specified in the API reference)
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
--New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
+-New-XIOLunMap:
+	-take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
+	-update -Volume to accept vol objects or vol name (just does name right now), and take Volume obj from pipeline
 -XIOS v4 properties/types to add/update/handle:
 	-to LunMap:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
 	-to SSD:  certainty, *io-error*, num-bad-sectors, tag-list
@@ -184,7 +188,7 @@ todo:
 			-InitiatorGroup blah -volume blahvol ## with no -Cluster and on 4.0 single-cluster
 		-?need to use GUIDs in the names of new objs, so as to be able to remove them, and need to remove the items, too? Or, report on the objects created and generate the code to remove them, so whomever can remove at will?
 	-include snippet somewhere that following is expected return for older XIOS versions when querying types that appeared in API in newer XIOS versions (and this behavior is there as a courtesy):
-		WARNING: Type 'bbus' does not exist in xms0.dom.lilly.com's XIOS version. This is possibly an object type that was introduced in a later XIOS version
+		WARNING: Type 'bbus' does not exist in xms0.dom.com's XIOS version. This is possibly an object type that was introduced in a later XIOS version
 -once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
 	-not available as of XIOS v3.0.1
 -upgrade New-XIOVolumeFolder, New-XIOInitiatorGroupFolder to make full, deep path of folders (for when parent folder heirarchy does not yet exist)
