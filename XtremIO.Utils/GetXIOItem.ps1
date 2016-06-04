@@ -1313,6 +1313,12 @@ function Get-XIOAlertDefinition {
 	.Example
 	Get-XIOBBU -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "BBU" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOStorageController -Name X1-SC2 -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIOBBU
+	Get the BBU that is associated with the StorageController "X1-SC2" from the given XMS appliance and XIO Cluster
+	.Example
+	Get-XIOBrick -Name X1 -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIOBBU -Name X2-BBU
+	Get the BBU of the given name, and that is associated with the Brick "X1" from the given XMS appliance and XIO Cluster
 	.Outputs
 	XioItemInfo.BBU
 #>
@@ -1323,14 +1329,16 @@ function Get-XIOBBU {
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the BBU to get. Can be an XIO object of type Brick or StorageController
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -1338,13 +1346,29 @@ function Get-XIOBBU {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "bbu"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (($_ -is [XioItemInfo.Brick]) -or ($_ -is [XioItemInfo.StorageController])) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_.BBU.Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning "RelatedObject was not of expected/accepted type (was of type [$($_.GetType().FullName)]). Please check the valid RelatedObject types supported by this cmdlet"}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
