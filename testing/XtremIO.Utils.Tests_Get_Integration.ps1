@@ -55,3 +55,24 @@ $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 		} ## end foreach-object
 	} ## end describe
 } ## end foreach-object
+
+
+## tests for cmdlets that do not support all of the standard features given above
+Describe -Tags "Get" -Name "Get-XIOInitiator" {
+	$strXIOObjectTypeToGet = "Initiator"
+	"InitiatorGroup" | Foreach-Object {
+		$strThisRelatedObjectType = $_
+		## Get up to two of the related objects.  These will be used to test the targeted cmdlet
+		$arrRelatedObjects = & "Get-XIO$strThisRelatedObjectType" | Select-Object -First 2
+		It "Gets XIO $strXIOObjectTypeToGet object, based on $strThisRelatedObjectType object ID" {
+	 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$strXIOObjectTypeToGet" -InitiatorGrpId $arrRelatedObjects.InitiatorGrpId}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
+	    	New-Variable -Name "bGetsOnly${strXIOObjectTypeToGet}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strXIOObjectTypeToGet")
+	    	(Get-Variable -ValueOnly -Name "bGetsOnly${strXIOObjectTypeToGet}Type") | Should Be $true
+		}
+		It "Gets XIO $strXIOObjectTypeToGet object, based on related $strThisRelatedObjectType object from pipeline" {
+	 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {$arrRelatedObjects | & "Get-XIO$strXIOObjectTypeToGet"}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
+	    	New-Variable -Name "bGetsOnly${strXIOObjectTypeToGet}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strXIOObjectTypeToGet")
+	    	(Get-Variable -ValueOnly -Name "bGetsOnly${strXIOObjectTypeToGet}Type") | Should Be $true
+		}
+	} ## end foreach-object
+} ## end describe
