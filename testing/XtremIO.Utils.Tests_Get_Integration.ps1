@@ -26,6 +26,7 @@
 $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	BBU = Write-Output Brick, StorageController
 	Brick = Write-Output BBU, Cluster, DAE, DAEController, DAEPsu, DataProtectionGroup, LocalDisk, Slot, Ssd, StorageController, StorageControllerPsu, Target, Xenv
+	Cluster = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv
 }
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 	$strXIOObjectTypeToGet = $_.Key
