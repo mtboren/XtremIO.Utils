@@ -23,11 +23,14 @@
 ## all types:
 # $arrXioRelatedObjectTypesToAccept = Write-Output BBU, Brick, Cluster, ClusterPerformance, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, DataProtectionGroupPerformance, EmailNotifier, Event, InfinibandSwitch, Initiator, InitiatorGroup, InitiatorGroupPerformance, InitiatorPerformance, LdapConfig, LocalDisk, LunMap, PerformanceCounter, Slot, Snapshot, SnapshotScheduler, SnapshotSet, SnmpNotifier, Ssd, SsdPerformance, StorageController, StorageControllerPsu, SyslogNotifier, Tag, Target, TargetGroup, TargetPerformance, UserAccount, Volume, VolumeFolder, VolumeFolderPerformance, VolumePerformance, Xenv, XMS
 
+## hashtable of Types to test and the corresponding "RelatedObject" Types that each should accept
 $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	BBU = Write-Output Brick, StorageController
 	Brick = Write-Output BBU, Cluster, DAE, DAEController, DAEPsu, DataProtectionGroup, LocalDisk, Slot, Ssd, StorageController, StorageControllerPsu, Target, Xenv
 	Cluster = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv
-}
+	ConsistencyGroup = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Volume
+} ## end hash
+
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 	$strXIOObjectTypeToGet = $_.Key
 	$arrXioRelatedObjectTypesToAccept = $_.Value
@@ -47,5 +50,5 @@ $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 		    	(Get-Variable -ValueOnly -Name "bGetsOnly${strXIOObjectTypeToGet}Type") | Should Be $true
 			}
 		} ## end foreach-object
-	}
+	} ## end describe
 } ## end foreach-object
