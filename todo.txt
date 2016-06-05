@@ -243,7 +243,7 @@ mega pipelining:
 		-that accepts object fom pipeline
 		-from which to determine Cluster, ComputerName, etc., in order to get the given object type based on the related object
 	-update comment-based help
-	-for:  Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotScheduler, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
+	-for:  Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotScheduler, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
 		working on:
 
 		done:
@@ -256,9 +256,16 @@ mega pipelining:
 			Get-XIOInfinibandSwitch:  from Cluster
 			Get-XIOInitiatorGroup:  from Initiator, IgFolder, LunMap, Snapshot, Volume
 				-Changed parameter from InitiatorGrpId to RelatedObject
+			Get-XIOInitiatorGroupFolder:  IgFolder, InitiatorGroup
+				-Changed parameter from InitiatorGrpId to RelatedObject
+				-for IgFolder, use SubfolderList, and need to remove "/InitiatorGroup" from start of folder name
+				-for InitiatorGroup, use Folder, but need to remove "/InitiatorGroup" from start of folder name -- that is part of the "full name" of the IgFolder, but the name does not contain that
 		postponing:
 			Get-XIOClusterPerformance:  from Cluster
 			Get-XIODataProtectionGroupPerformance:  from DataProtectionGroup
+			Get-XIOInitiatorGroupFolderPerformance:  from InitiatorGroupFolder
+			Get-XIOInitiatorGroupPerformance:  from InitiatorGroup
+			Get-XIOInitiatorPerformance:  from Initiator
 		no action taken:
 			Get-XIOInitiator:  already would get Initiators from InitiatorGroup from pipeline, though, in somewhat inefficient means -- the InitiatorGroup object returned by API does not have Initiator info, so have to get all Initiators and the filter on the InitatorGroup afterwards (before returning objects to consumer)
 -known issues:
