@@ -297,9 +297,30 @@ function _Test-TypeOrString {
 	) ## end param
 
 	process {
-		## make sure that all values are either a String or a Cluster obj
+		## make sure that all values are either a String or a <given> object type
 		$arrCheckBoolValues = $ObjectToTest | Foreach-Object {($_ -is [System.String]) -or ($_ -is $Type)}
 		return (($arrCheckBoolValues -contains $true) -and ($arrCheckBoolValues -notcontains $false))
+	} ## end process
+} ## end function
+
+
+function _Test-IsOneOfGivenType {
+	<# .Description
+		Helper function to test if object is one of the given Types specified
+		.Outputs
+		Boolean -- $true if object type is one of the specified Type; $false otherwise
+	#>
+	param (
+		## Object whose Type to test
+		[parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][PSObject]$ObjectToTest,
+		## Type of object for which to check
+		[parameter(Mandatory=$true)][Type[]]$Type
+	) ## end param
+
+	process {
+		## check if the object is of one of these Types
+		$arrCheckBoolValues = $Type | Foreach-Object {$ObjectToTest -is $_}
+		return ($arrCheckBoolValues -contains $true)
 	} ## end process
 } ## end function
 
