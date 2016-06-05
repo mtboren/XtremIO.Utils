@@ -243,7 +243,7 @@ mega pipelining:
 		-that accepts object fom pipeline
 		-from which to determine Cluster, ComputerName, etc., in order to get the given object type based on the related object
 	-update comment-based help
-	-for:  Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotScheduler, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
+	-for:  Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotScheduler, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
 		working on:
 
 		done:
@@ -260,6 +260,7 @@ mega pipelining:
 				-Changed parameter from InitiatorGrpId to RelatedObject
 				-for IgFolder, use SubfolderList, and need to remove "/InitiatorGroup" from start of folder name
 				-for InitiatorGroup, use Folder, but need to remove "/InitiatorGroup" from start of folder name -- that is part of the "full name" of the IgFolder, but the name does not contain that
+			Get-XIOLocalDisk:  from StorageController
 		postponing:
 			Get-XIOClusterPerformance:  from Cluster
 			Get-XIODataProtectionGroupPerformance:  from DataProtectionGroup

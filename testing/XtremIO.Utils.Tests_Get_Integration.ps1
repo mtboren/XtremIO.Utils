@@ -34,6 +34,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	InfinibandSwitch = Write-Output Cluster
 	InitiatorGroup = Write-Output Initiator, InitiatorGroupFolder, LunMap, Snapshot, Volume
 	InitiatorGroupFolder = Write-Output InitiatorGroup, InitiatorGroupFolder
+	LocalDisk = Write-Output StorageController
 } ## end hash
 
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {

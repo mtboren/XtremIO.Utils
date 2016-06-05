@@ -1376,7 +1376,7 @@ function _New-Object_fromItemTypeAndContent {
 					JournalState = $oContent."journal-state"
 					LastStartTime = $dteLastStartTime
 					LifecycleState = $oContent."fru-lifecycle-state"
-					LocalDisk = _New-ObjListFromProperty -IdPropertyPrefix "LocalDisk" -ObjectArray "local-disk-list"
+					LocalDisk = _New-ObjListFromProperty -IdPropertyPrefix "LocalDisk" -ObjectArray $oContent."local-disk-list"
 					ManagerPort = New-Object -Type PSObject -Property ([ordered]@{
 						Address = $oContent."node-mgr-addr"
 						Autonegotiate = $oContent."mgmt-port-autoneg"
