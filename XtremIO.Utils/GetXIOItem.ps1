@@ -1142,7 +1142,7 @@ function Get-XIOLunMap {
 		[parameter(ParameterSetName="ByComputerName")][string[]]$InitiatorGroup,
 		## LUN ID on which to filter returned LUN mapping info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName")][int[]]$HostLunId,
-		## Select properties to retrieve/return for given object type, instead of retrieving all (default). This capability is available as of the XIOS REST API v2
+		## Select properties to retrieve/return for given object type, instead of retrieving all (retriving all is default). This capability is available as of the XIOS REST API v2
 		[string[]]$Property,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
@@ -1171,9 +1171,9 @@ function Get-XIOLunMap {
 		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
 		## if the Volume was specified, return just LUN mappings involving that volume
 		if ($PSBoundParameters.ContainsKey("Volume")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($Volume | Where-Object {$oThisItem.VolumeName -like $_}).Count -gt 0}}
-		## if the InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
+		## if InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
 		if ($PSBoundParameters.ContainsKey("InitiatorGroup")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGroup | Where-Object {$oThisItem.InitiatorGroup -like $_}).Count -gt 0}}
-		## if the InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
+		## if HostLunId was specified, return just LUN mappings involving that HostLunId
 		if ($PSBoundParameters.ContainsKey("HostLunId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$HostLunId -contains $_.LunId}}
 		return $arrItemsToReturn
 	} ## end process
