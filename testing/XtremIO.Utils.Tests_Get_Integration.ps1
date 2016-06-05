@@ -32,6 +32,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	DAE = Write-Output Brick, DAEController, DAEPsu
 	DataProtectionGroup = Write-Output Brick, Ssd, StorageController
 	InfinibandSwitch = Write-Output Cluster
+	InitiatorGroup = Write-Output Initiator, InitiatorGroupFolder, LunMap, Snapshot, Volume
 } ## end hash
 
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
@@ -40,8 +41,8 @@ $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 	Describe -Tags "Get" -Name "Get-XIO$strXIOObjectTypeToGet" {
 		$arrXioRelatedObjectTypesToAccept | Foreach-Object {
 			$strThisRelatedObjectType = $_
-			## Get up to two of the related objects.  These will be used to test the targeted cmdlet
-			$arrRelatedObjects = & "Get-XIO$strThisRelatedObjectType" | Select-Object -First 2
+			## Get up to five of the related objects.  These will be used to test the targeted cmdlet
+			$arrRelatedObjects = & "Get-XIO$strThisRelatedObjectType" | Select-Object -First 5
 			It "Gets XIO $strXIOObjectTypeToGet object, based on related $strThisRelatedObjectType object" {
 		 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$strXIOObjectTypeToGet" -RelatedObject $arrRelatedObjects}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
 		    	New-Variable -Name "bGetsOnly${strXIOObjectTypeToGet}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strXIOObjectTypeToGet")

@@ -48,7 +48,7 @@ todo:
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
--for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
+-for when removing InitiatorGrpIdList from IgFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
 -add pipelining abilities for things like (add their tests at the same time!):
 	Get-XIODAE | Get-XIODAEController
 	Get-XIODAEController | Get-XIODAE
@@ -150,7 +150,7 @@ todo:
 			-hw-revision
 	-also, others listed on p198 of v3.0.1 REST API guide
 -change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
--address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  InitiatorGroupFolder objects have an IOPS property that may actually have no value, but that gets cast to an Int in the SupportingFunctions, and becomes "0" for the returned object
+-address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  IgFolder objects have an IOPS property that may actually have no value, but that gets cast to an Int in the SupportingFunctions, and becomes "0" for the returned object
 	-need to make these nullable? (can we?)
 -try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
 -add Update-Snapshot to correspond to "refresh" operation in mgmt GUI
@@ -210,7 +210,7 @@ todo:
 -?add ability to specify -Tag for when creating new objects that support "tag-list" property via API (like New-XIOInitiatorGroup, for example); or, just stick w/ adding new Tag assignments via dedicated cmdlet?
 -?for Set-XIO* cmdlets other than Set-XIOItemInfo, add ability to specify object by name and cluster?  Currently just supports by-object
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
--?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
+-?add "v2 URI" property to Tag objects (VolumeFolder, IgFolder), so that Set- calls for them are easier to make
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
 -?eventually for Open-XIOMgmtConsole:  only act on existing XMS connections (as the cmdlet will need the XMS software version in order to create the correct URL to the JNLP file); or, will this cmdlet change to open the web management console instead of the Java management console, once the Web UI takes over?
 -?add a Get-XIOUtilsConfiguration function to report things like the filespec of the StoredXioCred
@@ -243,7 +243,7 @@ mega pipelining:
 		-that accepts object fom pipeline
 		-from which to determine Cluster, ComputerName, etc., in order to get the given object type based on the related object
 	-update comment-based help
-	-for:  Get-XIOInitiatorGroup, Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotScheduler, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
+	-for:  Get-XIOInitiatorGroupFolder, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOLocalDisk, Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotScheduler, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
 		working on:
 
 		done:
@@ -254,6 +254,8 @@ mega pipelining:
 			Get-XIODAE:  from Brick, DAEController, DAEPsu
 			Get-XIODataProtectionGroup:  from Brick, Ssd, StorageController
 			Get-XIOInfinibandSwitch:  from Cluster
+			Get-XIOInitiatorGroup:  from Initiator, IgFolder, LunMap, Snapshot, Volume
+				-Changed parameter from InitiatorGrpId to RelatedObject
 		postponing:
 			Get-XIOClusterPerformance:  from Cluster
 			Get-XIODataProtectionGroupPerformance:  from DataProtectionGroup

@@ -544,8 +544,6 @@ function Get-XIOConsistencyGroup {
 			$RelatedObject | Foreach-Object {
 				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
 					$oThisRelatedObj = $_
-					## if the RelatedObject is a SnapshotScheduler:  if its SnappedObject is a ConsistencyGroup, make a hsh, else, do not
-					## else, make a hsh
 
 					## Cluster will be $null if RelatedObject is SnapshotScheduler
 					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
@@ -862,28 +860,28 @@ function Get-XIOInitiator {
 
 
 <#	.Description
-	Function to get XtremIO initiator group info using REST API from XtremIO Management Server (XMS)
+	Function to get XtremIO InitiatorGroup info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOInitiatorGroup
-	Request info from current XMS connection and return an object with the "initiator group" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "InitiatorGroup" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOInitiatorGroup myIG0
-	Get the "initiator group" named myIG0
+	Get the "InitiatorGroup" named myIG0
 	.Example
 	Get-XIOInitiator mysvr-hba* | Get-XIOInitiatorGroup
-	Get the "initiator group" of which the given initiator is a part
+	Get the "InitiatorGroup" of which the given initiator is a part
 	.Example
 	Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
-	Get the "initiator group(s)" that are directly in the given initiator group folder
+	Get the "InitiatorGroup(s)" that are directly in the given InitiatorGroupFolder
 	.Example
 	Get-XIOVolume myVol0 | Get-XIOInitiatorGroup
-	Get the "initiator group(s)" that are mapped to the given volume
+	Get the "InitiatorGroup(s)" that are mapped to the given volume
 	.Example
 	Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
-	Get the "initiator group(s)" that are mapped to the given snapshot
+	Get the "InitiatorGroup(s)" that are mapped to the given snapshot
 	.Example
 	Get-XIOInitiatorGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "initiator group" items from the given XMS appliance, and only for the given XIO Clusters
+	Get the "InitiatorGroup" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
 	Get-XIOInitiatorGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -897,16 +895,16 @@ function Get-XIOInitiatorGroup {
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## Specific initiator group ID of the initiator group to get; if not specified, return all. If piping an object (say, an IgFolder) with no direct initiators, there will be a parameter binding issue
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")][ValidateNotNullOrEmpty()][string[]]$InitiatorGrpId,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the Brick to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, or Volume
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -914,20 +912,42 @@ function Get-XIOInitiatorGroup {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator-group"
-		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{}
-		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
-		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Initiator, IgFolder, LunMap, Snapshot, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the InitiatorGrpId was specified, return just initiator groups involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("InitiatorGrpId") -and (-not [System.String]::IsNullOrEmpty($InitiatorGrpId))) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGrpId | Where-Object {$oThisItem.InitiatorGrpId -eq $_}).Count -gt 0}}
-		return $arrItemsToReturn
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properteries
+							"XioItemInfo.LunMap" {$oThisRelatedObj."InitiatorGroup"; break} ## end case
+							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.LunMapList.InitiatorGroup.Name; break} ## end case
+							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
+							default {$oThisRelatedObj."InitiatorGroup".Name}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
