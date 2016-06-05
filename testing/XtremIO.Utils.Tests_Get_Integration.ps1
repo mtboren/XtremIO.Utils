@@ -31,6 +31,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	ConsistencyGroup = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Volume
 	DAE = Write-Output Brick, DAEController, DAEPsu
 	DataProtectionGroup = Write-Output Brick, Ssd, StorageController
+	InfinibandSwitch = Write-Output Cluster
 } ## end hash
 
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
