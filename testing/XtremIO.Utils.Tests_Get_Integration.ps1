@@ -1,4 +1,4 @@
-﻿<#	.Description
+<#	.Description
 	Pester integration tests for XtremIO.Utils PowerShell module, for testing the interplay between cmdlets.  Expects that:
 	0) XtremIO.Utils module is already loaded (but, will try to load it if not)
 	1) a connection to at least one XMS is in place (but, will prompt for XMS to which to connect if not)
@@ -35,6 +35,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	InitiatorGroup = Write-Output Initiator, InitiatorGroupFolder, LunMap, Snapshot, Volume
 	InitiatorGroupFolder = Write-Output InitiatorGroup, InitiatorGroupFolder
 	LocalDisk = Write-Output StorageController
+	Snapshot = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Volume, VolumeFolder
 } ## end hash
 
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {

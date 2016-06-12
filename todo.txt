@@ -204,6 +204,7 @@ todo:
 	iscsi-routes
 -add ability to create ISCSI initiators via New-XIOInitiator
 -add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
+-?add something that handles return of objects such that only one instance of each unique object is returned?  For example:  should "Get-XIOInitiatorGroup | select -First 5 | Get-XIOSnapshot -Name mysnap044.*" only return one object for "mysnap044.lastweeksnap", even if that snapshot is mapped to all of the five InitiatorGroups passed as RelateObjects to Get-XIOSnapshot?  The, "return only unique objects" behavior is how some other modules do it, like PowerCLI, for example
 -?add Tag as supported RelatedObject type on Get-XIO* cmdlets?  Tags do not have Cluster properties, so may give unexpected behavior if only getting targeted object by name (won't have associated Cluster by which to pinpoint the targeted object); or, need to use Guid instead and filter?  A: still hit the "need cluster name" issue for when in multi-cluster situation; need to solve this someway
 -for future (once supporitng iSCSI in this PSModule), add ability to set following properties via Set-XIOInitiator:  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
@@ -243,7 +244,7 @@ mega pipelining:
 		-that accepts object fom pipeline
 		-from which to determine Cluster, ComputerName, etc., in order to get the given object type based on the related object
 	-update comment-based help
-	-for:  Get-XIOLunMap, Get-XIOSlot, Get-XIOSnapshot, Get-XIOSnapshotScheduler, Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
+	-for:  Get-XIOSnapshotSet, Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
 		working on:
 
 		done:
@@ -261,14 +262,23 @@ mega pipelining:
 				-for IgFolder, use SubfolderList, and need to remove "/InitiatorGroup" from start of folder name
 				-for InitiatorGroup, use Folder, but need to remove "/InitiatorGroup" from start of folder name -- that is part of the "full name" of the IgFolder, but the name does not contain that
 			Get-XIOLocalDisk:  from StorageController
+			Get-XIOSnapshot:  from
+				Snapshot:  DestinationSnapshot, list of obj w/ Snapshot Name, SnapshotId
+				SnapshotSet:  VolList, list of obj w/ Volume (Snapshot) Name, VolId
+				Volume:  DestinationSnapshot, list of obj w/ Snapshot Name, SnapshotId
+				VolumeFolder:  Volume, list of obj w/ Volume Name, VolId
+				-RelatedObject param replaces VolumeId and InitiatorGrpId parameters, which are now gone
 		postponing:
 			Get-XIOClusterPerformance:  from Cluster
 			Get-XIODataProtectionGroupPerformance:  from DataProtectionGroup
 			Get-XIOInitiatorGroupFolderPerformance:  from InitiatorGroupFolder
 			Get-XIOInitiatorGroupPerformance:  from InitiatorGroup
 			Get-XIOInitiatorPerformance:  from Initiator
+			Get-XIOSnapshotScheduler:  from Tag
 		no action taken:
 			Get-XIOInitiator:  already would get Initiators from InitiatorGroup from pipeline, though, in somewhat inefficient means -- the InitiatorGroup object returned by API does not have Initiator info, so have to get all Initiators and the filter on the InitatorGroup afterwards (before returning objects to consumer)
+			Get-XIOLunMap:  will do well to take InitiatorGroup and Volume from pipeline, but may benefit most from when Filtering is supported by this module; not action taken, yet
+			Get-XIOSlot:  from Brick, Ssd -- will benefit from when Filtering is supported by this module; can filter on ssd-uid value from Ssd object, at least
 -known issues:
 	-getting objects from pipeline with SnapshotScheduler as the -RelatedObject in multi-cluster XMS scenario may return more that just one of given object type:  API does not have cluster-specificity, so objects related to SnapshotScheduler are retrieved only by name and XMS computer name; if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned
 
