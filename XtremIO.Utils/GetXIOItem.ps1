@@ -550,7 +550,7 @@ function Get-XIOConsistencyGroup {
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = $(if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
 						Switch ($oThisRelatedObj.GetType().FullName) {
-							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properteries
+							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properties
 							"XioItemInfo.SnapshotScheduler" {
 								if ($oThisRelatedObj.SnappedObject.Type -eq "ConsistencyGroup") {$oThisRelatedObj."SnappedObject".Name}
 									## else, the SnappedObject type is a Volume or a SnapshotSet, so will get no ConsistencyGroup here
@@ -926,7 +926,7 @@ function Get-XIOInitiatorGroup {
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
 						Switch ($oThisRelatedObj.GetType().FullName) {
-							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properteries
+							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properties
 							"XioItemInfo.LunMap" {$oThisRelatedObj."InitiatorGroup"; break} ## end case
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.LunMapList.InitiatorGroup.Name; break} ## end case
 							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
@@ -1011,7 +1011,7 @@ function Get-XIOInitiatorGroupFolder {
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
 						Switch ($oThisRelatedObj.GetType().FullName) {
-							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properteries
+							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properties
 							"XioItemInfo.IgFolder" {$oThisRelatedObj."SubfolderList".Name -replace "^/InitiatorGroup",""; break} ## end case
 							"XioItemInfo.InitiatorGroup" {$oThisRelatedObj."Folder".Name -replace "^/InitiatorGroup",""; break} ## end case
 							## default:  doing nothing, as all cases should be covered above
@@ -1297,7 +1297,7 @@ function Get-XIOSnapshot {
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
 						Switch ($oThisRelatedObj.GetType().FullName) {
-							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properteries
+							## if the related object is a SnapshotScheduler, get the Snapshot name from some subsequent object's properties
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
 							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
 							## this gets both volume and snapshot names, but, as the Get-XIOItemInfo call gets only Snapshots here, the names of Volumes will not "hit", so just Snapshots will come back
@@ -1387,14 +1387,14 @@ function Get-XIOSnapshotSet {
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
 						Switch ($oThisRelatedObj.GetType().FullName) {
-							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properteries
+							## if the related object is a SnapshotScheduler, get the SnapshotSet name from some subsequent object's properties
 							"XioItemInfo.SnapshotScheduler" {
 								if ($oThisRelatedObj.SnappedObject.Type -eq "SnapSet") {$oThisRelatedObj."SnappedObject".Name}
 									## else, the SnappedObject type is a Volume or a ConsistencyGroup, so will get no SnapshotSet here
 								else {$null} ## end else
 								break
 							} ## end case
-							## default is that this related object has a ConsistencyGroup property
+							## default is that this related object has a SnapshotSet property
 							default {$oThisRelatedObj."SnapshotSet".Name}
 						} ## end switch
 					} ## end else
@@ -1428,6 +1428,12 @@ function Get-XIOSnapshotSet {
 	Get-XIOSsd -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "SSD" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
+	Get-XIOBrick -Name X3 | Get-XIOSsd
+	Get the "SSD" items for the SSDs in the given Brick
+	.Example
+	Get-XIOSlot 3_23 | Get-XIOSsd
+	Get the "SSD" info for the SSD in the given Slot
+	.Example
 	Get-XIOSsd -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -1447,7 +1453,9 @@ function Get-XIOSsd {
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the Brick to get. Can be an XIO object of type Brick or Slot
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -1455,13 +1463,41 @@ function Get-XIOSsd {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ssd"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, Slot | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if the related object is a Slot, get the SSD name from some subsequent object's properties
+							"XioItemInfo.Slot" {$oThisRelatedObj.SsdUid; break} ## end case
+							## default is that this related object has an SSD property
+							default {$oThisRelatedObj."SSD".Name}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 

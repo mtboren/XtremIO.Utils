@@ -244,7 +244,7 @@ mega pipelining:
 		-that accepts object fom pipeline
 		-from which to determine Cluster, ComputerName, etc., in order to get the given object type based on the related object
 	-update comment-based help
-	-for:  Get-XIOSsd, Get-XIOSsdPerformance, Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOTargetPerformance, Get-XIOVolume, Get-XIOVolumeFolder, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance
+	-for:  Get-XIOStorageController, Get-XIOStorageControllerPsu, Get-XIOTag, Get-XIOTarget, Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder
 		working on:
 
 		done:
@@ -269,6 +269,7 @@ mega pipelining:
 				VolumeFolder:  Volume, list of obj w/ Volume Name, VolId
 				-RelatedObject param replaces VolumeId and InitiatorGrpId parameters, which are now gone
 			Get-XIOSnapshotSet:  from Snapshot, SnapshotScheduler, Volume
+			Get-XIOSsd:  from Brick, Slot
 		postponing:
 			Get-XIOClusterPerformance:  from Cluster
 			Get-XIODataProtectionGroupPerformance:  from DataProtectionGroup
@@ -276,6 +277,10 @@ mega pipelining:
 			Get-XIOInitiatorGroupPerformance:  from InitiatorGroup
 			Get-XIOInitiatorPerformance:  from Initiator
 			Get-XIOSnapshotScheduler:  from Tag
+			Get-XIOSsdPerformance:  from Ssd
+			Get-XIOTargetPerformance:  from Target
+			Get-XIOVolumeFolderPerformance:  from VolumeFolder
+			Get-XIOVolumePerformance:  from Volume
 		no action taken:
 			Get-XIOInitiator:  already would get Initiators from InitiatorGroup from pipeline, though, in somewhat inefficient means -- the InitiatorGroup object returned by API does not have Initiator info, so have to get all Initiators and the filter on the InitatorGroup afterwards (before returning objects to consumer)
 			Get-XIOLunMap:  will do well to take InitiatorGroup and Volume from pipeline, but may benefit most from when Filtering is supported by this module; not action taken, yet
