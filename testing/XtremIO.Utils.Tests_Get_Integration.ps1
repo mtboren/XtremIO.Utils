@@ -36,6 +36,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	InitiatorGroupFolder = Write-Output InitiatorGroup, InitiatorGroupFolder
 	LocalDisk = Write-Output StorageController
 	Snapshot = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Volume, VolumeFolder
+	SnapshotSet = Write-Output Snapshot, SnapshotScheduler, Volume
 } ## end hash
 
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
@@ -45,8 +46,13 @@ $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 	Describe -Tags "Get" -Name "Get-XIO$strXIOObjectTypeToGet" {
 		$arrXioRelatedObjectTypesToAccept | Foreach-Object {
 			$strThisRelatedObjectType = $_
-			## Get up to five of the related objects.  These will be used to test the targeted cmdlet
-			$arrRelatedObjects = & "Get-XIO$strThisRelatedObjectType" | Select-Object -First 5
+			## Get related objects.  These will be used to test the targeted cmdlet
+			$arrRelatedObjects = Switch ($strXIOObjectTypeToGet) {
+				## specific tests for Get-XIOSnapshotSet with RelatedObject of Snapshot or Volume, get such items that have SnapshotSet property populated
+				{($_ -eq "SnapshotSet") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.SnapshotSet | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+				## Get up to five of the related objects
+				default {& "Get-XIO$strThisRelatedObjectType" | Select-Object -First 5}
+			} ## end switch
 			It "Gets XIO $strXIOObjReturnTypeShortname object, based on related $strThisRelatedObjectType object" {
 		 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$strXIOObjectTypeToGet" -RelatedObject $arrRelatedObjects}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
 		    	New-Variable -Name "bGetsOnly${strXIOObjReturnTypeShortname}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strXIOObjReturnTypeShortname")
