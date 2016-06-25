@@ -39,6 +39,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	SnapshotSet = Write-Output Snapshot, SnapshotScheduler, Volume
 	Ssd = Write-Output Brick, Slot
 	StorageController = Write-Output BBU, Brick, LocalDisk, StorageControllerPsu, Target, Xenv
+	StorageControllerPsu = Write-Output StorageController
 } ## end hash
 
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
