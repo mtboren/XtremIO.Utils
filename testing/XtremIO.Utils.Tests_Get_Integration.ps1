@@ -42,6 +42,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	StorageControllerPsu = Write-Output StorageController
 	Tag = Write-Output BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, Xenv
 	TargetGroup = Write-Output Target
+	Volume = Write-Output ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, VolumeFolder
 } ## end hash
 
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
@@ -55,6 +56,10 @@ $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 			$arrRelatedObjects = Switch ($strXIOObjectTypeToGet) {
 				## specific tests for Get-XIOSnapshotSet with RelatedObject of Snapshot or Volume, get such items that have SnapshotSet property populated
 				{($_ -eq "SnapshotSet") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.SnapshotSet | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+				## specific tests for Get-XIOVolume with RelatedObject of Volume, get such items that have DestinationSnapshot property populated
+				{($_ -eq "Volume") -and ("Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.DestinationSnapshot | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+				## specific tests for Get-XIOVolume with RelatedObject of Snapshot, get such items that have AncestorVolume property populated
+				{($_ -eq "Volume") -and ("Snapshot" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.AncestorVolume | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
 				## Get up to five of the related objects
 				default {& "Get-XIO$strThisRelatedObjectType" | Select-Object -First 5}
 			} ## end switch

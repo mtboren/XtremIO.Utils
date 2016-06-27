@@ -455,7 +455,7 @@ function Get-XIOCluster {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, or Xenv
+		## Related object from which to determine the Cluster to get. Can be an XIO object of type BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, or Xenv
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -525,7 +525,7 @@ function Get-XIOConsistencyGroup {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Snapshot, SnapshotScheduler, SnapshotSet, or Volume
+		## Related object from which to determine the ConsistencyGroup to get. Can be an XIO object of type Snapshot, SnapshotScheduler, SnapshotSet, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -611,7 +611,7 @@ function Get-XIODAE {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Brick, DAEController, or DAEPsu
+		## Related object from which to determine the DAE to get. Can be an XIO object of type Brick, DAEController, or DAEPsu
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -687,7 +687,7 @@ function Get-XIODataProtectionGroup {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Brick, Ssd, or StorageController
+		## Related object from which to determine the DataProtectionGroup to get. Can be an XIO object of type Brick, Ssd, or StorageController
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -749,7 +749,7 @@ function Get-XIOInfinibandSwitch {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Cluster
+		## Related object from which to determine the InfinibandSwitch to get. Can be an XIO object of type Cluster
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -903,7 +903,7 @@ function Get-XIOInitiatorGroup {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, or Volume
+		## Related object from which to determine the InitiatorGroup to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -988,7 +988,7 @@ function Get-XIOInitiatorGroupFolder {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type IgFolder or InitiatorGroup
+		## Related object from which to determine the InitiatorGroupFolder to get. Can be an XIO object of type IgFolder or InitiatorGroup
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1066,7 +1066,7 @@ function Get-XIOLocalDisk {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type StorageController
+		## Related object from which to determine the LocalDisk to get. Can be an XIO object of type StorageController
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1268,7 +1268,7 @@ function Get-XIOSnapshot {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type InitiatorGroup, Snapshot, SnapshotSet, Volume, or VolumeFolder
+		## Related object from which to determine the Snapshot to get. Can be an XIO object of type InitiatorGroup, Snapshot, SnapshotSet, Volume, or VolumeFolder
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1291,13 +1291,13 @@ function Get-XIOSnapshot {
 			$RelatedObject | Foreach-Object {
 				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
 					$oThisRelatedObj = $_
-					## unique to Get-XIOSnapshot:  if the RelatedObject is an InitiatorGroup, will do the filtering in a bit different way
+					## unique to Get-XIOSnapshot, Get-XIOVolume:  if the RelatedObject is an InitiatorGroup, will do the filtering in a bit different way
 					if ($oThisRelatedObj -is [XioItemInfo.InitiatorGroup]) {$bFilterByInitiatorGroupId = $true}
 					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
 						Switch ($oThisRelatedObj.GetType().FullName) {
-							## if the related object is a SnapshotScheduler, get the Snapshot name from some subsequent object's properties
+							## if the related object is a Snapshot or a Volume, get the Snapshot name from some subsequent object's properties
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
 							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
 							## this gets both volume and snapshot names, but, as the Get-XIOItemInfo call gets only Snapshots here, the names of Volumes will not "hit", so just Snapshots will come back
@@ -1363,7 +1363,7 @@ function Get-XIOSnapshotSet {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Snapshot, SnapshotScheduler, or Volume
+		## Related object from which to determine the SnapshotSet to get. Can be an XIO object of type Snapshot, SnapshotScheduler, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1454,7 +1454,7 @@ function Get-XIOSsd {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Brick or Slot
+		## Related object from which to determine the Ssd to get. Can be an XIO object of type Brick or Slot
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1546,7 +1546,7 @@ function Get-XIOStorageController {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type BBU, Brick, LocalDisk, StorageControllerPsu, Target, or Xenv
+		## Related object from which to determine the StorageController to get. Can be an XIO object of type BBU, Brick, LocalDisk, StorageControllerPsu, Target, or Xenv
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1613,7 +1613,7 @@ function Get-XIOStorageControllerPsu {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type StorageController
+		## Related object from which to determine the StorageControllerPsu to get. Can be an XIO object of type StorageController
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1672,7 +1672,7 @@ function Get-XIOTag {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, or Xenv
+		## Related object from which to determine the Tag to get. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, or Xenv
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1770,6 +1770,9 @@ function Get-XIOTarget {
 	Get-XIOTargetGroup Default
 	Get the "TargetGroup" named Default
 	.Example
+	Get-XIOTarget X1-SC1-fc1 | Get-XIOTargetGroup
+	Get the "TargetGroup" related to the given Target
+	.Example
 	Get-XIOTargetGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "TargetGroup" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
@@ -1793,7 +1796,7 @@ function Get-XIOTargetGroup {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Brick to get. Can be an XIO object of type Target
+		## Related object from which to determine the TargetGroup to get. Can be an XIO object of type Target
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1850,6 +1853,24 @@ function Get-XIOTargetGroup {
 	Get-XIOVolume -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Volume" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
+	Get-XIOConsistencyGroup myCG0 | Get-XIOVolume
+	Get the "Volume" items from the related ConsistencyGroup object
+	.Example
+	Get-XIOLunMap -InitiatorGroup myIG0 | Get-XIOVolume
+	Get the "Volume" items from the related InitiatorGroup object
+	.Example
+	Get-XIOSnapshot mySnapshot0 | Get-XIOVolume
+	Get the "Volume" object from which the given Snapshot was taken (the snapshot's ancestor volume)
+	.Example
+	Get-XIOSnapshotScheduler mySnapshotScheduler0 | Get-XIOVolume
+	Get the "Volume" object that is the subject of the given SnapshotScheduler (the "snapped object" of the scheduler)
+	.Example
+	Get-XIOSnapshotSet someSnapshotSet | Get-XIOVolume
+	Get the "Volume" items that comprise the given SnapshotSet
+	.Example
+	Get-XIOVolume mySourceVolume0 | Get-XIOVolume
+	Get the "Volume" item resulted from having taken a snapshot of the given volume, if any (the "offspring" Volume of this ancestor Volume)
+	.Example
 	Get-XIOVolume -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -1863,17 +1884,15 @@ function Get-XIOVolume {
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## Specific volume ID of the volume to get; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("VolIdList","VolId")][string[]]$VolumeId,
-		## Specific initiator group ID to which volume is mapped by which to get volume; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")][ValidateNotNullOrEmpty()][string[]]$InitiatorGrpId,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the Volume to get. Can be an XIO object of type ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, or VolumeFolder
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -1885,18 +1904,59 @@ function Get-XIOVolume {
 		$hshParamsForGetXioItemInfo = @{}
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("VolumeId","InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the VolumeId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("VolumeId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($VolumeId | Where-Object {$oThisItem.VolId -eq $_}).Count -gt 0}}
-		## if the InitiatorGrpId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("InitiatorGrpId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGrpId | Where-Object {$oThisItem.InitiatorGrpIdList -contains $_}).Count -gt 0}}
-		return $arrItemsToReturn
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					## unique to Get-XIOSnapshot, Get-XIOVolume:  if the RelatedObject is an InitiatorGroup, will do the filtering in a bit different way
+					if ($oThisRelatedObj -is [XioItemInfo.InitiatorGroup]) {$bFilterByInitiatorGroupId = $true}
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							"XioItemInfo.ConsistencyGroup" {$oThisRelatedObj.VolList.Name; break} ## end case
+							"XioItemInfo.LunMap" {$oThisRelatedObj.VolumeName; break} ## end case
+							## if the related object is a Snapshot, get the Snapshot name from some subsequent object's properties
+							"XioItemInfo.Snapshot" {$oThisRelatedObj.AncestorVolume.Name; break} ## end case
+							"XioItemInfo.SnapshotScheduler" {
+								if ($oThisRelatedObj.SnappedObject.Type -eq "Volume") {$oThisRelatedObj."SnappedObject".Name}
+									## else, the SnappedObject type is a Consistency or a SnapshotSet, so will get no Volume here
+								else {$null} ## end else
+								break
+							} ## end case
+							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
+							"XioItemInfo.Volume" {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
+							## this gets both volume and snapshot, since snapshots are treated as Volumes, too
+							"XioItemInfo.VolumeFolder" {$oThisRelatedObj.Volume.Name; break} ## end case
+							## gets all volumes, then filters later in the cmdlet
+							"XioItemInfo.InitiatorGroup" {"*"; break}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		## if filtering by InitiatorGroup
+		if ($bFilterByInitiatorGroupId) {
+			$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_} | Where-Object {$oThisItem = $_; ($RelatedObject.InitiatorGrpId | Where-Object {$oThisItem.LunMapList.InitiatorGroup.InitiatorGrpId -contains $_}).Count -gt 0}
+		} ## end if
+		else {$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}}
 	} ## end process
 } ## end function
 
