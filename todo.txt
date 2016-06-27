@@ -245,7 +245,7 @@ mega pipelining:
 		-that accepts object fom pipeline
 		-from which to determine Cluster, ComputerName, etc., in order to get the given object type based on the related object
 	-update comment-based help
-	-for:  Get-XIOTargetGroup, Get-XIOVolume, Get-XIOVolumeFolder
+	-for:  Get-XIOVolume, Get-XIOVolumeFolder
 		working on:
 
 		done:
@@ -274,6 +274,7 @@ mega pipelining:
 			Get-XIOStorageController:  from BBU, Brick, LocalDisk, StorageControllerPsu, Target, Xenv
 			Get-XIOStorageControllerPsu:  from Get-XIOStorageController
 			Get-XIOTag:  from BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, Xenv
+			Get-XIOTargetGroup:  from Target
 		postponing:
 			Get-XIOClusterPerformance:  from Cluster
 			Get-XIODataProtectionGroupPerformance:  from DataProtectionGroup
