@@ -304,6 +304,12 @@ mega pipelining:
 		Get-XIOSlot:  from Brick, Ssd -- will benefit from when Filtering is supported by this module; can filter on ssd-uid value from Ssd object, at least
 -known issues:
 	-getting objects from pipeline with SnapshotScheduler as the -RelatedObject in multi-cluster XMS scenario may return more that just one of given object type:  API does not have cluster-specificity, so objects related to SnapshotScheduler are retrieved only by name and XMS computer name; if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned
+	-when connected to multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster_id_is_required" message:
+		-Get-XIOVolume when using a VolumeFolder as the RelatedObject parameter value
+		-Get XIOInitiatorGroup when using an IgFolder as the RelatedObject parameter value
+		-due to VolumeFolder and IgFolder objects not having a Cluster property
+		-this may not get resolved, as support for VolumeFolder/IgFolder objects is going away (they have been replaced with Tag objects)
+	-Remove-XIOUserAccount via API v2.1 (on XMS v4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
 
 
 

@@ -57,6 +57,8 @@ $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
 			$arrRelatedObjects = Switch ($strXIOObjectTypeToGet) {
 				## specific tests for Get-XIOConsistencyGroup with RelatedObject of Volume, get such items that have ConsistencyGroup property populated
 				{($_ -eq "ConsistencyGroup") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.ConsistencyGroup | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+				## specific tests for Get-XIOSnapshot with RelatedObject of Snapshot or Volume, get such items that have DestinationSnapshot property populated
+				{($_ -eq "Snapshot") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.DestinationSnapshot | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
 				## specific tests for Get-XIOSnapshotSet with RelatedObject of Snapshot or Volume, get such items that have SnapshotSet property populated
 				{($_ -eq "SnapshotSet") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.SnapshotSet | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
 				## specific tests for Get-XIOVolume with RelatedObject of Volume, get such items that have DestinationSnapshot property populated
