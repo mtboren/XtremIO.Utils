@@ -272,6 +272,76 @@ function Get-XIOItemInfo {
 
 
 <#	.Description
+	Function to get XtremIO BBU info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOBBU
+	Get the "BBU" items
+	.Example
+	Get-XIOBBU -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "BBU" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOStorageController -Name X1-SC2 -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIOBBU
+	Get the BBU that is associated with the StorageController "X1-SC2" from the given XMS appliance and XIO Cluster
+	.Example
+	Get-XIOBrick -Name X1 -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIOBBU -Name X2-BBU
+	Get the BBU of the given name, and that is associated with the Brick "X1" from the given XMS appliance and XIO Cluster
+	.Outputs
+	XioItemInfo.BBU
+#>
+function Get-XIOBBU {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.BBU])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the BBU to get. Can be an XIO object of type Brick or StorageController
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "bbu"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, StorageController | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_."BBU".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+	} ## end process
+} ## end function
+
+
+<#	.Description
 	Function to get XtremIO brick info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOBrick
@@ -282,6 +352,12 @@ function Get-XIOItemInfo {
 	.Example
 	Get-XIOBrick -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Brick" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOBBU -Name X3-BBU | Get-XIOBrick
+	Get the "Brick" item associated with the given BBU
+	.Example
+	Get-XIOTarget X4-SC2-fc2 | Get-XIOBrick
+	Get the "Brick" item associated with the given fiber channel target
 	.Example
 	Get-XIOBrick -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -295,14 +371,16 @@ function Get-XIOBrick {
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the Brick to get. Can be an XIO object of type BBU, Cluster, DAE, DAEController, DAEPsu, DataProtectionGroup, LocalDisk, Slot, Ssd, StorageController, StorageControllerPsu, Target, or Xenv
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -310,13 +388,33 @@ function Get-XIOBrick {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "brick"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output BBU, Cluster, DAE, DAEController, DAEPsu, DataProtectionGroup, LocalDisk, Slot, Ssd, StorageController, StorageControllerPsu, Target, Xenv | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					## the name of the property on the RelatedObject from which to get the Cluster name (Cluster objects do not have a .Cluster property)
+					$strPropertyFromWhichToGetClusterName = if ($_ -is [XioItemInfo.Cluster]) {"Name"} else {"Cluster"}
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.$strPropertyFromWhichToGetClusterName}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {$_."Brick".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -325,10 +423,19 @@ function Get-XIOBrick {
 	Function to get XtremIO cluster info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOCluster
-	Request info from current XMS connection and return an object with the "cluster" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "Cluster" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOCluster myCluster
-	Get the "cluster" named myCluster
+	Get the "Cluster" named myCluster
+	.Example
+	Get-XIOInitiatorGroup myIG0 | Get-XIOCluster
+	Get the "Cluster" in which this IntiatorGroup is defined
+	.Example
+	Get-XIOSsd -Name wwn-0x5000000000000001 | Get-XIOCluster
+	Get the "Cluster" for which this SSD provides storage
+	.Example
+	Get-XIOVolume myVol0 | Get-XIOCluster
+	Get the "Cluster" in which this Volume is defined
 	.Example
 	Get-XIOCluster -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -347,7 +454,9 @@ function Get-XIOCluster {
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Related object from which to determine the Cluster to get. Can be an XIO object of type BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, or Xenv
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -355,22 +464,196 @@ function Get-XIOCluster {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "cluster"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## for Get-XIOCluster (only), not supporting -Name in RelatedObject parameter set (doesn't make sense, as the related object would be the source for the cluster name, and if someone just wants to specify -Name for the cluster, no RelatedObject is necessary)
+					$hshParamsForGetXioInfo["Name"] = $_."Cluster".Name
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
 
 <#	.Description
-	Function to get XtremIO data-protection-group info using REST API from XtremIO Management Server (XMS)
+	Function to get XtremIO ConsistencyGroup info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOConsistencyGroup
+	Get the "ConsistencyGroup" items
+	.Example
+	Get-XIOConsistencyGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "ConsistencyGroup" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOVolume myVol0 | Get-XIOConsistencyGroup
+	Get the "ConsistencyGroup" items related to this Volume
+	.Example
+	Get-XIOSnapshotScheduler mySnapSched0 | Get-XIOConsistencyGroup
+	Get the "ConsistencyGroup" items related to this SnapshotScheduler.  Only returns anything for a SnapshotScheduler whose snapshotted object is a ConsistencyGroup
+	.Outputs
+	XioItemInfo.ConsistencyGroup
+#>
+function Get-XIOConsistencyGroup {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.ConsistencyGroup])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the ConsistencyGroup to get. Can be an XIO object of type Snapshot, SnapshotScheduler, SnapshotSet, or Volume
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "consistency-group"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Volume | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+
+					## Cluster will be $null if RelatedObject is SnapshotScheduler
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = $(if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if the related object is a SnapshotScheduler, get the ConsistencyGroup name from some subsequent object's properties
+							"XioItemInfo.SnapshotScheduler" {
+								if ($oThisRelatedObj.SnappedObject.Type -eq "ConsistencyGroup") {$oThisRelatedObj."SnappedObject".Name}
+									## else, the SnappedObject type is a Volume or a SnapshotSet, so will get no ConsistencyGroup here
+								else {$null} ## end else
+								break
+							} ## end case
+							## default is that this related object has a ConsistencyGroup property
+							default {$oThisRelatedObj."ConsistencyGroup".Name}
+						} ## end switch
+					}) ## end else
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO DAE (Disk Array Enclosure) info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIODAE
+	Get the "DAE" items
+	.Example
+	Get-XIODAE -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "DAE" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOBrick -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIODAE
+	Get the "DAE" items for just the related Brick object
+	.Example
+	Get-XIODAEController X1-DAE-LCC-B -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIODAE
+	Get the "DAE" items for just the related DAEController object
+	.Outputs
+	XioItemInfo.DAE
+#>
+function Get-XIODAE {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.DAE])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the DAE to get. Can be an XIO object of type Brick, DAEController, or DAEPsu
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "dae"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, DAEController, DAEPsu | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_."DAE".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO DataProtectionGroup info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIODataProtectionGroup
-	Request info from current XMS connection and return an object with the "data-protection-group" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "DataProtectionGroup " info for the logical storage entity defined on the array
 	.Example
 	Get-XIODataProtectionGroup X[34]-DPG
 	Get the DataProtectionGroup objects named X3-DPG and X4-DPG
@@ -380,6 +663,12 @@ function Get-XIOCluster {
 	.Example
 	Get-XIODataProtectionGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "DataProtectionGroup" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOSsd wwn-0x5000000000000001 | Get-XIODataProtectionGroup
+	Get the "DataProtectionGroup" that this SSD services
+	.Example
+	Get-XIOStorageController -Cluster myCluster0 -ComputerName somexmsappl01.dom.com -Name X3-SC2 | Get-XIODataProtectionGroup
+	Get the "DataProtectionGroup" that this StorageController services
 	.Outputs
 	XioItemInfo.DataProtectionGroup
 #>
@@ -390,14 +679,16 @@ function Get-XIODataProtectionGroup {
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the DataProtectionGroup to get. Can be an XIO object of type Brick, Ssd, or StorageController
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -405,13 +696,96 @@ function Get-XIODataProtectionGroup {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "data-protection-group"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, Ssd, StorageController | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {$_."DataProtectionGroup".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO InfiniBand Switch info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOInfinibandSwitch
+	Get the "InfinibandSwitch" items
+	.Example
+	Get-XIOCluster myCluster0 | Get-XIOInfinibandSwitch
+	Get the "InfinibandSwitch" items associated with the given cluster; potentially more useful as the XtremIO physical infrastructure grows to support more InfinibandSwitches per unit
+	.Outputs
+	XioItemInfo.InfinibandSwitch
+#>
+function Get-XIOInfinibandSwitch {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.InfinibandSwitch])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Related object from which to determine the InfinibandSwitch to get. Can be an XIO object of type Cluster
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "infiniband-switch"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Cluster | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					## the name of the property on the RelatedObject from which to get the Cluster name (Cluster objects do not have a .Cluster property)
+					$strPropertyFromWhichToGetClusterName = if ($_ -is [XioItemInfo.Cluster]) {"Name"} else {"Cluster"}
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.$strPropertyFromWhichToGetClusterName}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_."InfinibandSwitch".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -467,7 +841,7 @@ function Get-XIOInitiator {
 		$ItemType_str = "initiator"
 		## initialize new hashtable to hold params for Get-XIOItemInfo call
 		$hshParamsForGetXioItemInfo = @{}
-		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
+		## if not getting Initiator by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
 	} ## end begin
 
@@ -486,28 +860,28 @@ function Get-XIOInitiator {
 
 
 <#	.Description
-	Function to get XtremIO initiator group info using REST API from XtremIO Management Server (XMS)
+	Function to get XtremIO InitiatorGroup info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOInitiatorGroup
-	Request info from current XMS connection and return an object with the "initiator group" info for the logical storage entity defined on the array
+	Request info from current XMS connection and return an object with the "InitiatorGroup" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOInitiatorGroup myIG0
-	Get the "initiator group" named myIG0
+	Get the "InitiatorGroup" named myIG0
 	.Example
 	Get-XIOInitiator mysvr-hba* | Get-XIOInitiatorGroup
-	Get the "initiator group" of which the given initiator is a part
+	Get the "InitiatorGroup" of which the given initiator is a part
 	.Example
 	Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
-	Get the "initiator group(s)" that are directly in the given initiator group folder
+	Get the "InitiatorGroup(s)" that are directly in the given InitiatorGroupFolder
 	.Example
 	Get-XIOVolume myVol0 | Get-XIOInitiatorGroup
-	Get the "initiator group(s)" that are mapped to the given volume
+	Get the "InitiatorGroup(s)" that are mapped to the given volume
 	.Example
 	Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
-	Get the "initiator group(s)" that are mapped to the given snapshot
+	Get the "InitiatorGroup(s)" that are mapped to the given snapshot
 	.Example
 	Get-XIOInitiatorGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "initiator group" items from the given XMS appliance, and only for the given XIO Clusters
+	Get the "InitiatorGroup" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
 	Get-XIOInitiatorGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -521,16 +895,16 @@ function Get-XIOInitiatorGroup {
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## Specific initiator group ID of the initiator group to get; if not specified, return all. If piping an object (say, an IgFolder) with no direct initiators, there will be a parameter binding issue
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")][ValidateNotNullOrEmpty()][string[]]$InitiatorGrpId,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the InitiatorGroup to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, or Volume
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -538,20 +912,41 @@ function Get-XIOInitiatorGroup {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator-group"
-		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{}
-		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
-		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Initiator, IgFolder, LunMap, Snapshot, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the InitiatorGrpId was specified, return just initiator groups involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("InitiatorGrpId") -and (-not [System.String]::IsNullOrEmpty($InitiatorGrpId))) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGrpId | Where-Object {$oThisItem.InitiatorGrpId -eq $_}).Count -gt 0}}
-		return $arrItemsToReturn
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							"XioItemInfo.LunMap" {$oThisRelatedObj."InitiatorGroup"; break} ## end case
+							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.LunMapList.InitiatorGroup.Name; break} ## end case
+							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
+							default {$oThisRelatedObj."InitiatorGroup".Name}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -571,6 +966,9 @@ function Get-XIOInitiatorGroup {
 	Get-XIOInitiatorGroupFolder /someVC/someCluster | Get-XIOInitiatorGroup
 	Get the InitiatorGroup objects in the given "initiator group folder"
 	.Example
+	Get-XIOInitiatorGroupFolder /someVC | Get-XIOInitiatorGroupFolder
+	Get the "initiator group folder" objects that are direct subfolders of the given "initiator group folder"
+	.Example
 	Get-XIOInitiatorGroupFolder -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -583,14 +981,14 @@ function Get-XIOInitiatorGroupFolder {
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## Specific initiator group ID of the initiator group to get; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][string[]]$InitiatorGrpId,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Related object from which to determine the InitiatorGroupFolder to get. Can be an XIO object of type IgFolder or InitiatorGroup
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -598,20 +996,109 @@ function Get-XIOInitiatorGroupFolder {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ig-folder"
-		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{}
-		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
-		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output IgFolder, InitiatorGroup | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the InitiatorGrpId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("InitiatorGrpId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGrpId | Where-Object {$oThisItem.InitiatorGrpIdList -contains $_}).Count -gt 0}}
-		return $arrItemsToReturn
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					## no "Cluster" param here, as IgFolder objects are not cluster-specific
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							"XioItemInfo.IgFolder" {$oThisRelatedObj."SubfolderList".Name -replace "^/InitiatorGroup",""; break} ## end case
+							"XioItemInfo.InitiatorGroup" {$oThisRelatedObj."Folder".Name -replace "^/InitiatorGroup",""; break} ## end case
+							## default:  doing nothing, as all cases should be covered above
+							default {}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO LocalDisk info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOLocalDisk
+	Get the "LocalDisk" items
+	.Example
+	Get-XIOLocalDisk -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "LocalDisk" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOStorageController X4-SC1 -ComputerName somexmsappl01.dom.com | Get-XIOLocalDisk
+	Get the "LocalDisk" items from the given XMS appliance, and only for the given XIO StorageController
+	.Outputs
+	XioItemInfo.LocalDisk
+#>
+function Get-XIOLocalDisk {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.LocalDisk])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the LocalDisk to get. Can be an XIO object of type StorageController
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "local-disk"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output StorageController | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_."LocalDisk".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -654,7 +1141,7 @@ function Get-XIOLunMap {
 		[parameter(ParameterSetName="ByComputerName")][string[]]$InitiatorGroup,
 		## LUN ID on which to filter returned LUN mapping info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName")][int[]]$HostLunId,
-		## Select properties to retrieve/return for given object type, instead of retrieving all (default). This capability is available as of the XIOS REST API v2
+		## Select properties to retrieve/return for given object type, instead of retrieving all (retriving all is default). This capability is available as of the XIOS REST API v2
 		[string[]]$Property,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
@@ -683,11 +1170,55 @@ function Get-XIOLunMap {
 		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
 		## if the Volume was specified, return just LUN mappings involving that volume
 		if ($PSBoundParameters.ContainsKey("Volume")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($Volume | Where-Object {$oThisItem.VolumeName -like $_}).Count -gt 0}}
-		## if the InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
+		## if InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
 		if ($PSBoundParameters.ContainsKey("InitiatorGroup")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGroup | Where-Object {$oThisItem.InitiatorGroup -like $_}).Count -gt 0}}
-		## if the InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
+		## if HostLunId was specified, return just LUN mappings involving that HostLunId
 		if ($PSBoundParameters.ContainsKey("HostLunId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$HostLunId -contains $_.LunId}}
 		return $arrItemsToReturn
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO Slot info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOSlot
+	Get the "Slot" items
+	.Example
+	Get-XIOSlot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "Slot" items from the given XMS appliance, and only for the given XIO Clusters
+	.Outputs
+	XioItemInfo.Slot
+#>
+function Get-XIOSlot {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Slot])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "slot"
+		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+	} ## end begin
+
+	Process {
+		## call the base function to get the given item
+		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
 
@@ -704,6 +1235,15 @@ function Get-XIOLunMap {
 	Get-XIOInitiatorGroup myIgroup | Get-XIOSnapshot
 	Get the "Snapshot" objects that are mapped to the given initiator group
 	.Example
+	Get-XIOSnapshot someSnap0 | Get-XIOSnapshot
+	Get the "Snapshot" object that was made from source volume (a snapshot itself) "someSnap0"
+	.Example
+	Get-XIOSnapshotSet mySnapSet0 | Get-XIOSnapshot
+	Get the "Snapshot" objects that are a part of the SnapshotSet "mySnapSet0"
+	.Example
+	Get-XIOVolume myVolume0 | Get-XIOSnapshot
+	Get the "Snapshot" object that was made from source volume "myVolume0"
+	.Example
 	Get-XIOSnapshot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Snapshot" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
@@ -719,18 +1259,16 @@ function Get-XIOSnapshot {
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## Specific volume ID of the volume to get; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("VolIdList","VolId")][string[]]$VolumeId,
-		## Specific initiator group ID to which volume is mapped by which to get volume; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")][ValidateNotNullOrEmpty()][string[]]$InitiatorGrpId,
+		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the Snapshot to get. Can be an XIO object of type InitiatorGroup, Snapshot, SnapshotSet, Volume, or VolumeFolder
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -742,18 +1280,137 @@ function Get-XIOSnapshot {
 		$hshParamsForGetXioItemInfo = @{}
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("VolumeId","InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the InitiatorGrpId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("VolumeId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($VolumeId | Where-Object {$oThisItem.VolId -eq $_}).Count -gt 0}}
-		## if the InitiatorGrpId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("InitiatorGrpId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGrpId | Where-Object {$oThisItem.InitiatorGrpIdList -contains $_}).Count -gt 0}}
-		return $arrItemsToReturn
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					## unique to Get-XIOSnapshot, Get-XIOVolume:  if the RelatedObject is an InitiatorGroup, will do the filtering in a bit different way
+					if ($oThisRelatedObj -is [XioItemInfo.InitiatorGroup]) {$bFilterByInitiatorGroupId = $true}
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if the related object is a Snapshot or a Volume, get the Snapshot name from some subsequent object's properties
+							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
+							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
+							## this gets both volume and snapshot names, but, as the Get-XIOItemInfo call gets only Snapshots here, the names of Volumes will not "hit", so just Snapshots will come back
+							"XioItemInfo.VolumeFolder" {$oThisRelatedObj.Volume.Name; break} ## end case
+							"XioItemInfo.InitiatorGroup" {"*"; break}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		## if filtering by InitiatorGroup
+		if ($bFilterByInitiatorGroupId) {
+			$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_} | Where-Object {$oThisItem = $_; ($RelatedObject.InitiatorGrpId | Where-Object {$oThisItem.LunMapList.InitiatorGroup.InitiatorGrpId -contains $_}).Count -gt 0}
+		} ## end if
+		else {$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}}
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO SnapshotSet info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOSnapshotSet
+	Get the "SnapshotSet" items
+	.Example
+	Get-XIOSnapshotSet -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "SnapshotSet" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOVolume myVolumeWithASnapshot | Get-XIOSnapshotSet
+	Get the "SnapshotSet" item related to this Volume
+	.Example
+	Get-XIOSnapshot myImportantSnap | Get-XIOSnapshotSet
+	Get the "SnapshotSet" item related to this Snapshot
+	.Example
+	Get-XIOSnapshotScheduler myScheduler_OfSnapset | Get-XIOSnapshotSet
+	Get the "SnapshotSet" item related that this SnapshotScheduler targets as its "snapped object". If the SnapshotScheduler targets a Volume or ConsistencyGroup, this returns $null
+	.Outputs
+	XioItemInfo.SnapshotSet
+#>
+function Get-XIOSnapshotSet {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.SnapshotSet])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the SnapshotSet to get. Can be an XIO object of type Snapshot, SnapshotScheduler, or Volume
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "snapshot-set"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, Volume | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if the related object is a SnapshotScheduler, get the SnapshotSet name from some subsequent object's properties
+							"XioItemInfo.SnapshotScheduler" {
+								if ($oThisRelatedObj.SnappedObject.Type -eq "SnapSet") {$oThisRelatedObj."SnappedObject".Name}
+									## else, the SnappedObject type is a Volume or a ConsistencyGroup, so will get no SnapshotSet here
+								else {$null} ## end else
+								break
+							} ## end case
+							## default is that this related object has a SnapshotSet property
+							default {$oThisRelatedObj."SnapshotSet".Name}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -769,6 +1426,12 @@ function Get-XIOSnapshot {
 	.Example
 	Get-XIOSsd -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "SSD" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOBrick -Name X3 | Get-XIOSsd
+	Get the "SSD" items for the SSDs in the given Brick
+	.Example
+	Get-XIOSlot 3_23 | Get-XIOSsd
+	Get the "SSD" info for the SSD in the given Slot
 	.Example
 	Get-XIOSsd -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -789,7 +1452,9 @@ function Get-XIOSsd {
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the Ssd to get. Can be an XIO object of type Brick or Slot
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -797,13 +1462,41 @@ function Get-XIOSsd {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ssd"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, Slot | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if the related object is a Slot, get the SSD name from some subsequent object's properties
+							"XioItemInfo.Slot" {$oThisRelatedObj.SsdUid; break} ## end case
+							## default is that this related object has an SSD property
+							default {$oThisRelatedObj."SSD".Name}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -815,10 +1508,22 @@ function Get-XIOSsd {
 	Request info from current XMS connection and return an object with the "storage controller" info for the logical storage entity defined on the array
 	.Example
 	Get-XIOStorageController X3-SC1
-	Get the "storage controller" named X3-SC1
+	Get the "StorageController" named X3-SC1
 	.Example
 	Get-XIOStorageController -Name X1-SC2 -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the given "storage controller" items from the given XMS appliance, and only for the given XIO Clusters
+	Get the given "StorageController" items from the given XMS appliance, and only for the given XIO Clusters
+	.Example
+	Get-XIOLocalDisk X4-SC2-LocalDisk6 | Get-XIOStorageController
+	Get the "StorageController" in which the given LocalDisk resides
+	.Example
+	Get-XIOLocalDisk | Where-Object {$_.LifecycleState -ne "healthy"} | Get-XIOStorageController
+	Get the "StorageControllers" that have one or more LocalDisks that are in a LifeCycleState that is other than "healthy"
+	.Example
+	Get-XIOXenv | Sort-Object CPUUsage -Descending | Select-Object -First 1 | Get-XIOStorageController
+	Get the "StorageController" of the XEnv that has the highest CPUUsage
+	.Example
+	Get-XIOTarget | Where-Object {($_.PortType -eq "fc") -and ($_.PortState -eq "down")} | Get-XIOStorageController
+	Get the "StorageControllers" of the fibre channel Targets that are down
 	.Example
 	Get-XIOStorageController -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
@@ -839,7 +1544,9 @@ function Get-XIOStorageController {
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the StorageController to get. Can be an XIO object of type BBU, Brick, LocalDisk, StorageControllerPsu, Target, or Xenv
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -847,13 +1554,158 @@ function Get-XIOStorageController {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "storage-controller"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output BBU, Brick, LocalDisk, StorageControllerPsu, Target, Xenv | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_."StorageController".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO Storage Controller PSU info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOStorageControllerPsu
+	Get the "StorageControllerPsu" items
+	.Example
+	Get-XIOStorageController X1-SC2 | Get-XIOStorageControllerPsu
+	Get the "StorageControllerPsu" items for the given StorageController
+	.Example
+	Get-XIOStorageControllerPsu -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
+	Get the "StorageControllerPsu" items from the given XMS appliance, and only for the given XIO Clusters
+	.Outputs
+	XioItemInfo.StorageControllerPsu
+#>
+function Get-XIOStorageControllerPsu {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.StorageControllerPsu])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the StorageControllerPsu to get. Can be an XIO object of type StorageController
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "storage-controller-psu"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output StorageController | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_."StorageControllerPsu".Name}
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Function to get XtremIO Tag info using REST API from XtremIO Management Server (XMS)
+	.Example
+	Get-XIOTag
+	Get the "Tag" items
+	.Outputs
+	XioItemInfo.Tag
+#>
+function Get-XIOTag {
+	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
+	[OutputType([XioItemInfo.Tag])]
+	param(
+		## XMS address to use; if none, use default connections
+		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Item name(s) for which to get info (or, all items of given type if no name specified here)
+		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse,
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Related object from which to determine the Tag to get. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, or Xenv
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+		## the itemtype to get via Get-XIOItemInfo
+		$ItemType_str = "tag"
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, Xenv | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					## no "Cluster" param for getting Tag objects
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = $_."TagList".Name
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -917,6 +1769,9 @@ function Get-XIOTarget {
 	Get-XIOTargetGroup Default
 	Get the "TargetGroup" named Default
 	.Example
+	Get-XIOTarget X1-SC1-fc1 | Get-XIOTargetGroup
+	Get the "TargetGroup" related to the given Target
+	.Example
 	Get-XIOTargetGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "TargetGroup" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
@@ -939,7 +1794,9 @@ function Get-XIOTargetGroup {
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the TargetGroup to get. Can be an XIO object of type Target
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -947,13 +1804,32 @@ function Get-XIOTargetGroup {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "target-group"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, Xenv | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					## no "Cluster" param for getting Tag objects
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = $_."TargetGroup".Name
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					$hshParamsForGetXioInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -976,6 +1852,24 @@ function Get-XIOTargetGroup {
 	Get-XIOVolume -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Volume" items from the given XMS appliance, and only for the given XIO Clusters
 	.Example
+	Get-XIOConsistencyGroup myCG0 | Get-XIOVolume
+	Get the "Volume" items from the related ConsistencyGroup object
+	.Example
+	Get-XIOLunMap -InitiatorGroup myIG0 | Get-XIOVolume
+	Get the "Volume" items from the related InitiatorGroup object
+	.Example
+	Get-XIOSnapshot mySnapshot0 | Get-XIOVolume
+	Get the "Volume" object from which the given Snapshot was taken (the snapshot's ancestor volume)
+	.Example
+	Get-XIOSnapshotScheduler mySnapshotScheduler0 | Get-XIOVolume
+	Get the "Volume" object that is the subject of the given SnapshotScheduler (the "snapped object" of the scheduler)
+	.Example
+	Get-XIOSnapshotSet someSnapshotSet | Get-XIOVolume
+	Get the "Volume" items that comprise the given SnapshotSet
+	.Example
+	Get-XIOVolume mySourceVolume0 | Get-XIOVolume
+	Get the "Volume" item resulted from having taken a snapshot of the given volume, if any (the "offspring" Volume of this ancestor Volume)
+	.Example
 	Get-XIOVolume -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -989,17 +1883,15 @@ function Get-XIOVolume {
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## Specific volume ID of the volume to get; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("VolIdList","VolId")][string[]]$VolumeId,
-		## Specific initiator group ID to which volume is mapped by which to get volume; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")][ValidateNotNullOrEmpty()][string[]]$InitiatorGrpId,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+		## Related object from which to determine the Volume to get. Can be an XIO object of type ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, or VolumeFolder
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -1011,18 +1903,59 @@ function Get-XIOVolume {
 		$hshParamsForGetXioItemInfo = @{}
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("VolumeId","InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the VolumeId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("VolumeId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($VolumeId | Where-Object {$oThisItem.VolId -eq $_}).Count -gt 0}}
-		## if the InitiatorGrpId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("InitiatorGrpId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGrpId | Where-Object {$oThisItem.InitiatorGrpIdList -contains $_}).Count -gt 0}}
-		return $arrItemsToReturn
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					## unique to Get-XIOSnapshot, Get-XIOVolume:  if the RelatedObject is an InitiatorGroup, will do the filtering in a bit different way
+					if ($oThisRelatedObj -is [XioItemInfo.InitiatorGroup]) {$bFilterByInitiatorGroupId = $true}
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							"XioItemInfo.ConsistencyGroup" {$oThisRelatedObj.VolList.Name; break} ## end case
+							"XioItemInfo.LunMap" {$oThisRelatedObj.VolumeName; break} ## end case
+							## if the related object is a Snapshot, get the Snapshot name from some subsequent object's properties
+							"XioItemInfo.Snapshot" {$oThisRelatedObj.AncestorVolume.Name; break} ## end case
+							"XioItemInfo.SnapshotScheduler" {
+								if ($oThisRelatedObj.SnappedObject.Type -eq "Volume") {$oThisRelatedObj."SnappedObject".Name}
+									## else, the SnappedObject type is a Consistency or a SnapshotSet, so will get no Volume here
+								else {$null} ## end else
+								break
+							} ## end case
+							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
+							"XioItemInfo.Volume" {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
+							## this gets both volume and snapshot, since snapshots are treated as Volumes, too
+							"XioItemInfo.VolumeFolder" {$oThisRelatedObj.Volume.Name; break} ## end case
+							## gets all volumes, then filters later in the cmdlet
+							"XioItemInfo.InitiatorGroup" {"*"; break}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		## if filtering by InitiatorGroup
+		if ($bFilterByInitiatorGroupId) {
+			$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_} | Where-Object {$oThisItem = $_; ($RelatedObject.InitiatorGrpId | Where-Object {$oThisItem.LunMapList.InitiatorGroup.InitiatorGrpId -contains $_}).Count -gt 0}
+		} ## end if
+		else {$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}}
 	} ## end process
 } ## end function
 
@@ -1039,6 +1972,9 @@ function Get-XIOVolume {
 	Get-XIOVolume myBigVol0 | Get-XIOVolumeFolder
 	Get the "volume folder" for the volume
 	.Example
+	Get-XIOVolumeFolder /myBigVols | Get-XIOVolumeFolder
+	Get only the "volume folder" objects that are direct subfolders of /myBigVols
+	.Example
 	Get-XIOVolumeFolder -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 	.Outputs
@@ -1052,13 +1988,13 @@ function Get-XIOVolumeFolder {
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## Specific volume ID of the volume to get; if not specified, return all
-		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][Alias("VolIdList","VolId")][string[]]$VolumeId,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+		## Related object from which to determine the Volume to get. Can be an XIO object of type Snapshot, Volume, or VolumeFolder
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -1066,20 +2002,42 @@ function Get-XIOVolumeFolder {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "volume-folder"
-		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{}
-		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
-		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("VolumeId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the InitiatorGrpId was specified, return just initiator group folder involving that InitiatorGroup ID
-		if ($PSBoundParameters.ContainsKey("VolumeId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($VolumeId | Where-Object {$oThisItem.VolIdList -contains $_}).Count -gt 0}}
-		return $arrItemsToReturn
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					## no "Cluster" param here, as VolumeFolder objects are not cluster-specific
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj."Folder".Name -replace "^/Volume",""; break} ## end case
+							"XioItemInfo.VolumeFolder" {$oThisRelatedObj."SubfolderList".Name -replace "^/Volume",""; break} ## end case
+							## default:  doing nothing, as all cases should be covered above
+							default {}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType = $ItemType_str} + $PSBoundParameters}
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
 	} ## end process
 } ## end function
 
@@ -1226,7 +2184,6 @@ function Get-XIOEvent {
 } ## end function
 
 
-#region  new types for API v2 ####################################################################################
 <#	.Description
 	Function to get XtremIO Alert info using REST API from XtremIO Management Server (XMS)
 	.Example
@@ -1294,138 +2251,6 @@ function Get-XIOAlertDefinition {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "alert-definition"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
-	Function to get XtremIO BBU info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOBBU
-	Get the "BBU" items
-	.Example
-	Get-XIOBBU -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "BBU" items from the given XMS appliance, and only for the given XIO Clusters
-	.Outputs
-	XioItemInfo.BBU
-#>
-function Get-XIOBBU {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.BBU])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "bbu"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
-	Function to get XtremIO ConsistencyGroup info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOConsistencyGroup
-	Get the "ConsistencyGroup" items
-	.Example
-	Get-XIOConsistencyGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "ConsistencyGroup" items from the given XMS appliance, and only for the given XIO Clusters
-	.Outputs
-	XioItemInfo.ConsistencyGroup
-#>
-function Get-XIOConsistencyGroup {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.ConsistencyGroup])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "consistency-group"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
-	Function to get XtremIO DAE (Disk Array Enclosure) info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIODAE
-	Get the "DAE" items
-	.Example
-	Get-XIODAE -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "DAE" items from the given XMS appliance, and only for the given XIO Clusters
-	.Outputs
-	XioItemInfo.DAE
-#>
-function Get-XIODAE {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.DAE])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "dae"
 		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
 		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
@@ -1565,45 +2390,6 @@ function Get-XIOEmailNotifier {
 
 
 <#	.Description
-	Function to get XtremIO InfiniBand Switch info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOInfinibandSwitch
-	Get the "InfinibandSwitch" items
-	.Outputs
-	XioItemInfo.InfinibandSwitch
-#>
-function Get-XIOInfinibandSwitch {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.InfinibandSwitch])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "infiniband-switch"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
 	Function to get XtremIO LDAP Config info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOLdapConfig
@@ -1631,50 +2417,6 @@ function Get-XIOLdapConfig {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ldap-config"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
-	Function to get XtremIO LocalDisk info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOLocalDisk
-	Get the "LocalDisk" items
-	.Example
-	Get-XIOLocalDisk -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "LocalDisk" items from the given XMS appliance, and only for the given XIO Clusters
-	.Outputs
-	XioItemInfo.LocalDisk
-#>
-function Get-XIOLocalDisk {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.LocalDisk])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "local-disk"
 		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
 		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
@@ -1791,50 +2533,6 @@ function Get-XIOPerformanceCounter {
 
 
 <#	.Description
-	Function to get XtremIO SnapshotSet info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOSnapshotSet
-	Get the "SnapshotSet" items
-	.Example
-	Get-XIOSnapshotSet -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "SnapshotSet" items from the given XMS appliance, and only for the given XIO Clusters
-	.Outputs
-	XioItemInfo.SnapshotSet
-#>
-function Get-XIOSnapshotSet {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.SnapshotSet])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "snapshot-set"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
 	Function to get XtremIO SNMP Notifier info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOSnmpNotifier
@@ -1862,50 +2560,6 @@ function Get-XIOSnmpNotifier {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "snmp-notifier"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
-	Function to get XtremIO Storage Controller PSU info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOStorageControllerPsu
-	Get the "StorageControllerPsu" items
-	.Example
-	Get-XIOStorageControllerPsu -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "StorageControllerPsu" items from the given XMS appliance, and only for the given XIO Clusters
-	.Outputs
-	XioItemInfo.StorageControllerPsu
-#>
-function Get-XIOStorageControllerPsu {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.StorageControllerPsu])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "storage-controller-psu"
 		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
 		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
@@ -1957,45 +2611,6 @@ function Get-XIOSyslogNotifier {
 
 
 <#	.Description
-	Function to get XtremIO Tag info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOTag
-	Get the "Tag" items
-	.Outputs
-	XioItemInfo.Tag
-#>
-function Get-XIOTag {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.Tag])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "tag"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
 	Function to get XtremIO User Account info using REST API from XtremIO Management Server (XMS)
 	.Example
 	Get-XIOUserAccount
@@ -2023,50 +2638,6 @@ function Get-XIOUserAccount {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "user-account"
-		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
-		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
-	} ## end begin
-
-	Process {
-		## call the base function to get the given item
-		Get-XIOItemInfo @hshParamsForGetXioInfo
-	} ## end process
-} ## end function
-
-
-<#	.Description
-	Function to get XtremIO Slot info using REST API from XtremIO Management Server (XMS)
-	.Example
-	Get-XIOSlot
-	Get the "Slot" items
-	.Example
-	Get-XIOSlot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
-	Get the "Slot" items from the given XMS appliance, and only for the given XIO Clusters
-	.Outputs
-	XioItemInfo.Slot
-#>
-function Get-XIOSlot {
-	[CmdletBinding(DefaultParameterSetName="ByComputerName")]
-	[OutputType([XioItemInfo.Slot])]
-	param(
-		## XMS address to use; if none, use default connections
-		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
-		## Item name(s) for which to get info (or, all items of given type if no name specified here)
-		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse,
-		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
-	) ## end param
-
-	Begin {
-		## string to add to messages written by this function; function name in square brackets
-		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
-		## the itemtype to get via Get-XIOItemInfo
-		$ItemType_str = "slot"
 		## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
 		$hshParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters} else {@{ItemType_str = $ItemType_str} + $PSBoundParameters}
 	} ## end begin
@@ -2154,8 +2725,6 @@ function Get-XIOXMS {
 		Get-XIOItemInfo @hshParamsForGetXioInfo
 	} ## end process
 } ## end function
-
-#endregion  new types for API v2 #################################################################################
 
 
 
