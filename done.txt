@@ -1,3 +1,69 @@
+done for version 1.1.0:
+[feat_ExpandedPipelining]
+mega pipelining:
+-add support for getting objects based on related objects from the pipeline (like, getting a ConsistencyGroup object based on a related Snapshot object, or a LunMap object based on a related Volume object, or a StorageController object based on a related Brick object)
+	-add tests
+	-add -RelatedObject param:
+		-that accepts object fom pipeline
+		-from which to determine Cluster, ComputerName, etc., in order to get the given object type based on the related object
+	-update comment-based help
+	-done for:
+		Get-XIOBBU:  from Brick, StorageController
+		Get-XIOBrick:  from BBU, Cluster, DAE, DAEController, DAEPsu, DataProtectionGroup, LocalDisk, Slot, Ssd, StorageController, StorageControllerPsu, Target, Xenv
+		Get-XIOCluster:  from BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv
+		Get-XIOConsistencyGroup:  from Snapshot, SnapshotScheduler, SnapshotSet, Volume
+		Get-XIODAE:  from Brick, DAEController, DAEPsu
+		Get-XIODataProtectionGroup:  from Brick, Ssd, StorageController
+		Get-XIOInfinibandSwitch:  from Cluster
+		Get-XIOInitiatorGroup:  from Initiator, IgFolder, LunMap, Snapshot, Volume
+			-Changed parameter from InitiatorGrpId to RelatedObject
+		Get-XIOInitiatorGroupFolder:  IgFolder, InitiatorGroup
+			-Changed parameter from InitiatorGrpId to RelatedObject
+			-for IgFolder, use SubfolderList, and need to remove "/InitiatorGroup" from start of folder name
+			-for InitiatorGroup, use Folder, but need to remove "/InitiatorGroup" from start of folder name -- that is part of the "full name" of the IgFolder, but the name does not contain that
+		Get-XIOLocalDisk:  from StorageController
+		Get-XIOSnapshot:  from
+			Snapshot:  DestinationSnapshot, list of obj w/ Snapshot Name, SnapshotId
+			SnapshotSet:  VolList, list of obj w/ Volume (Snapshot) Name, VolId
+			Volume:  DestinationSnapshot, list of obj w/ Snapshot Name, SnapshotId
+			VolumeFolder:  Volume, list of obj w/ Volume Name, VolId
+			-RelatedObject param replaces VolumeId and InitiatorGrpId parameters, which are now gone
+		Get-XIOSnapshotSet:  from Snapshot, SnapshotScheduler, Volume
+		Get-XIOSsd:  from Brick, Slot
+		Get-XIOStorageController:  from BBU, Brick, LocalDisk, StorageControllerPsu, Target, Xenv
+		Get-XIOStorageControllerPsu:  from Get-XIOStorageController
+		Get-XIOTag:  from BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, Xenv
+		Get-XIOTargetGroup:  from Target
+		Get-XIOVolume:  from
+			ConsistencyGroup:  VolList, list of obj w/ Volume (Snapshot) Name, VolId
+			InitiatorGroup
+			LunMap:  VolumeName, the name of the volume
+			Snapshot:  AncestorVolume, list of obj w/ Volume (Snapshot) Name, VolId
+			SnapshotScheduler:  SnappedObject if Type -eq "Volume"?  See Get-XIOConsistencyGroup, Get-XIOSnapshotSet
+			SnapshotSet:  VolList, list of obj w/ Volume (Snapshot) Name, VolId
+			Volume:  DestinationSnapshot, list of obj w/ Volume (Snapshot) Name, SnapshotId
+			VolumeFolder:  Volume, list of obj w/ Volume (Snapshot) Name, VolId
+			-RelatedObject param replaces VolumeId and InitiatorGrpId parameters, which are now gone
+		Get-XIOVolumeFolder:  from Snapshot, Volume, VolumeFolder
+			-RelatedObject param replaces VolumeId parameter, which is now gone
+	-postponing:
+		Get-XIOClusterPerformance:  from Cluster
+		Get-XIODataProtectionGroupPerformance:  from DataProtectionGroup
+		Get-XIOInitiatorGroupFolderPerformance:  from InitiatorGroupFolder
+		Get-XIOInitiatorGroupPerformance:  from InitiatorGroup
+		Get-XIOInitiatorPerformance:  from Initiator
+		Get-XIOSnapshotScheduler:  from Tag
+		Get-XIOSsdPerformance:  from Ssd
+		Get-XIOTarget:  from Tag
+		Get-XIOTargetPerformance:  from Target
+		Get-XIOVolumeFolderPerformance:  from VolumeFolder
+		Get-XIOVolumePerformance:  from Volume
+	-no action taken:
+		Get-XIOInitiator:  already would get Initiators from InitiatorGroup from pipeline, though, in somewhat inefficient means -- the InitiatorGroup object returned by API does not have Initiator info, so have to get all Initiators and the filter on the InitatorGroup afterwards (before returning objects to consumer)
+		Get-XIOLunMap:  will do well to take InitiatorGroup and Volume from pipeline, but may benefit most from when Filtering is supported by this module; not action taken, yet
+		Get-XIOSlot:  from Brick, Ssd -- will benefit from when Filtering is supported by this module; can filter on ssd-uid value from Ssd object, at least
+
+
 done for version 1.0.0:
 [feat_RemoveItems]
 -add Remove-XIO* cmdlets:

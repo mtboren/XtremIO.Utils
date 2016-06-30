@@ -1,6 +1,53 @@
 ## XtremIO.Utils PowerShell module ##
 
 ### Changelog ###
+### v1.1.0
+30 Jun 2016
+
+This release is all about having expanded the pipelining capabilities of the `Get-XIO*` cmdlets.  This was accomplished by adding a `-RelatedObject` parameter to many of these cmdlets.  For example, one can now get a `ConsistencyGroup` object based on a related `Snapshot` object, or a `LunMap` object based on a related `Volume` object, or a `StorageController` object based on a related `Brick` object.  One can pass a value directly to `-RelatedObject`, or (much more conveniently) via pipeline.  Details for this release:
+
+- \[improvement] Added `-RelatedObject` parameter to nineteen (19) cmdlets, accepting related objects by value and by pipeline as such.  The cmdlets then use the properties of the related object to determine the Cluster, ComputerName, etc., in order to get the desired object type based on the related object:
+	- **`Get-XIOBBU`**:  from `Brick`, `StorageController`
+	- **`Get-XIOBrick`**:  from `BBU`, `Cluster`, `DAE`, `DAEController`, `DAEPsu`, `DataProtectionGroup`, `LocalDisk`, `Slot`, `Ssd`, `StorageController`, `StorageControllerPsu`, `Target`, `Xenv`
+	- **`Get-XIOCluster`**:  from `BBU`, `Brick`, `ConsistencyGroup`, `DAE`, `DAEController`, `DAEPsu`, `DataProtectionGroup`, `InfinibandSwitch`, `Initiator`, `InitiatorGroup`, `LocalDisk`, `LunMap`, `Slot`, `Snapshot`, `SnapshotSet`, `Ssd`, `StorageController`, `StorageControllerPsu`, `Target`, `TargetGroup`, `Volume`, `Xenv`
+	- **`Get-XIOConsistencyGroup`**:  from `Snapshot`, `SnapshotScheduler`, `SnapshotSet`, `Volume`
+	- **`Get-XIODAE`**:  from `Brick`, `DAEController`, `DAEPsu`
+	- **`Get-XIODataProtectionGroup`**:  from `Brick`, `Ssd`, `StorageController`
+	- **`Get-XIOInfinibandSwitch`**:  from `Cluster`
+	- **`Get-XIOInitiatorGroup`**:  from `Initiator`, `IgFolder`, `LunMap`, `Snapshot`, `Volume`
+		- `-RelatedObject` parameter replaces `-InitiatorGrpId`
+	- **`Get-XIOInitiatorGroupFolder`**:  from `IgFolder`, `InitiatorGroup`
+		- `-RelatedObject` parameter replaces `-InitiatorGrpId`
+	- **`Get-XIOLocalDisk`**:  from `StorageController`
+	- **`Get-XIOSnapshot`**:  from `Snapshot`, `SnapshotSet`, `Volume`, `VolumeFolder`
+		- `-RelatedObject` parameter replaces `-VolumeId` and `-InitiatorGrpId` parameters, which are now gone
+	- **`Get-XIOSnapshotSet`**:  from `Snapshot`, `SnapshotScheduler`, `Volume`
+	- **`Get-XIOSsd`**:  from `Brick`, `Slot`
+	- **`Get-XIOStorageController`**:  from `BBU`, `Brick`, `LocalDisk`, `StorageControllerPsu`, `Target`, `Xenv`
+	- **`Get-XIOStorageControllerPsu`**:  from Get-XIOStorageController
+	- **`Get-XIOTag`**:  from `BBU`, `Brick`, `Cluster`, `ConsistencyGroup`, `DAE`, `InfinibandSwitch`, `Initiator`, `InitiatorGroup`, `LocalDisk`, `Snapshot`, `SnapshotSet`, `Ssd`, `Target`, `TargetGroup`, `Volume`, `Xenv`
+	- **`Get-XIOTargetGroup`**:  from `Target`
+	- **`Get-XIOVolume`**:  from `ConsistencyGroup`, `InitiatorGroup`, `LunMap`, `Snapshot`, `SnapshotScheduler`, `SnapshotSet`, `Volume`, `VolumeFolder`
+		- `-RelatedObject` parameter replaces `-VolumeId` and `-InitiatorGrpId` parameters, which are now gone
+	- **`Get-XIOVolumeFolder`**:  from `Snapshot`, `Volume`, `VolumeFolder`
+		- `-RelatedObject` parameter replaces VolumeId parameter, which is now gone
+
+Known Issues:
+
+- Getting objects from pipeline with `SnapshotScheduler` as the `-RelatedObject` in a multi-cluster XMS scenario may return more that just one of given object type:  the XIOS API does not have cluster-specificity for `SnapshotScheduler` objects, so objects related to `SnapshotScheduler` are retrieved only by name and XMS computer name for now (until better filtering based on GUID is in place); if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned
+- When connected to a multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster\_id\_is\_required" message:
+	- `Get-XIOVolume` when using a `VolumeFolder` as the `-RelatedObject` parameter value
+	- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
+	- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
+	- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
+- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
+- `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
+	- folder support will be removed from this PowerShell module eventually, so these may not get addressed
+	- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
+- Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
+	- Workaround:  do not specify `-ParentFolder` parameter (of course), which creates volume without volume tag
+
+
 ### v1.0.0
 05 May 2016
 

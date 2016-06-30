@@ -10,6 +10,8 @@ todo:
 -change the .Guid property on API v1 objects to have value that, if .guid property of API obj does not exist, then use <objType>-id[0] (the Id part of the <id>,<name>,<index> array)
 	-then, can more universally use that Guid in pipelining and whatnot
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+-fix bug in Get-XIOStorageController:  not returning valid LocalDisk info
+-fix order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
 -fix bug in New-XIOVolume:  when specifying both -ParentFolder and -Cluster, throws error:  "message": "Command Syntax Error: Invalid property parent-folder-id"
 	-either send ParentFolder property as part of tag_list value (need to test), or do not include -ParentFolder in same paramset as -Cluster?
 -fix bug in Get-XIOSnapshotScheduler when using by URI:  must have "?cluster-name=<blahh>" in the URI, or request returns error:  "message": "cluster_id_is_required"
@@ -22,7 +24,9 @@ todo:
 	-same for adding Remove-XIOLdapConfig (the DELETE how-to is not specified in the API reference)
 -replace "manual" enumeration of valid types for param values in Get-XIOEvent with legit Enums
 	-do same for Get-XIOItemInfo?
--New-XIOLunMap:  take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
+-New-XIOLunMap:
+	-take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
+	-update -Volume to accept vol objects or vol name (just does name right now), and take Volume obj from pipeline
 -XIOS v4 properties/types to add/update/handle:
 	-to LunMap:  Certainty, InitiatorGrpId, ClusterId, TargetGrpId, VolumeId (these IDs in some way -- as object properties, like InitiatorGroup, Cluster, TargetGroup, Volume, or, just the IDs?)
 	-to SSD:  certainty, *io-error*, num-bad-sectors, tag-list
@@ -44,7 +48,7 @@ todo:
 -shorten param names in cmdlets to more PowerShell-like (make aliases for now, but deprecate the longer param names?)
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume Name or Volume Id (and, so, accept from pipeline, too)?
--for when removing InitiatorGrpIdList from InitiatorGroupFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
+-for when removing InitiatorGrpIdList from IgFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
 -add pipelining abilities for things like (add their tests at the same time!):
 	Get-XIODAE | Get-XIODAEController
 	Get-XIODAEController | Get-XIODAE
@@ -146,7 +150,7 @@ todo:
 			-hw-revision
 	-also, others listed on p198 of v3.0.1 REST API guide
 -change wording around Disable-CertValidation to refer to the output as ServerCertificateValidationCallback, not CertificatePolicy
--address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  InitiatorGroupFolder objects have an IOPS property that may actually have no value, but that gets cast to an Int in the SupportingFunctions, and becomes "0" for the returned object
+-address performance properties that are no longer "real" from the API, but still presented as properties/values on objects; for example:  IgFolder objects have an IOPS property that may actually have no value, but that gets cast to an Int in the SupportingFunctions, and becomes "0" for the returned object
 	-need to make these nullable? (can we?)
 -try Invoke-WebRequest in place of the WebClient .NET class (this guy reports success vs. Invoke-RestMethod when same symptoms, but uses an IDontCare CertPolicy:  https://communities.vmware.com/thread/466166)
 -add Update-Snapshot to correspond to "refresh" operation in mgmt GUI
@@ -184,7 +188,7 @@ todo:
 			-InitiatorGroup blah -volume blahvol ## with no -Cluster and on 4.0 single-cluster
 		-?need to use GUIDs in the names of new objs, so as to be able to remove them, and need to remove the items, too? Or, report on the objects created and generate the code to remove them, so whomever can remove at will?
 	-include snippet somewhere that following is expected return for older XIOS versions when querying types that appeared in API in newer XIOS versions (and this behavior is there as a courtesy):
-		WARNING: Type 'bbus' does not exist in xms0.dom.lilly.com's XIOS version. This is possibly an object type that was introduced in a later XIOS version
+		WARNING: Type 'bbus' does not exist in xms0.dom.com's XIOS version. This is possibly an object type that was introduced in a later XIOS version
 -once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
 	-not available as of XIOS v3.0.1
 -upgrade New-XIOVolumeFolder, New-XIOInitiatorGroupFolder to make full, deep path of folders (for when parent folder heirarchy does not yet exist)
@@ -200,12 +204,14 @@ todo:
 	iscsi-routes
 -add ability to create ISCSI initiators via New-XIOInitiator
 -add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
+-?add something that handles return of objects such that only one instance of each unique object is returned?  For example:  should "Get-XIOInitiatorGroup | select -First 5 | Get-XIOSnapshot -Name mysnap044.*" only return one object for "mysnap044.lastweeksnap", even if that snapshot is mapped to all of the five InitiatorGroups passed as RelateObjects to Get-XIOSnapshot?  The, "return only unique objects" behavior is how some other modules do it, like PowerCLI, for example
+-?add Tag as supported RelatedObject type on Get-XIO* cmdlets?  Tags do not have Cluster properties, so may give unexpected behavior if only getting targeted object by name (won't have associated Cluster by which to pinpoint the targeted object); or, need to use Guid instead and filter?  A: still hit the "need cluster name" issue for when in multi-cluster situation; need to solve this someway
 -for future (once supporitng iSCSI in this PSModule), add ability to set following properties via Set-XIOInitiator:  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -?add ability to specify -Tag for when creating new objects that support "tag-list" property via API (like New-XIOInitiatorGroup, for example); or, just stick w/ adding new Tag assignments via dedicated cmdlet?
 -?for Set-XIO* cmdlets other than Set-XIOItemInfo, add ability to specify object by name and cluster?  Currently just supports by-object
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
--?add "v2 URI" property to Tag objects (VolumeFolder, InitiatorGroupFolder), so that Set- calls for them are easier to make
+-?add "v2 URI" property to Tag objects (VolumeFolder, IgFolder), so that Set- calls for them are easier to make
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
 -?eventually for Open-XIOMgmtConsole:  only act on existing XMS connections (as the cmdlet will need the XMS software version in order to create the correct URL to the JNLP file); or, will this cmdlet change to open the web management console instead of the Java management console, once the Web UI takes over?
 -?add a Get-XIOUtilsConfiguration function to report things like the filespec of the StoredXioCred
@@ -223,16 +229,35 @@ todo:
 -?for when rev'ing minimum API support level to API v2.0, remove the conditional Cluster property population code (as needed .sys-id property should be present on everything at that point); affected object types:  Initiator, InitiatorGroup, LunMap, Target,
 
 
+-known issues:
+	Since module release v1.1.0
+	- Getting objects from pipeline with `SnapshotScheduler` as the `-RelatedObject` in a multi-cluster XMS scenario may return more that just one of given object type:  the XIOS API does not have cluster-specificity for `SnapshotScheduler` objects, so objects related to `SnapshotScheduler` are retrieved only by name and XMS computer name for now (until better filtering based on GUID is in place); if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned
+	- When connected to a multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster\_id\_is\_required" message:
+		- `Get-XIOVolume` when using a `VolumeFolder` as the `-RelatedObject` parameter value
+		- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
+		- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
+		- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
+	- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
+	- `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
+		- folder support will be removed from this PowerShell module eventually, so these may not get addressed
+		- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
+	- Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
+		- Workaround:  do not specify `-ParentFolder` parameter, which creates volume without volume tag
+
+
+
+
 
 
 
 should do next:
-	-mega pipelining
 	-straggler release (odds/ends plus New-XIOTagAssignment, Remove-XIOTagAssignment)
+	-test "scheduler-name" param for creating new XIO SnapshotScheduler -- works?
+	-add Open-XIOXMSWebUi
 
 doing:
 
-done for version next (after v0.14.0):
+done for version next (after v1.1.0):
 
 ## things below here are in changelog/readme
 
@@ -247,8 +272,8 @@ done for previous versions:  moved to done.txt
 ## release items
 merge branches into dev
 rev module version
-test in PSv4, PSv5, on XIOS 2.4, on XIOS 4.0-multicluster, and test with multiple XIO connections, if not already tested
-update changelog/readme
+test in PSv4, PSv5, on XIOS 4.0-multicluster, and test with multiple XIO connections, if not already tested
+update changelog/readme, including release date
 commit to dev
 merge to master
 move "Latest" tag to master commit
