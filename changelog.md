@@ -2,7 +2,7 @@
 
 ### Changelog ###
 ### v1.1.0
-Jun 2016
+30 Jun 2016
 
 This release is all about having expanded the pipelining capabilities of the `Get-XIO*` cmdlets.  This was accomplished by adding a `-RelatedObject` parameter to many of these cmdlets.  For example, one can now get a `ConsistencyGroup` object based on a related `Snapshot` object, or a `LunMap` object based on a related `Volume` object, or a `StorageController` object based on a related `Brick` object.  One can pass a value directly to `-RelatedObject`, or (much more conveniently) via pipeline.  Details for this release:
 
@@ -40,11 +40,11 @@ Known Issues:
 	- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
 	- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
 	- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
-- `Remove-XIOUserAccount` via the XIOS API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
-- `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIOS API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
+- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
+- `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
 	- folder support will be removed from this PowerShell module eventually, so these may not get addressed
 	- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
-- Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIOS API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
+- Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
 	- Workaround:  do not specify `-ParentFolder` parameter (of course), which creates volume without volume tag
 
 
