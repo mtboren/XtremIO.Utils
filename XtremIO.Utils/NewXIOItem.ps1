@@ -536,7 +536,7 @@ function New-XIOUserAccount {
 		## XMS address to use
 		[string[]]$ComputerName,
 		## Credentials from which to make new user account (from the credential's username and password)
-		[parameter(Position=0)][parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")]$Credential,
+		[parameter(Position=0)][parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")][System.Management.Automation.PSCredential]$Credential,
 		## If specifying a public key for a user, instead of a credential, this is the username for the new user; use either -Credential or (-UserName and -UserPublicKey)
 		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")][string]$UserName,
 		## If specifying a public key for a user, instead of a credential, this is the public key for the new user; use either -Credential or (-UserName and -UserPublicKey)

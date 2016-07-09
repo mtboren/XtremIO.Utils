@@ -196,31 +196,32 @@ todo:
 
 
 should do next:
-	-variety release
-		-XIOS v4 properties/types to add/update/handle:
-			-to LunMap:  Certainty
-			-to StorageController:  remove obsolete:  encryption* properties ("EncryptionMode", "EncryptionSwitchStatus")
-		-enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Get-XIOTagAssignment and Remove-XIOTagAssignment kind of cmdlets)
-		-improve Get-XIOLunMap:
-			-add -Name param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
-			-revisit pipelining:  sufficient for now, until adding Filtering support in later release?
-		-test "scheduler-name" param for creating new XIO SnapshotScheduler -- works? (have seen in docs/web)
-		-enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup, or via Add-XIOVolumeToConsistencyGroup, Remove-XIOVolumeFromConsistencyGroup?)
-		-add type to -Credential param declaration for New-XIOUserAccount (none specified right now)
-		-add -Color param to New-XIOTag (seems to be supported per events, but not listed in API doc -- test out)
-		-Volume object:  add VolSizeGB for ease of reading for when the volume size is less than 1TB
-		-Alert object:  add .Cluster property from .sys-id, deprecate ClusterId, ClusterName properties
-		-update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
-		-update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
-			-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
-		-fix order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
-		-add Open-XIOXMSWebUi cmdlet
-			-add verbose that says that one must enable via CLI (if this is the case -- is there a way to doit via the API?)
 
 
 doing:
+[feat_MiscUpdates]
+-enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Get-XIOTagAssignment and Remove-XIOTagAssignment kind of cmdlets)
+-improve Get-XIOLunMap:
+	-add -Name param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
+	-revisit pipelining:  sufficient for now, until adding Filtering support in later release?
+-test "scheduler-name" param for creating new XIO SnapshotScheduler -- works? (have seen in docs/web)
+-enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup, or via Add-XIOVolumeToConsistencyGroup, Remove-XIOVolumeFromConsistencyGroup?)
+-add -Color param to New-XIOTag (seems to be supported per events, but not listed in API doc -- test out)
+-update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
+-update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
+	-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
+-fix order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
+-add Open-XIOXMSWebUi cmdlet
+	-add verbose that says that one must enable via CLI (if this is the case -- is there a way to doit via the API?)
 
 done for version next (after v1.1.0):
+-Properties to added/removed/deprecated:
+	-on Alert object:  added Cluster property, deprecated ClusterId, ClusterName properties
+	-to LunMap:  added "Certainty"
+	-for StorageController:  removed obsolete properties (values were returned as "obsolete"):  "EncryptionMode", "EncryptionSwitchStatus"
+	-for SSD:  removed obsolete property (values was returned as "obsolete"):  "SSDPositionState"
+	-for Volume, Snapshot objects:  added VolSizeGB property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
+-added type to -Credential param declaration for New-XIOUserAccount (none was specified previously)
 
 ## things below here are in changelog/readme
 

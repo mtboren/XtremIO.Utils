@@ -9,7 +9,12 @@ namespace XioItemInfo {
 		public String AssociatedObjIndex;
 		public String AssociatedObjName;
 		public String Class;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v1.1.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v1.1.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public DateTime CreationTime;
 		public String Description;
@@ -131,8 +136,8 @@ namespace XioItemInfo {
 		public String DebugCreationTimeoutLevel;
 		public System.Nullable<Decimal> DedupeRatio;
 		public String EncryptionMode;
-		public System.Nullable<Int32> ExpansionDataTransferPct;
 		public System.Nullable<Boolean> EncryptionSupported;
+		public System.Nullable<Int32> ExpansionDataTransferPct;
 		public String FcPortSpeed;
 		public String FreespaceLevel;
 		public System.Nullable<Double> FreeSSDTB;
@@ -562,6 +567,7 @@ namespace XioItemInfo {
 	}
 
 	public class LunMap : InfoBase {
+		public String Certainty;
 		public XioItemInfo.Cluster Cluster;
 		public String InitiatorGroup;
 		public System.Nullable<Int32> InitiatorGrpIndex;
@@ -761,7 +767,6 @@ namespace XioItemInfo {
 		public String SsdId;
 		public String SSDLink1Health;
 		public String SSDLink2Health;
-		public String SSDPositionState;
 		public String SsdRGrpState;
 		public String SsdUid;
 		public String SwapLED;
@@ -796,8 +801,6 @@ namespace XioItemInfo {
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
 		public String EnabledState;
-		public String EncryptionMode;
-		public String EncryptionSwitchStatus;
 		public Object FcHba;
 		public String FWVersionError;
 		public String HealthState;
@@ -1021,6 +1024,7 @@ namespace XioItemInfo {
 		public System.Nullable<Double> UsedLogicalTB;
 		public String VaaiTPAlertsCfg;
 		public String VolId;
+		public System.Nullable<Double> VolSizeGB;
 		public System.Nullable<Double> VolSizeTB;
 
 		// Implicit constructor
