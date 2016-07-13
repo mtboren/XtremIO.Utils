@@ -2103,6 +2103,7 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"schedulers" {
 				[ordered]@{
+					Cluster = $(if ($null -ne $oContent."sys-id") {_New-XioClusterObjFromSysId -SysId $oContent."sys-id"})
 					Guid = $oContent.guid
 					Index = $oContent.index
 					Enabled = ($oContent."enabled-state" -eq "enabled")

@@ -629,6 +629,7 @@ namespace XioItemInfo {
 	// Snapshot Scheduler
 	public class SnapshotScheduler {
 		public String Name;
+		public XioItemInfo.Cluster Cluster;
 		public Boolean Enabled;
 		public String Guid;
 		public Int32 Index;

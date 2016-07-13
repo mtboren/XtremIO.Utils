@@ -884,12 +884,14 @@ function New-XIOSnapshot {
 <#	.Description
 	Create a new XtremIO SnapshotScheduler. Can schedule on given time interval, or on explicit day of the week (or everyday), and can specify the number of snapshots to keep or the duration for which to keep snapshots.  The maximums are 511 snapshots or an age of 5 years, whichever is lower. That is, if specifying a "Friday" schedule and "500" for the number of snapshots to keep, the system will keep the last 260 snapshots, since 5 years is the max, 5years * 52snaps/year = 260 snaps.
 	.Notes
-	XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
+	XIO API does not require a name for the new SnapshotScheduler (a.k.a., "Scheduler" or "Protection Scheduler".  If you specify no value for -Name parameter, the name property of the new SnapshotScheduler will be an empty string (not $null).  The XMS Java-based GUI will show the SnapshotScheduler's name as "[Scheduler5]", and the XMS WebUI will show the SnapshotScheduler's name as "[Protection Scheduler5]", where 5 is the given SnapshotScheduler's index.
+
+	API version support for specifying name:  the XtremIO REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
 	.Example
 	New-XIOSnapshotScheduler -RelatedObject (Get-XIOVolume someVolume0) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20
 	Create new SnapshotScheduler from a Volume, using an interval between snapshots, and specifying a particular number of Snapshots to retain
 	.Example
-	New-XIOSnapshotScheduler -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -Cluster myCluster0 -Enabled:$false
+	New-XIOSnapshotScheduler -Name mySnapScheduler0 -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -Cluster myCluster0 -Enabled:$false
 	Create new SnapshotScheduler from a ConsistencyGroup, with an explict schedule, specifying duration for which to keep Snapshots, on the given XIO cluster, and set the scheduler as user-disabled
 	.Example
 	Get-XIOSnapshotSet -Name testSnapshotSet0.1455845074 | New-XIOSnapshotScheduler -ExplicitDay EveryDay -ExplicitTimeOfDay 3am -SnapshotRetentionCount 500 -Suffix myScheduler0
@@ -903,6 +905,8 @@ function New-XIOSnapshotScheduler {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
+		## The name for the new SnapshotScheduler. Supported starting with XtremIO REST API v2.1.
+		[parameter(Position=0)][string]$Name,
 		## The name of the XIO Cluster on which to make new snapshot scheduler. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, or ConsistencyGroup
@@ -983,6 +987,8 @@ function New-XIOSnapshotScheduler {
 					$hshNewItemSpec["time"] = $("{0}:{1}:{2}" -f $intNumberOfDayOfTheWeek, $ExplicitTimeOfDay.Hour, $ExplicitTimeOfDay.Minute)
 				} ## end case
 		} ## end switch
+		## if Name was specified, add it to the config spec
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshNewItemSpec["scheduler-name"] = $Name}
 		## if Suffix was specified, add it to the config spec
 		if ($PSBoundParameters.ContainsKey("Suffix")) {$hshNewItemSpec["suffix"] = $Suffix}
 		## if Cluster not specified explicitly, add (else, subsequent New-XIOItem call adds it already)
@@ -992,7 +998,7 @@ function New-XIOSnapshotScheduler {
 		$hshParamsForNewItem = @{
 			ComputerName = $ComputerName
 			ItemType_str = $strThisItemType
-			Name = "new no-name scheduler (XIO API does not yet support name for new scheduler)"
+			Name = $(if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {"<new no-name scheduler>"})
 			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 		} ## end hashtable
 
