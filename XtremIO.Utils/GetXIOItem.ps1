@@ -545,7 +545,7 @@ function Get-XIOConsistencyGroup {
 				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
 					$oThisRelatedObj = $_
 
-					## Cluster will be $null if RelatedObject is SnapshotScheduler
+					## In REST API v2.0, Cluster will be $null if RelatedObject is SnapshotScheduler; this goes away in API v2.1
 					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = $(if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {

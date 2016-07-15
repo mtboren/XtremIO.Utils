@@ -216,9 +216,10 @@ doing:
 	-add verbose that says that one must enable via CLI (if this is the case -- is there a way to doit via the API?)
 -added -Name parameter to New-XIOSnapshotScheduler:   "scheduler-name" param for creating new XIO SnapshotScheduler -- works in XIOS REST API v2.1, not in API v2.0
 	-check that tests are good (including testing getting related items from a SnapshotScheduler from pipeline in API v2.0 (maybe not in multi-cluster), and in v2.1 (should -- but, are things not adding "Cluster" param from SnapshotScheduler, since that object type used to not include .Cluster property?))
-		-need to update Get-XIO* that take SnapshotScheduler obj from pipeline for RelatedObject to gleen Cluster from SnapshotScheduler, now (if not $null)
+	-need to add -Cluster param to Get-XIOSnapshotScheduler, since API v2.1 now supports it
 	done:
 		added param
+		-verified that Get-XIO* cmdlets that take SnapshotScheduler obj from pipeline for RelatedObject gleen Cluster from SnapshotScheduler
 
 
 done for version next (after v1.1.0):
