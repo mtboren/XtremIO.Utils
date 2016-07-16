@@ -211,15 +211,8 @@ doing:
 -update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
 -update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 	-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
--fix order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
 -add Open-XIOXMSWebUi cmdlet
 	-add verbose that says that one must enable via CLI (if this is the case -- is there a way to doit via the API?)
--added -Name parameter to New-XIOSnapshotScheduler:   "scheduler-name" param for creating new XIO SnapshotScheduler -- works in XIOS REST API v2.1, not in API v2.0
-	-check that tests are good (including testing getting related items from a SnapshotScheduler from pipeline in API v2.0 (maybe not in multi-cluster), and in v2.1 (should -- but, are things not adding "Cluster" param from SnapshotScheduler, since that object type used to not include .Cluster property?))
-	-need to add -Cluster param to Get-XIOSnapshotScheduler, since API v2.1 now supports it
-	done:
-		added param
-		-verified that Get-XIO* cmdlets that take SnapshotScheduler obj from pipeline for RelatedObject gleen Cluster from SnapshotScheduler
 
 
 done for version next (after v1.1.0):
@@ -231,6 +224,10 @@ done for version next (after v1.1.0):
 	-for Volume, Snapshot objects:  added VolSizeGB property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
 -added type to -Credential param declaration for New-XIOUserAccount (none was specified previously)
 -added .Cluster property to SnapshotScheduler objects (available via XIO REST API starting in v2.1; will be $null in SnapshotScheduler objects returned from XIO REST API v2.0)
+-added -Name parameter to New-XIOSnapshotScheduler:   "scheduler-name" param for creating new XIO SnapshotScheduler -- works in XIOS REST API v2.1, not in API v2.0
+	-verified that Get-XIO* cmdlets that take SnapshotScheduler obj from pipeline for RelatedObject gleen Cluster from SnapshotScheduler
+-fixed order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
+-added -Cluster param to Get-XIOSnapshotScheduler
 
 add to Known Issues section of docs:
 -XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.

@@ -1134,14 +1134,13 @@ namespace XioItemInfo {
 // Enumerations
 namespace XioItemInfo.Enums.PerfCounter {
 	public enum AggregationType {avg, min, max}
-	//public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
 	public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Target, TargetGroup, Volume, XEnv, Xms}
 	public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
 	public enum TimeFrame {real_time, last_hour, last_day, last_week, last_year}
 } // end namespace
 namespace XioItemInfo.Enums.Tag {
 	// Entity type names that are valid for values as new Tag entity types
-	public enum EntityType {BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SSD, SnapshotScheduler, SnapshotSet, StorageController, Target, Volume}
+	public enum EntityType {BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, Volume}
 } // end namespace
 namespace XioItemInfo.Enums.General {
 	// Operating System "types", as used by Initiator objects
