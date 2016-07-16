@@ -463,13 +463,12 @@ function New-XIOLunMap {
 
 <#	.Description
 	Create a new XtremIO Tag. Note:  As of XIOS v4.0.2, this cmdlet can make Tags for the fifteen entity types supported by the API.  However, the XMS management interface only displays Tags for six of these entity types (ConsistencyGroup, Initiator, InitatorGroup, SnapshotScheduler, SnapshotSet, and Volume).  The Get-XIOTag cmdlet _will_ show all tags, not just for these six entity types.
-	To see the entity types supported for Tag objects, get the values of the XioItemInfo.Enums.Tag.EntityType enumeration, via:  [System.Enum]::GetNames([XioItemInfo.Enums.Tag.EntityType])
 	.Example
-	New-XIOTag -Name MyVols -EntityType Volume
-	Create a new tag "MyVols", nested in the "/Volume" parent tag, to be used for Volume entities. This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
+	New-XIOTag -Name MyVols -EntityType Volume -Color ffcc99
+	Create a new tag "MyVols", nested in the "/Volume" parent tag, to be used for Volume entities, and with the given hex RGB color (-Color supported by XtremIO REST API starting in v2.1).  This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
 	.Example
 	New-XIOTag -Name /Volume/MyVols2/someOtherTag/superImportantVols -EntityType Volume
-	Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.
+	Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.  And, the maximum tag depth seems to be four (three "parent" tag levels, and then the fourth level being the "leaf" tag "superImportantVols" in this example)
 	.Example
 	New-XIOTag -Name /X-Brick/MyTestXBrickTag -EntityType Brick
 	Create a new tag "/X-Brick/MyTestXBrickTag", to be used for XtremIO Brick entities
@@ -482,10 +481,12 @@ function New-XIOTag {
 	param(
 		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName,
-		## Name for new tag being made
+		## Name for new tag being made.  Can specify "deep" tags (nested tags), up to four total levels.
 		[parameter(Mandatory=$true)][string]$Name,
-		## Type of entity to which this tag can be applied
-		[parameter(Mandatory=$true)][XioItemInfo.Enums.Tag.EntityType]$EntityType
+		## Type of entity to which this tag can be applied.  Entity types supported for Tag objects:  get the values of the XioItemInfo.Enums.Tag.EntityType enumeration, via:  [System.Enum]::GetNames([XioItemInfo.Enums.Tag.EntityType])
+		[parameter(Mandatory=$true)][XioItemInfo.Enums.Tag.EntityType]$EntityType,
+		## Color to assign this tag (as seen in an XMS UI), in the form of six hexadecimal characters (a 'hex triplet'), representing the red, green, and blue components of the color.  Supported by XtremIO REST API starting in v2.1.  Examples:  FFFFFF for white, or FF0000 for red.  Read more about such color things at https://en.wikipedia.org/wiki/Web_colors
+		[ValidateScript({$_ -match "^[0-9a-f]{6}$"})][string]$Color
 	) ## end param
 
 	Begin {
@@ -500,6 +501,9 @@ function New-XIOTag {
 			## get the URI entity type value to use for this PSModule entity typename (need to do .ToString() to get the typename string, as it is a XioItemInfo.Enums.Tag.EntityType enum value)
 			"entity" = $hshCfg.TagEntityTypeMapping[$EntityType.ToString()]
 		} ## end hashtable
+
+		## if the Color was specified, add it (prefixing a '#' to the hex triplet, as that is how the color values are seemingly stored in the XMS, though it also seems that it is not mandatory, as the API will accept other values)
+		if ($PSBoundParameters.ContainsKey("Color")) {$hshNewItemSpec['color'] = "#{0}" -f $Color.ToUpper()}
 
 		## the params to use in calling the helper function to actually create the new object
 		$hshParamsForNewItem = @{

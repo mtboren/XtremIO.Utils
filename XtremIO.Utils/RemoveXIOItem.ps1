@@ -366,7 +366,10 @@ function Remove-XIOSnapshotSet {
 	Remove an XtremIO Tag.  Does not disturb objects that are tagged with the Tag being removed, except that they no longer have that Tag associated with them.
 	.Example
 	Get-XIOTag /Volume/myVolTag0 | Remove-XIOTag
-	Removes the given Tag.
+	Removes the given Tag and any "child" tags that it had.
+	.Example
+	Get-XIOTag /Volume/someParentTag | Remove-XIOTag
+	Removes the given Tag and any "child" tags that it had.  For example, if "someParentTag" had a ten child Tags, "childTag0" through "childTag9", those child Tags would also be removed.
 	.Outputs
 	No output upon successful removal
 #>

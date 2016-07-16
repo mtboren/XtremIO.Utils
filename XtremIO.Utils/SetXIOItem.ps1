@@ -821,26 +821,31 @@ function Set-XIOSyslogNotifier {
 	Set-XIOTag -Tag (Get-XIOTag /InitiatorGroup/myTag) -Caption myTag_renamed
 	Set a new caption for the given Tag from the existing object itself
 	.Example
-	Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed
-	Set a new caption for the given Tag from the existing object itself (via pipeline)
+	Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed -Color 00FF00
+	Set a new caption for the given Tag from the existing object itself (via pipeline), and change its color to green (as specified by the 00FF00 hex triplet)
 	.Outputs
 	XioItemInfo.Tag object for the modified object if successful
 #>
 function Set-XIOTag {
-	[CmdletBinding(SupportsShouldProcess=$true)]
+	[CmdletBinding(DefaultParameterSetName="SetCaption",SupportsShouldProcess=$true)]
 	[OutputType([XioItemInfo.Tag])]
 	param(
 		## Tag object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Tag]$Tag,
 		## New caption to set for Tag
-		[parameter(Mandatory=$true)][string]$Caption
+		[parameter(Mandatory=$true,ParameterSetName="SetCaption")][parameter(ParameterSetName="SetColor")][string]$Caption,
+		## Color to assign this tag (as seen in an XMS UI), in the form of six hexadecimal characters (a 'hex triplet'), representing the red, green, and blue components of the color.  Supported by XtremIO REST API starting in v2.1.  Examples:  FFFFFF for white, or FF0000 for red.  Read more about such color things at https://en.wikipedia.org/wiki/Web_colors
+		[parameter(Mandatory=$true,ParameterSetName="SetColor")][ValidateScript({$_ -match "^[0-9a-f]{6}$"})][string]$Color
 	) ## end param
 
 	Process {
 		## the API-specific pieces for modifying the XIO object's properties
-		$hshSetItemSpec = @{
-			caption = $Caption
-		} ## end hashtable
+		$hshSetItemSpec = @{}
+		## if the new Caption was specified
+		if ($PSBoundParameters.ContainsKey("Caption")) {$hshSetItemSpec['caption'] = $Caption}
+
+		## if the Color was specified, add it (prefixing a '#' to the hex triplet, as that is how the color values are seemingly stored in the XMS, though it also seems that it is not mandatory, as the API will accept other values)
+		if ($PSBoundParameters.ContainsKey("Color")) {$hshSetItemSpec['color'] = "#{0}" -f $Color.ToUpper()}
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{

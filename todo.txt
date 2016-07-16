@@ -207,7 +207,6 @@ doing:
 	-add -Name param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
 	-revisit pipelining:  sufficient for now, until adding Filtering support in later release?
 -enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup, or via Add-XIOVolumeToConsistencyGroup, Remove-XIOVolumeFromConsistencyGroup?)
--add -Color param to New-XIOTag (seems to be supported per events, but not listed in API doc -- test out)
 -update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
 -update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 	-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
@@ -228,6 +227,8 @@ done for version next (after v1.1.0):
 	-verified that Get-XIO* cmdlets that take SnapshotScheduler obj from pipeline for RelatedObject gleen Cluster from SnapshotScheduler
 -fixed order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
 -added -Cluster param to Get-XIOSnapshotScheduler
+-added -Color param to New-XIOTag -- only supported by XIO REST API starting in v2.1 (seems to be supported per events, but not listed in API doc)
+-updated Set-XIOTag to support setting tag color via new -Color parameter -- only supported by XIO REST API starting in v2.1
 
 add to Known Issues section of docs:
 -XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
