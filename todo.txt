@@ -210,8 +210,6 @@ doing:
 -update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
 -update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 	-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
--add Open-XIOXMSWebUi cmdlet
-	-add verbose that says that one must enable via CLI (if this is the case -- is there a way to doit via the API?)
 
 
 done for version next (after v1.1.0):
@@ -229,6 +227,7 @@ done for version next (after v1.1.0):
 -added -Cluster param to Get-XIOSnapshotScheduler
 -added -Color param to New-XIOTag -- only supported by XIO REST API starting in v2.1 (seems to be supported per events, but not listed in API doc)
 -updated Set-XIOTag to support setting tag color via new -Color parameter -- only supported by XIO REST API starting in v2.1
+-added Open-XIOXMSWebUI cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
 
 add to Known Issues section of docs:
 -XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
