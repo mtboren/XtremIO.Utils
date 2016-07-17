@@ -34,7 +34,7 @@ function Set-XIOItemInfo {
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
-		## XioItemInfo object whose property to set
+		## XioItemInfo object whose property to set, like an XIOItemInfo.Volume object
 		[parameter(Position=0,ParameterSetName="ByXioItemInfoObj",ValueFromPipeline)][ValidateNotNullOrEmpty()][PSObject]$XIOItemInfoObj
 	) ## end param
 

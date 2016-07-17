@@ -202,7 +202,14 @@ should do next:
 
 doing:
 [feat_MiscUpdates]
--enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Get-XIOTagAssignment and Remove-XIOTagAssignment kind of cmdlets)
+-enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Remove-XIOTagAssignment kind of cmdlet; will not have Get-XIOTagAssignment, as one can get the Tags assigned to an object via Get-XIOTag)
+	-New-XIOTagAssignment:  take Entity or Tag from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity, tag-id name from Tag
+		-can use @(guid, name, index) for entity-details, tag-id, cluster-id
+		-use Set-XIOItemInfo
+		-"entity" property must have one of the following values: [InfinibandSwitch, DAE, Initiator, BatteryBackupUnit, Scheduler, StorageController, DataProtectionGroup, X-Brick, Volume, Cluster, InitiatorGroup, SSD, SnapshotSet, ConsistencyGroup, Target]
+		-return a custom object that has just Tag and Entity properties?  Currently just the update tag object is returned; could also make new obj type TagAssignment with just those couple of properties
+			like New-Object -Type PSObject -Property ([ordered]@{Tag = Get-XIOItemInfo -URI $oExistingXioItem.Uri; Entity = Get-XIOItemInfo thisEntity.uri})
+	-Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag, or does this just remove all tags for object?
 -improve Get-XIOLunMap:
 	-add -Name param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
 	-revisit pipelining:  sufficient for now, until adding Filtering support in later release?
