@@ -1015,3 +1015,72 @@ function New-XIOSnapshotScheduler {
 		New-XIOItem @hshParamsForNewItem
 	} ## end process
 } ## end function
+
+
+<#	.Description
+	Create a new XtremIO Tag assignment (assign a Tag to an XIO entity)
+	.Example
+	New-XIOTagAssignment -Tag (Get-XIOTag /Initiator/myInitiatorTag0) -Entity (Get-XIOInitiator myServer0-Init*)
+	Tag the Initiators myServer0-Init* with the initiator Tag "/Initiator/myInitiatorTag0"
+	.Example
+	Get-XIOVolume myVol[01] | New-XIOTagAssignment -Tag (Get-XIOTag /Volume/favoriteVolumes)
+	Tag the Volumes myVol0, myVol1 with the volume Tag "/Volume/favoriteVolumes"
+	.Outputs
+	XioItemInfo.TagAssignment object with information about the newly created object if successful
+#>
+function New-XIOTagAssignment {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	# [OutputType([XioItemInfo.TagAssignment])]
+	param(
+		## XtremIO entity to which to apply/assign the given Tag. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, or Volume
+		[parameter(ValueFromPipeline=$true, Mandatory=$true)][PSObject[]]$Entity,
+		## The Tag object to apply/assign to the given Entity object(s)
+		[parameter(Mandatory=$true)][XioItemInfo.Tag]$Tag
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		# $strThisItemType = "tag"
+		## TypeNames of supported Entity objects
+		$arrTypeNamesOfSupportedEntityObj = Write-Output BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, Volume | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		$Entity | Foreach-Object {
+			$oThisEntity = $_
+			if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedEntityObj) {
+				## the Tag object that will get updated
+				$oThisTag = $Tag
+
+				## the API-specific pieces that define the new properties to add to the given XIO Tag object
+				$hshSetItemSpec = ([ordered]@{
+					"tag-id" = @($oThisTag.Guid, $oThisTag.Name, $oThisTag.Index)
+					## get the URI entity type value to use for this Entity type shortname
+					"entity" = $hshCfg.TagEntityTypeMapping[$oThisEntity.GetType().Name]
+					"entity-details" = @($oThisEntity.Guid, $oThisEntity.Name, $oThisEntity.Index)
+				}) ## end hashtable
+
+				## add cluster-id if suitable
+				if ($oThisEntity -is [XioItemInfo.Cluster]) {$hshSetItemSpec["cluster-id"] = @($oThisEntity.Guid, $oThisEntity.Name, $oThisEntity.Index)}
+				## SnapshotScheduler object in REST API v2.0 has $null Cluster property value
+				else {if ($null -ne $oThisEntity.Cluster) {$hshSetItemSpec["cluster-id"] = $oThisEntity.Cluster.Name}}
+
+				## the params to use in calling the helper function to actually update the Tag object
+				$hshParamsForSetItem = @{
+					SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+					XIOItemInfoObj = $oThisTag
+					Confirm = $false
+				} ## end hashtable
+
+				## call the function to make this new item, which is actually setting properties on a Tag object
+				try {
+					$oUpdatedTag = Set-XIOItemInfo @hshParamsForSetItem
+					if ($null -ne $oUpdatedTag) {New-Object -Type PSObject -Property ([ordered]@{Tag = $oUpdatedTag; Entity = Get-XIOItemInfo -Uri $oThisEntity.Uri})}
+				} ## end try
+				## currently just throwing caught error
+				catch {Throw $_}
+			} ## end if
+			else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedEntityObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedEntityObj -join ", "))}
+		} ## end foreach-object
+	} ## end process
+} ## end function

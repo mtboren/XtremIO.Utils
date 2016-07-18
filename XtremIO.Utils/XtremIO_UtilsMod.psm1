@@ -11,7 +11,7 @@ Export-ModuleMember -Function Get-XIOItemInfo, Get-XIOAlert, Get-XIOAlertDefinit
 	## performance items
 	Get-XIOClusterPerformance, Get-XIODataProtectionGroupPerformance, Get-XIOInitiatorGroupFolderPerformance, Get-XIOInitiatorGroupPerformance, Get-XIOInitiatorPerformance, Get-XIOPerformanceCounter, Get-XIOSsdPerformance, Get-XIOTargetPerformance, Get-XIOVolumeFolderPerformance, Get-XIOVolumePerformance,
 	## "New-" items
-	New-XIOConsistencyGroup, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOSnapshot, New-XIOSnapshotScheduler, New-XIOTag, New-XIOUserAccount, New-XIOVolume, New-XIOVolumeFolder,
+	New-XIOConsistencyGroup, New-XIOInitiator, New-XIOInitiatorGroup, New-XIOInitiatorGroupFolder, New-XIOLunMap, New-XIOSnapshot, New-XIOSnapshotScheduler, New-XIOTag, New-XIOTagAssignment, New-XIOUserAccount, New-XIOVolume, New-XIOVolumeFolder,
 	## "Remove-" items
 	Remove-XIOConsistencyGroup, Remove-XIOInitiator, Remove-XIOInitiatorGroup, Remove-XIOInitiatorGroupFolder, Remove-XIOLunMap, Remove-XIOSnapshotScheduler, Remove-XIOSnapshotSet, Remove-XIOStoredCred, Remove-XIOTag, Remove-XIOUserAccount, Remove-XIOVolume, Remove-XIOVolumeFolder,
 	## "Set-" items
