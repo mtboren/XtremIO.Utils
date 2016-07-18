@@ -909,6 +909,17 @@ namespace XioItemInfo {
 
 		// Implicit constructor
 		public Tag () {}
+
+		public override string ToString() {return Name;}
+	}
+
+	// TagAssignment
+	public class TagAssignment {
+		public XioItemInfo.Tag Tag;
+		public Object Entity;
+
+		// Implicit constructor
+		public TagAssignment () {}
 	}
 
 	// Target (iSCSI/FC target)

@@ -1026,11 +1026,11 @@ function New-XIOSnapshotScheduler {
 	Get-XIOVolume myVol[01] | New-XIOTagAssignment -Tag (Get-XIOTag /Volume/favoriteVolumes)
 	Tag the Volumes myVol0, myVol1 with the volume Tag "/Volume/favoriteVolumes"
 	.Outputs
-	XioItemInfo.TagAssignment object with information about the newly created object if successful
+	XioItemInfo.TagAssignment object with information about the newly created assignment if successful
 #>
 function New-XIOTagAssignment {
 	[CmdletBinding(SupportsShouldProcess=$true)]
-	# [OutputType([XioItemInfo.TagAssignment])]
+	[OutputType([XioItemInfo.TagAssignment])]
 	param(
 		## XtremIO entity to which to apply/assign the given Tag. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, or Volume
 		[parameter(ValueFromPipeline=$true, Mandatory=$true)][PSObject[]]$Entity,
@@ -1075,7 +1075,7 @@ function New-XIOTagAssignment {
 				## call the function to make this new item, which is actually setting properties on a Tag object
 				try {
 					$oUpdatedTag = Set-XIOItemInfo @hshParamsForSetItem
-					if ($null -ne $oUpdatedTag) {New-Object -Type PSObject -Property ([ordered]@{Tag = $oUpdatedTag; Entity = Get-XIOItemInfo -Uri $oThisEntity.Uri})}
+					if ($null -ne $oUpdatedTag) {New-Object -Type XioItemInfo.TagAssignment -Property ([ordered]@{Tag = $oUpdatedTag; Entity = Get-XIOItemInfo -Uri $oThisEntity.Uri})}
 				} ## end try
 				## currently just throwing caught error
 				catch {Throw $_}
