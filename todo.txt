@@ -1,4 +1,5 @@
 todo:
+-enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup, or via Add-XIOVolumeToConsistencyGroup, Remove-XIOVolumeFromConsistencyGroup?)
 -add Filtering support in some way, possible only in API v2 (need to handle how to only "enable" it for XIOSv4+ XMSs)
 	-see the "Filter" support that came in API v2 in the API guide (pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide)
 	-good for speeding up LunMap retrieval and the likes
@@ -171,11 +172,12 @@ todo:
 		-need to update all places that specify API types as singular to use real API type name
 -?add object definitions of sub-property objects?  Could slow things down (like Get-VM does vs. Get-View in PowerCLI)
 -?for when rev'ing minimum API support level to API v2.0, remove the conditional Cluster property population code (as needed .sys-id property should be present on everything at that point); affected object types:  Initiator, InitiatorGroup, LunMap, Target,
--once API exposes "move-to-folder" functionality, make Move- cmdlets for Volumes, VolumeFolders, InitiatorGroups, InitiatorGroupFolders
-	-not available as of XIOS v3.0.1
 
 
--known issues:
+-known issues / considerations:
+	Since module release v1.next
+	- User must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
+
 	Since module release v1.1.0
 	- In XtremIO REST API v2.0, getting objects from pipeline with `SnapshotScheduler` as the `-RelatedObject` in a multi-cluster XMS scenario may return more that just one of given object type:  the XIOS API does not have cluster-specificity for `SnapshotScheduler` objects, so objects related to `SnapshotScheduler` are retrieved only by name and XMS computer name for now (until better filtering based on GUID is in place); if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned.  This is not the case starting in XtremIO REST API v2.1.
 	- When connected to a multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster\_id\_is\_required" message:
@@ -204,22 +206,20 @@ should do next:
 doing:
 [feat_MiscUpdates]
 -enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Remove-XIOTagAssignment kind of cmdlet; will not have Get-XIOTagAssignment, as one can get the Tags assigned to an object via Get-XIOTag)
-	-New-XIOTagAssignment:  take Entity or Tag from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity, tag-id name from Tag
-		-add tests for New-XIOTagAssignment
-		-user must try assigning proper Tag type to proper Entity type (does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
-		-override ToString() method of Entity objects so that it just outputs object name?
-		done:
-			-can use @(guid, name, index) for entity-details, tag-id, cluster-id spec properties
-			-uses Set-XIOItemInfo
-			-"entity" property must have one of the following values: [InfinibandSwitch, DAE, Initiator, BatteryBackupUnit, Scheduler, StorageController, DataProtectionGroup, X-Brick, Volume, Cluster, InitiatorGroup, SSD, SnapshotSet, ConsistencyGroup, Target]
-			-return a new obj type TagAssignment with just Tag and Entity properties
-				like New-Object -Type XioItemInfo.TagAssignment -Property ([ordered]@{Tag = Get-XIOItemInfo -URI $oExistingXioItem.Uri; Entity = Get-XIOItemInfo thisEntity.uri})
 	-Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag, or does this just remove all tags for object?
 		-add tests for Remove-XIOTagAssignment
+
+	done:
+	-New-XIOTagAssignment:  take Entity or Tag from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity, tag-id name from Tag
+		-can use @(guid, name, index) for entity-details, tag-id, cluster-id spec properties
+		-uses Set-XIOItemInfo
+		-"entity" property must have one of the following values: [InfinibandSwitch, DAE, Initiator, BatteryBackupUnit, Scheduler, StorageController, DataProtectionGroup, X-Brick, Volume, Cluster, InitiatorGroup, SSD, SnapshotSet, ConsistencyGroup, Target]
+		-return a new obj type TagAssignment with just Tag and Entity properties
+			like New-Object -Type XioItemInfo.TagAssignment -Property ([ordered]@{Tag = Get-XIOItemInfo -URI $oExistingXioItem.Uri; Entity = Get-XIOItemInfo thisEntity.uri})
+		-add tests for New-XIOTagAssignment
 -improve Get-XIOLunMap:
 	-add -Name param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
 	-revisit pipelining:  sufficient for now, until adding Filtering support in later release?
--enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup, or via Add-XIOVolumeToConsistencyGroup, Remove-XIOVolumeFromConsistencyGroup?)
 -update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
 -update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 	-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?

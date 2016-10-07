@@ -342,6 +342,24 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 	}
 
 
+	Describe -Tags "New" -Name "New-XIOTagAssignment" {
+		It "Creates a new tag assignment for given volume object" {
+			## the target object type of tag to use
+			$strTagObjectTypeToUse = "Volume"
+			## tag to use for new tag assignment
+			$oTagToUseForNewAssignment = $hshXioObjsToRemove["Tag"] | Where-Object {$_.ObjectType -eq $strTagObjectTypeToUse} | Select-Object -First 1
+			$oXioObjToUseForNewAssignment = $hshXioObjsToRemove[$strTagObjectTypeToUse] | Select-Object -First 1
+
+			$oNewTagAssignment = New-XIOTagAssignment -Tag $oTagToUseForNewAssignment -Entity $oXioObjToUseForNewAssignment
+			# $hshXioObjsToRemove["TagAssignment"] += @($oNewTagAssignment)
+
+			$oNewTagAssignment | Should BeOfType [XioItemInfo.TagAssignment]
+			$oNewTagAssignment.Tag.ObjectType | Should Be $strTagObjectTypeToUse
+			$oNewTagAssignment.Entity.Name | Should Be $oXioObjToUseForNewAssignment.Name
+		}
+	}
+
+
 	Describe -Tags "New" -Name "New-XIOUserAccount" {
 		It "Creates a new UserAccount with the read_only role, and with the given username/password. Uses default inactivity timeout configured on the XMS" {
 			$strRole = "read_only"

@@ -1068,6 +1068,7 @@ function New-XIOTagAssignment {
 				## the params to use in calling the helper function to actually update the Tag object
 				$hshParamsForSetItem = @{
 					SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+					## the Set-XIOItemInfo cmdlet derives the ComputerName to use from the .ComputerName property of this tag object being acted upon; so, not taking -ComputerName as param to New-XIOTagAssignment
 					XIOItemInfoObj = $oThisTag
 					Confirm = $false
 				} ## end hashtable
