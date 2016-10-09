@@ -206,7 +206,7 @@ should do next:
 doing:
 [feat_MiscUpdates]
 -enable setting Tag for an object -- should be done via New-XIOTagAssignment type of cmdlet (needs corresponding Remove-XIOTagAssignment kind of cmdlet; will not have Get-XIOTagAssignment, as one can get the Tags assigned to an object via Get-XIOTag)
-	-Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag, or does this just remove all tags for object?
+	-Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag object
 		-add tests for Remove-XIOTagAssignment
 
 	done:
@@ -241,6 +241,7 @@ done for version next (after v1.1.0):
 -added -Color param to New-XIOTag -- only supported by XIO REST API starting in v2.1 (seems to be supported per events, but not listed in API doc)
 -updated Set-XIOTag to support setting tag color via new -Color parameter -- only supported by XIO REST API starting in v2.1
 -added Open-XIOXMSWebUI cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
+-added DefaultParameterSetName to Set-XIOUserAccount, as some parameter combinations resulted in "Parameter set cannot be resolved using the specified named parameters" error
 
 add to Known Issues section of docs:
 -XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.

@@ -67,8 +67,10 @@ function Remove-XIOItemInfo {
 					{"Volume","Snapshot" -contains $_} {"named '{0}', of size '{1}TB', and" -f $oExistingXioItem.Name, $oExistingXioItem.VolSizeTB; break}
 					default {"named '{0}'" -f $oExistingXioItem.Name}
 				} ## end switch
+				## the object type name (or "Tag Assignment") if this Remove is of a tag assignment (as deduced by the $oExistingXioItem item being a Tag, and the $oRemoveSpecItem hashtable having "entity" and "entity-details" keys, which are what initiate a tag _assigment_ removal, versus just a removal of the Tag itself)
+				$strObjectTypeBeingRemoved_display = if (($oExistingXioItem.GetType().Name -eq "Tag") -and (($oRemoveSpecItem | Get-Member -Name entity,entity-details | Measure-Object).Count -eq 2)) {"Tag assignment"} else {$oExistingXioItem.GetType().Name}
 				## make the overall ShouldProcess message
-				$strShouldProcessOutput = "Remove XIO '{0}' object {1} with the following {2} propert{3}:`n{4}`n" -f $oExistingXioItem.GetType().Name, $strShouldProcessOutput_firstPiece, $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $strPropertiesOfObjToRemove
+				$strShouldProcessOutput = "Remove XIO '{0}' object {1} with the following {2} propert{3}:`n{4}`n" -f $strObjectTypeBeingRemoved_display, $strShouldProcessOutput_firstPiece, $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $strPropertiesOfObjToRemove
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
 					$hshParamsToSetXIOItem = @{
@@ -395,6 +397,71 @@ function Remove-XIOTag {
 
 		## call the function to actually remove this item
 		Remove-XIOItemInfo @hshParamsForRemoveItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Remove an XtremIO Tag assignment (unassign a Tag from an XIO entity)
+	.Example
+	Remove-XIOTagAssignment -Tag (Get-XIOTag /Initiator/myInitiatorTag0) -Entity (Get-XIOInitiator myServer0-Init*)
+	Remove the initiator Tag "/Initiator/myInitiatorTag0" from the Initiators myServer0-Init*
+	.Example
+	Get-XIOVolume myVol[01] | Remove-XIOTagAssignment -Tag (Get-XIOTag /Volume/favoriteVolumes)
+	Remove the volume Tag "/Volume/favoriteVolumes" from the Volumes myVol0, myVol1
+	.Outputs
+	None on success
+#>
+function Remove-XIOTagAssignment {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	param(
+		## XtremIO entity from which to remove the given Tag assignment. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, or Volume
+		[parameter(ValueFromPipeline=$true, Mandatory=$true)][PSObject[]]$Entity,
+		## The Tag object to unassign from the given Entity object(s)
+		[parameter(Mandatory=$true)][XioItemInfo.Tag]$Tag
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		# $strThisItemType = "tag"
+		## TypeNames of supported Entity objects
+		$arrTypeNamesOfSupportedEntityObj = Write-Output BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, Volume | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		$Entity | Foreach-Object {
+			$oThisEntity = $_
+			if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedEntityObj) {
+				## the Tag object that will get updated
+				$oThisTag = $Tag
+
+				## the API-specific pieces that specify the properties to remove from the given XIO Tag object
+				$hshRemoveItemSpec = ([ordered]@{
+					"tag-id" = @($oThisTag.Guid, $oThisTag.Name, $oThisTag.Index)
+					## get the URI entity type value to use for this Entity type shortname
+					"entity" = $hshCfg.TagEntityTypeMapping[$oThisEntity.GetType().Name]
+					"entity-details" = @($oThisEntity.Guid, $oThisEntity.Name, $oThisEntity.Index)
+				}) ## end hashtable
+
+				## add cluster-id if suitable
+				if ($oThisEntity -is [XioItemInfo.Cluster]) {$hshRemoveItemSpec["cluster-id"] = @($oThisEntity.Guid, $oThisEntity.Name, $oThisEntity.Index)}
+				## SnapshotScheduler object in REST API v2.0 has $null Cluster property value
+				else {if ($null -ne $oThisEntity.Cluster) {$hshRemoveItemSpec["cluster-id"] = $oThisEntity.Cluster.Name}}
+
+				## the params to use in calling the helper function to actually update the Tag object
+				$hshParamsForSetItem = @{
+					SpecForRemoveItem = $hshRemoveItemSpec | ConvertTo-Json
+					## the Set-XIOItemInfo cmdlet derives the ComputerName to use from the .ComputerName property of this tag object being acted upon; so, not taking -ComputerName as param to New-XIOTagAssignment
+					XIOItemInfoObj = $oThisTag
+				} ## end hashtable
+
+				## call the function to remove this item, which is actually removing properties on a Tag object
+				try {Remove-XIOItemInfo @hshParamsForSetItem} ## end try
+				## currently just throwing caught error
+				catch {Throw $_}
+			} ## end if
+			else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedEntityObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedEntityObj -join ", "))}
+		} ## end foreach-object
 	} ## end process
 } ## end function
 

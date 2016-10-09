@@ -915,7 +915,7 @@ function Set-XIOTarget {
 	XioItemInfo.UserAccount object for the modified object if successful
 #>
 function Set-XIOUserAccount {
-	[CmdletBinding(SupportsShouldProcess=$true)]
+	[CmdletBinding(SupportsShouldProcess=$true, DefaultParameterSetName="SpecifySecureStringPassword")]
 	[OutputType([XioItemInfo.UserAccount])]
 	param(
 		## UserAccount object to modify
