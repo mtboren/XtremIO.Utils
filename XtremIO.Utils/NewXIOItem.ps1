@@ -197,10 +197,13 @@ function New-XIOConsistencyGroup {
 	New-XIOInitiatorGroup -Name testIG0
 	Create an initiator-group named testIG0 with no initiators defined therein
 	.Example
-	New-XIOInitiatorGroup -Name testIG1 -ParentFolder "/testIGs" -InitiatorList @{'"myserver-hba2"' = '"10:00:00:00:00:00:00:F4"'; '"myserver-hba3"' = '"10:00:00:00:00:00:00:F5"'}
-	Create an initiator-group named testIG1 with two initiators defined therein (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0). And, notice the keys/values in the InitatorList hashtable:  they are made to include quotes in them by wrapping the double-quoted value in single quotes. This is a "feature" of XIOS REST API v1.0 -- these values need to reach the REST API with quotes around them
+	New-XIOInitiatorGroup -Name testIG1 -InitiatorList @{myserver_hba2 = "10:00:00:00:00:00:00:F0"; myserver_hba3 = "10:00:00:00:00:00:00:F1"} | New-XIOTagAssignment -Tag (Get-XIOTag /InitiatorGroup/testIGs)
+	Create an initiator-group named testIG1 with two initiators defined therein, and then assign the Tag "/InitiatorGroup/testIGs" to the new initiator group
 	.Example
-	New-XIOInitiatorGroup -Name testIG2 -Cluster myCluster0 -InitiatorList @{"myserver2-hba2" = "10:00:00:00:00:00:00:F6"; "myserver2-hba3" = "10:00:00:00:00:00:00:F7"}
+	New-XIOInitiatorGroup -Name testIG2 -ParentFolder /testIGs -InitiatorList @{'"myserver_hba2"' = '"10:00:00:00:00:00:00:F4"'; '"myserver_hba3"' = '"10:00:00:00:00:00:00:F5"'}
+	Deprecated:  Create an initiator-group named testIG2 with two initiators defined therein (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0). And, notice the keys/values in the InitatorList hashtable:  they are made to include quotes in them by wrapping the double-quoted value in single quotes. This is a "feature" of XIOS REST API v1.0 -- these values need to reach the REST API with quotes around them
+	.Example
+	New-XIOInitiatorGroup -Name testIG3 -Cluster myCluster0 -InitiatorList @{myserver2_hba2 = "10:00:00:00:00:00:00:F6"; myserver2_hba3 = "10:00:00:00:00:00:00:F7"}
 	Create an initiator-group named testIG3 with two initiators defined therein, and for XIO Cluster "myCluster0" (-Cluster being handy/necessary for connection to XMS that manages multiple XIO Clusters).  Notice, no additional quoting needed for InitiatorList hashtable keys/values -- the XIOS REST API v2 does not have the "feature" described in the previous example
 	.Outputs
 	XioItemInfo.InitiatorGroup object for the newly created object if successful
@@ -217,10 +220,10 @@ function New-XIOInitiatorGroup {
 		[string[]]$Cluster,
 		## The initiator-name and port-address for each initiator you want to add to the group, if any (why not, though?). Each key/value pair shall use initiator-name as the key, and the corresponding port-address for the value.
 		#For the port addresses, valid values are colon-separated hex numbers, non-separated hex numbers, or non-separated hex numbers prefixed with "0x".  That is, the following formats are acceptable for port-address values:  XX:XX:XX:XX:XX:XX:XX:XX, XXXXXXXXXXXXXXXX, or 0xXXXXXXXXXXXXXXXX
-		#Example hashtable for two initiators named "myserver-hba2" and "myserver-hba3":
-		#    @{"myserver-hba2" = "10:00:00:00:00:00:00:F4"; "myserver-hba3" = "10:00:00:00:00:00:00:F5"}
+		#Example hashtable for two initiators named "myserver_hba2" and "myserver_hba3":
+		#    @{"myserver_hba2" = "10:00:00:00:00:00:00:F4"; "myserver_hba3" = "10:00:00:00:00:00:00:F5"}
 		[System.Collections.Hashtable]$InitiatorList_hsh,
-		## The initiator group's parent folder. The folder's Folder Type must be IG. If omitted, the volume will be added to the root IG folder. Example value: "/IGsForMyCluster0"
+		## Deprecated:  The initiator group's parent folder. The folder's Folder Type must be IG. If omitted, the volume will be added to the root IG folder. Example value: "/IGsForMyCluster0"
 		[ValidateScript({$_.StartsWith("/")})][string]$ParentFolder_str
 	) ## end param
 
@@ -272,13 +275,13 @@ function New-XIOInitiatorGroup {
 	.Notes
 	Does not yet support creating iSCSI initiators
 	.Example
-	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 0x100000000000ab56
+	New-XIOInitiator -Name myserver0_hba2 -InitiatorGroup myserver0 -PortAddress 0x100000000000ab56
 	Create a new initiator in the initiator group "myserver0"
 	.Example
-	New-XIOInitiator -Name myserver0-hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54 -OperatingSystem ESX
+	New-XIOInitiator -Name myserver0_hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54 -OperatingSystem ESX
 	Create a new initiator in the initiator group "myserver0" on all XIO Clusters in the connected XMS, and specifies "ESX" for the Operating System type
 	.Example
-	New-XIOInitiator -Name myserver0-hba4 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
+	New-XIOInitiator -Name myserver0_hba4 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
 	Create a new initiator in the initiator group "myserver0", on specified XIO Cluster only
 	.Outputs
 	XioItemInfo.Initiator object for the newly created object if successful
@@ -345,6 +348,10 @@ function New-XIOInitiator {
 
 <#	.Description
 	Create a new XtremIO initiator-group-folder
+	.Synopsis
+	Deprecated cmdlet for creating legacy "folder" objects
+	.Notes
+	Folders have been replaced with Tags in newer XIOS releases.  Support for *Folder cmdlets is deprecated, and the cmdlets will be removed at some point.  Use Tags instead of folders.
 	.Example
 	New-XIOInitiatorGroupFolder -Name someDeeperFolder -ParentFolder /myMainIGroups
 	Create a subfolder "someDeeperFolder" in parent folder "/myMainIGroups"
@@ -594,14 +601,17 @@ function New-XIOUserAccount {
 	New-XIOVolume -Name testvol03 -SizeGB 2KB
 	Create a 2TB (which is 2048GB, as represented by the "2KB" value for the -SizeGB param) volume named testvol0
 	.Example
-	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol04 -SizeGB 5120 -ParentFolder "/testVols"
-	Create a 5TB volume named testvol04 in the given parent folder (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0)
+	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol04 -SizeGB 5120 | New-XIOTagAssignment -Tag (Get-XIOTag /Volumes/testVols)
+	Create a 5TB volume named testvol04 and assign the given Tag to the new volume
 	.Example
 	New-XIOVolume -Name testvol05 -SizeGB 5KB -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert
 	Create a 5TB volume named testvol05 with all three alert types enabled
 	.Example
 	New-XIOVolume -Name testvol10 -Cluster myxio05,myxio06 -SizeGB 1024
 	Create two 1TB volumes named "testvol10", one on each of the two given XIO clusters (expects that the XMS is using at least v2.0 of the REST API, which is available as of XIOS v4.0)
+	.Example
+	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol11 -SizeGB 5120 -ParentFolder "/testVols"
+	Deprecated:  Create a 5TB volume named testvol04 in the given parent folder (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0)
 	.Outputs
 	XioItemInfo.Volume object for the newly created object if successful
 #>
@@ -622,7 +632,7 @@ function New-XIOVolume {
 		## The disk space size of the volume in GB. This parameter reflects the size of the volume available to the initiators. It does not indicate the actual SSD space this volume may consume
 		#   Must be an integer greater than 0 and a multiple of 1 MB.
 		[parameter(Mandatory=$true)][ValidateScript({$_ -gt 0})][int]$SizeGB_int,
-		## Identifies the volume folder to which this volume will initially belong. The folder's Folder Type must be Volume. If omitted, the volume will be added to the root volume folder. Example value: "/myBigVolumesFolder"
+		## Deprecated:  Identifies the volume folder to which this volume will initially belong. The folder's Folder Type must be Volume. If omitted, the volume will be added to the root volume folder. Example value: "/myBigVolumesFolder"
 		##   Note:  parameter is obsolete, no longer supported in XIOS API v2.0
 		[ValidateScript({$_.StartsWith("/")})][string]$ParentFolder_str,
 		## Switch:  Enable small IO alerts for this volume?  They are disabled by default
@@ -682,6 +692,10 @@ function New-XIOVolume {
 
 <#	.Description
 	Create a new XtremIO volume-folder
+	.Synopsis
+	Deprecated cmdlet for creating legacy "folder" objects
+	.Notes
+	Folders have been replaced with Tags in newer XIOS releases.  Support for *Folder cmdlets is deprecated, and the cmdlets will be removed at some point.  Use Tags instead of folders.
 	.Example
 	New-XIOVolumeFolder -Name someDeeperFolder -ParentFolder /myMainVols
 	Create a subfolder "someDeeperFolder" in parent folder "/myMainVols"

@@ -202,10 +202,6 @@ todo:
 
 
 should do next:
-
-
-doing:
-[feat_MiscUpdates]
 -improve Get-XIOLunMap:
 	-add -Name param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
 	-revisit pipelining:  sufficient for now, until adding Filtering support in later release?
@@ -214,7 +210,11 @@ doing:
 	-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
 
 
-done for version next (after v1.1.0):
+doing:
+[feat_MiscUpdates]
+
+done:
+[feat_MiscUpdates]
 - Properties added/removed/deprecated:
 	- on Alert object:  added Cluster property, deprecated ClusterId, ClusterName properties
 	- to LunMap:  added "Certainty"
@@ -237,12 +237,13 @@ done for version next (after v1.1.0):
 		- uses Set-XIOItemInfo (actual act of "tagging" an entity is a call to modify the existing Tag object)
 		- "entity" property must have one of the following values: InfinibandSwitch, DAE, Initiator, BatteryBackupUnit, Scheduler, StorageController, DataProtectionGroup, X-Brick, Volume, Cluster, InitiatorGroup, SSD, SnapshotSet, ConsistencyGroup, Target
 		- returns a new obj type TagAssignment with just Tag and Entity properties
+		- updated other cmdlets' Help examples to include use of New-XIOTagAssignment, particularly in place of where -ParentFolder param is used
 		- added tests for New-XIOTagAssignment
 	- Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag object
 		- added tests for Remove-XIOTagAssignment
 
-add to Known Issues section of docs:
--XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
+- added to Known Issues section of docs:
+	- XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
 
 
 ## things below here are in changelog/readme
