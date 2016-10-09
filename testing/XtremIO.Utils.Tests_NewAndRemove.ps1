@@ -351,7 +351,7 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 			$oXioObjToUseForNewAssignment = $hshXioObjsToRemove[$strTagObjectTypeToUse] | Select-Object -First 1
 
 			$oNewTagAssignment = New-XIOTagAssignment -Tag $oTagToUseForNewAssignment -Entity $oXioObjToUseForNewAssignment
-			# $hshXioObjsToRemove["TagAssignment"] += @($oNewTagAssignment)
+			$hshXioObjsToRemove["TagAssignment"] += @($oNewTagAssignment)
 
 			$oNewTagAssignment | Should BeOfType [XioItemInfo.TagAssignment]
 			$oNewTagAssignment.Tag.ObjectType | Should Be $strTagObjectTypeToUse
@@ -388,7 +388,26 @@ Describe -Tags "Remove" -Name "Remove-XIOInitiatorGroup_shouldThrow" {
 			{$oUpdatedTestIGObj | Remove-XIOInitiatorGroup} | Should Throw
 		}
 	}
-}
+} ## end describe
+
+
+## remove all Tag assignments made during testing
+$hshXioObjsToRemove["TagAssignment"] | Foreach-Object {
+	$oThisTagAssignment = $_
+	Describe -Tags "Remove" -Name "Remove-XIOTagAssignment" {
+		Context "Tag is assigneed to entity" {
+			It "Removes a Tag assignment from a given XIO entity" {
+				## get the entity and Tag for the assignment removal
+				$oXIOTagInAssignmentToRemove = $oThisTagAssignment.Tag; $oXIOEntityInTagAssignment = $oThisTagAssignment.Entity
+				## remove the Tag assignment (still interactive -- prompts for confirmation)
+				{Remove-XIOTagAssignment -Tag $oXIOTagInAssignmentToRemove -Entity $oXIOEntityInTagAssignment} | Should Not Throw
+				## ensure that the XIO entity no long is "tagged" with the given XIO Tag
+				$bEntityNoLongerHasThisTag = (Get-XIOItemInfo -URI $oXIOEntityInTagAssignment.URI | Get-XIOTag).Name -notcontains $oXIOTagInAssignmentToRemove.Name
+				$bEntityNoLongerHasThisTag | Should Be $true
+			}
+		}
+	}
+} ## end foreach-object
 
 
 ## not in use for now
@@ -435,8 +454,10 @@ Describe -Tags "Remove" -Name "Remove-XIOInitiatorGroup_shouldThrow" {
 #   Volume (so that subsequent Remove-XIOVolumeFolder will not fail on API v1 due to non-empty folder -- that throws error in API v1)
 #	then <all the rest>
 $arrTypeSpecificRemovalOrder = Write-Output SnapshotScheduler ConsistencyGroup LunMap Snapshot Initiator Volume
+## list of types that are removed by other means (separate tests), and, so, will not be added to list of types to "auto" remove
+$arrTypesRemovedInOtherTests = Write-Output TagAssignment
 ## then, the order-specific types, plus the rest of the types that were created during the New-XIO* testing, so as to be sure to removal all of the new test objects created:
-$arrOverallTypeToRemove_InOrder = $arrTypeSpecificRemovalOrder + @($hshXioObjsToRemove.Keys | Where-Object {$arrTypeSpecificRemovalOrder -notcontains $_})
+$arrOverallTypeToRemove_InOrder = $arrTypeSpecificRemovalOrder + @($hshXioObjsToRemove.Keys | Where-Object {$arrTypeSpecificRemovalOrder -notcontains $_ -and ($arrTypesRemovedInOtherTests -notcontains $_)})
 
 ## for each of the types to remove, and in order, if there were objects of this type created, remove them
 $arrOverallTypeToRemove_InOrder | Foreach-Object {
