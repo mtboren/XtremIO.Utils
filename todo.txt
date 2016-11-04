@@ -212,7 +212,9 @@ should do next:
 
 doing:
 [feat_MiscUpdates]
--need to finish testing:  run New & Remove tests
+-need to finish testing:
+	-finish particular integration tests
+	-ran New & Remove tests
 
 done:
 [feat_MiscUpdates]
