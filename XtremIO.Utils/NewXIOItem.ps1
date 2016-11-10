@@ -157,7 +157,7 @@ function New-XIOConsistencyGroup {
 			## for ByVolume, populate "vol-list"
 			"ByVolume" {
 				## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
-				$arrSrcVolumeNames = @(if (($Volume | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$Volume.Name} else {$Volume})
+				$arrSrcVolumeNames = @(if ("XioItemInfo.Volume", "XioItemInfo.Snapshot" -contains ($Volume | Get-Member | Select-Object -Unique TypeName).TypeName) {$Volume.Name} else {$Volume})
 				$hshNewItemSpec["vol-list"] = $arrSrcVolumeNames
 				break
 			} ## end case
@@ -831,7 +831,7 @@ function New-XIOSnapshot {
 				## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
 				$arrSrcVolumeNames = @(if (($oParamOfInterest | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$oParamOfInterest.Name} else {$oParamOfInterest})
 				$hshNewItemSpec["volume-list"] = $arrSrcVolumeNames
-				$strNameForCheckingForExistingItem = "$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"
+				$strNameForCheckingForExistingItem = ($arrSrcVolumeNames | Select-Object -First 1),$SnapshotSuffix -join "."
 				break
 			} ## end case
 			## if this is ByConsistencyGroup, or ByRelatedObject where the object is a ConsistencyGroup
@@ -845,7 +845,7 @@ function New-XIOSnapshot {
 				} ## end else
 				$hshNewItemSpec["consistency-group-id"] = $strSrcCGName
 				## set the name for checking; may need updated for when receiving ConsistencyGroup value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
-				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcCGName$SnapshotSuffix"}
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {($arrSrcVolumeNames | Select-Object -First 1),$SnapshotSuffix -join "."} else {$strSrcCGName,$SnapshotSuffix -join "."}
 				break
 			} ## end case
 			## if this is BySnapshotSet, or ByRelatedObject where the object is a SnapshotSet
@@ -859,7 +859,7 @@ function New-XIOSnapshot {
 				} ## end else
 				$hshNewItemSpec["snapshot-set-id"] = $strSrcSnapsetName
 				## set the name for checking; may need updated for when receiving SnapshotSet value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
-				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcSnapsetName$SnapshotSuffix"}
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {($arrSrcVolumeNames | Select-Object -First 1), $SnapshotSuffix -join "."} else {$strSrcSnapsetName,$SnapshotSuffix -join "."}
 				break
 			} ## end case
 			## if this is ByTag, or ByRelatedObject where the object is a Tag
@@ -874,7 +874,7 @@ function New-XIOSnapshot {
 				## needs to be an array, so that the JSON will be correct for the API call, which expects an array of values
 				$hshNewItemSpec["tag-list"] = $arrSrcTagNames
 				## set the name for checking; may need updated for when receiving Tag value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
-				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$($arrSrcTagNames | Select-Object -First 1)$SnapshotSuffix"}
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {($arrSrcVolumeNames | Select-Object -First 1),$SnapshotSuffix -join "."} else {($arrSrcTagNames | Select-Object -First 1),$SnapshotSuffix -join "."}
 				break
 			} ## end case
 		} ## end switch

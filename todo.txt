@@ -194,6 +194,7 @@ todo:
 		- Workaround:  do not specify `-ParentFolder` parameter, which creates volume without volume tag
 	Other:
 	- XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new scheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
+	- cannot get deprecated XIO VolumeFolder from Snapshot object in modern XIOS (with modern REST API), as API does not provide "folder" type of property any more. Support for Snapshot type as related object to `Get-XIOVolumeFolder` will be removed in future release (though, may survive until the altogether removal of `Get-XIOVolumeFolder`)
 
 
 
@@ -212,9 +213,7 @@ should do next:
 
 doing:
 [feat_MiscUpdates]
--need to finish testing:
-	-finish particular integration tests
-	-ran New & Remove tests
+- need to move Known Issues section from ChangeLog to ReadMe, or restate the whole current set of Known Issues in each section of a release in ChangeLog
 
 done:
 [feat_MiscUpdates]
@@ -245,8 +244,11 @@ done:
 	- Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag object
 		- added tests for Remove-XIOTagAssignment
 
-- added to Known Issues section of docs:
+- added to Known Issues section of todo doc:
 	- XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
+	- cannot get deprecated XIO VolumeFolder from Snapshot object in modern XIOS (with modern REST API), as API does not provide "folder" type of property any more. Support for Snapshot type as related object to `Get-XIOVolumeFolder` will be removed in future release (though, may survive until the altogether removal of `Get-XIOVolumeFolder`)
+
+- finished tests
 
 
 ## things below here are in changelog/readme
