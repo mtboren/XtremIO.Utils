@@ -1,6 +1,14 @@
 ## XtremIO.Utils PowerShell module ReadMe##
 
+Contents:
+
+- [Getting Started](#gettingStarted)
+- [Changelog](#changelog)
+- [Other Details](#otherDetails)
+
+<a id="gettingStarted"></a>
 ### Getting Started ###
+
 
 ##### Importing the module #####
 
@@ -36,9 +44,13 @@ The module can also store an encrypted credential for use with `Connect-XIOServe
 ##### Example run through of putting it together #####
 See this module's GitHub Pages page for exciting examples of using the cmdlets from this module, available at <https://mtboren.github.io/XtremIO.Utils/>.
 
+
+<a id="changelog"></a>
 ### Changelog for the module ###
 In [changelog.md](changelog.md), there is an informative section for each version of the module, with listing of new features, improvements, bug fixes, and more.  Be sure to read it for all of the exciting news.
 
+
+<a id="otherDetails"></a>
 ### Some details on the module, cmdlet behavior, etc. ###
 Remove-XIO* cmdlets:
 

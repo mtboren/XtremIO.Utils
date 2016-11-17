@@ -176,25 +176,27 @@ todo:
 
 
 -known issues / considerations:
-	Since module release v1.next
-	- User must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
+From module release v1.2.0
 
-	Since module release v1.1.0
-	- In XtremIO REST API v2.0, getting objects from pipeline with `SnapshotScheduler` as the `-RelatedObject` in a multi-cluster XMS scenario may return more that just one of given object type:  the XIOS API does not have cluster-specificity for `SnapshotScheduler` objects, so objects related to `SnapshotScheduler` are retrieved only by name and XMS computer name for now (until better filtering based on GUID is in place); if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned.  This is not the case starting in XtremIO REST API v2.1.
-	- When connected to a multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster\_id\_is\_required" message:
-		- `Get-XIOVolume` when using a `VolumeFolder` as the `-RelatedObject` parameter value
-		- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
-		- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
-		- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
-	- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
-	- `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
-		- folder support will be removed from this PowerShell module eventually, so these may not get addressed
-		- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
-	- Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
-		- Workaround:  do not specify `-ParentFolder` parameter, which creates volume without volume tag
-	Other:
-	- XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new scheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
-	- cannot get deprecated XIO VolumeFolder from Snapshot object in modern XIOS (with modern REST API), as API does not provide "folder" type of property any more. Support for Snapshot type as related object to `Get-XIOVolumeFolder` will be removed in future release (though, may survive until the altogether removal of `Get-XIOVolumeFolder`)
+- User must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
+- XIO REST API version support for specifying `-Name` for new SnapshotScheduler:  the XIO REST API v2.0 does not seem to support specifying the name for a new scheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
+- cannot get deprecated XIO VolumeFolder from Snapshot object in modern XIOS (with modern REST API), as API does not provide "folder" type of property any more. Support for Snapshot type as related object to `Get-XIOVolumeFolder` will be removed in future release (though, may survive until the altogether removal of `Get-XIOVolumeFolder`)
+- `New-XIOTag`, `Set-XIOTag`: Specifying `-Color` parameter is only supported by the XIO REST API starting in v2.1 of said REST API
+
+From module release v1.1.0
+
+- In XtremIO REST API v2.0, getting objects from pipeline with `SnapshotScheduler` as the `-RelatedObject` in a multi-cluster XMS scenario may return more that just one of given object type:  the XIOS API does not have cluster-specificity for `SnapshotScheduler` objects, so objects related to `SnapshotScheduler` are retrieved only by name and XMS computer name for now (until better filtering based on GUID is in place); if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned.  This is not the case starting in XtremIO REST API v2.1.
+- When connected to a multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster\_id\_is\_required" message:
+	- `Get-XIOVolume` when using a `VolumeFolder` as the `-RelatedObject` parameter value
+	- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
+	- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
+	- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
+- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
+- `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
+	- folder support will be removed from this PowerShell module eventually, so these may not get addressed
+	- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
+- Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
+	- Workaround:  do not specify `-ParentFolder` parameter, which creates volume without volume tag
 
 
 
@@ -212,27 +214,15 @@ should do next:
 
 
 doing:
-[feat_MiscUpdates]
-- need to move Known Issues section from ChangeLog to ReadMe, or restate the whole current set of Known Issues in each section of a release in ChangeLog
+- update examples in GitHub Pages page
 
 done:
+- finished tests
+- updated ChangeLog, ReadMe
+
+
+## things below here are in changelog/readme
 [feat_MiscUpdates]
-- Properties added/removed/deprecated:
-	- on Alert object:  added Cluster property, deprecated ClusterId, ClusterName properties
-	- to LunMap:  added "Certainty"
-	- for StorageController:  removed obsolete properties (values were returned as "obsolete"):  "EncryptionMode", "EncryptionSwitchStatus"
-	- for SSD:  removed obsolete property (values was returned as "obsolete"):  "SSDPositionState"
-	- for Volume, Snapshot objects:  added VolSizeGB property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
-- added type to -Credential param declaration for New-XIOUserAccount (none was specified previously)
-- added .Cluster property to SnapshotScheduler objects (available via XIO REST API starting in v2.1; will be $null in SnapshotScheduler objects returned from XIO REST API v2.0)
-- added -Name parameter to New-XIOSnapshotScheduler:   "scheduler-name" param for creating new XIO SnapshotScheduler -- works in XIOS REST API v2.1, not in API v2.0
-	- verified that Get-XIO* cmdlets that take SnapshotScheduler obj from pipeline for RelatedObject gleen Cluster from SnapshotScheduler
-- fixed order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
-- added -Cluster param to Get-XIOSnapshotScheduler
-- added -Color param to New-XIOTag -- only supported by XIO REST API starting in v2.1 (seems to be supported per events, but not listed in API doc)
-- updated Set-XIOTag to support setting tag color via new -Color parameter -- only supported by XIO REST API starting in v2.1
-- added Open-XIOXMSWebUI cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
-- added DefaultParameterSetName to Set-XIOUserAccount, as some parameter combinations resulted in "Parameter set cannot be resolved using the specified named parameters" error
 - enabled assigning Tag for an object -- done via New-XIOTagAssignment cmdlet (with corresponding Remove-XIOTagAssignment cmdlet); may have Get-XIOTagAssignment in future, but one can at least get the Tags assigned to an object via Get-XIOTag for now)
 	- New-XIOTagAssignment:  takes Entity or Tag from pipeline; needs cluster-id, entity-details (entity name) and entity (entity type) from Entity, tag-id name from Tag
 		- can use @(guid, name, index) for entity-details, tag-id, cluster-id spec properties
@@ -243,15 +233,22 @@ done:
 		- added tests for New-XIOTagAssignment
 	- Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag object
 		- added tests for Remove-XIOTagAssignment
-
-- added to Known Issues section of todo doc:
-	- XIO REST API version support for specifying -Name for new SnapshotScheduler:  the REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
-	- cannot get deprecated XIO VolumeFolder from Snapshot object in modern XIOS (with modern REST API), as API does not provide "folder" type of property any more. Support for Snapshot type as related object to `Get-XIOVolumeFolder` will be removed in future release (though, may survive until the altogether removal of `Get-XIOVolumeFolder`)
-
-- finished tests
-
-
-## things below here are in changelog/readme
+- updated Set-XIOTag to support setting tag color via new -Color parameter -- only supported by XIO REST API starting in v2.1
+- added -Color param to New-XIOTag -- only supported by XIO REST API starting in v2.1 (seems to be supported per events, but not listed in API doc)
+- added Open-XIOXMSWebUI cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
+- added -Name parameter to New-XIOSnapshotScheduler:   "scheduler-name" param for creating new XIO SnapshotScheduler -- works in XIOS REST API v2.1, not in API v2.0
+	- verified that Get-XIO* cmdlets that take SnapshotScheduler obj from pipeline for RelatedObject gleen Cluster from SnapshotScheduler
+- fixed order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
+- fixed: added DefaultParameterSetName to Set-XIOUserAccount, as some parameter combinations resulted in "Parameter set cannot be resolved using the specified named parameters" error
+- added type to -Credential param declaration for New-XIOUserAccount (none was specified previously)
+- added -Cluster param to Get-XIOSnapshotScheduler
+- Properties added/removed/deprecated:
+	- for Alert:  added Cluster property, deprecated ClusterId and ClusterName properties
+	- for LunMap:  added "Certainty"
+	- for SnapshotScheduler: added Cluster property (available via XIO REST API starting in v2.1; will be $null in SnapshotScheduler objects returned from XIO REST API v2.0)
+	- for SSD:  removed obsolete property SSDPositionState (values were returned from API as "obsolete")
+	- for StorageController:  removed obsolete properties EncryptionMode, EncryptionSwitchStatus (values were returned from API as "obsolete")
+	- for Volume, Snapshot:  added VolSizeGB property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
 
 done for previous versions:  moved to done.txt
 

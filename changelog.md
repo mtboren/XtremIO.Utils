@@ -1,6 +1,65 @@
-## XtremIO.Utils PowerShell module ##
+## XtremIO.Utils PowerShell module Changelog ##
 
-### Changelog ###
+Contents:
+
+- [v1.2.0](#v1.2.0)
+- [Known Issues](#currentKnownIssues)
+- [v1.1.0](#v1.1.0), 30 Jun 2016
+- [v1.0.0](#v1.0.0), 05 May 2016
+- [v0.14.0](#v0.14.0), 22 Apr 2016
+- [v0.12.0](#v0.12.0), 08 Apr 2016
+- [Older versions](#olderVersions)
+
+------
+
+<a id="v1.2.0"></a>
+### v1.2.0
+This release brought new cmdlets for managing Tag assignments on objects, a small new cmdlet to quickly open the WebUI on XMS appliances, some lifecycle management of object types and properties, and various bugfixes/updates.  See below for the exciting list: 
+
+- \[new] added ability to assign/remove Tag for an object; done via new cmdlets `New-XIOTagAssignment` and `Remove-XIOTagAssignment`
+- \[new] added `Open-XIOXMSWebUI` cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
+- \[updated] `New-XIOTag`, `Set-XIOTag` cmdlets now support specifying Tag color via new `-Color` parameter
+- \[updated] added `-Name` parameter to `New-XIOSnapshotScheduler` (available via XIO REST API starting in v2.1)
+- \[updated] added/removed/deprecated following properties for given object types:
+	- for `Alert`:  added `Cluster` property, deprecated `ClusterId` and `ClusterName` properties
+	- for `LunMap`:  added `Certainty`
+	- for `SnapshotScheduler`: added `Cluster` property (available via XIO REST API starting in v2.1; will be `$null` in `SnapshotScheduler` objects returned from XIO REST API v2.0)
+	- for `SSD`:  removed obsolete property `SSDPositionState` (values were returned from API as "obsolete")
+	- for `StorageController`:  removed obsolete properties `EncryptionMode`, `EncryptionSwitchStatus` (values were returned from API as "obsolete")
+	- for `Volume`, `Snapshot`:  added `VolSizeGB` property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
+- \[fixed] fixed order of items in `[XioItemInfo.Enums.Tag.EntityType]` enumeration
+- \[fixed] added DefaultParameterSetName to `Set-XIOUserAccount`, as some parameter combinations resulted in "Parameter set cannot be resolved using the specified named parameters" error
+- \[updated] various minor updates/fixes to cmdlets and their parameters, for improving the overall experience
+ 
+
+<a id="currentKnownIssues"></a>
+**Known Issues as of v1.2.0:**
+
+From module release v1.2.0
+
+- User must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
+- XIO REST API version support for specifying `-Name` for new SnapshotScheduler:  the XIO REST API v2.0 does not seem to support specifying the name for a new scheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
+- cannot get deprecated XIO VolumeFolder from Snapshot object in modern XIOS (with modern REST API), as API does not provide "folder" type of property any more. Support for Snapshot type as related object to `Get-XIOVolumeFolder` will be removed in future release (though, may survive until the altogether removal of `Get-XIOVolumeFolder`)
+- `New-XIOTag`, `Set-XIOTag`: Specifying `-Color` parameter is only supported by the XIO REST API starting in v2.1 of said REST API
+
+From module release v1.1.0
+
+- In XtremIO REST API v2.0, getting objects from pipeline with `SnapshotScheduler` as the `-RelatedObject` in a multi-cluster XMS scenario may return more that just one of given object type:  the XIOS API does not have cluster-specificity for `SnapshotScheduler` objects, so objects related to `SnapshotScheduler` are retrieved only by name and XMS computer name for now (until better filtering based on GUID is in place); if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned.  This is not the case starting in XtremIO REST API v2.1.
+- When connected to a multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster\_id\_is\_required" message:
+	- `Get-XIOVolume` when using a `VolumeFolder` as the `-RelatedObject` parameter value
+	- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
+	- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
+	- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
+- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
+- `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
+	- folder support will be removed from this PowerShell module eventually, so these may not get addressed
+	- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
+- Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
+	- Workaround:  do not specify `-ParentFolder` parameter, which creates volume without volume tag
+
+------
+
+<a id="v1.1.0"></a>
 ### v1.1.0
 30 Jun 2016
 
@@ -32,7 +91,7 @@ This release is all about having expanded the pipelining capabilities of the `Ge
 	- **`Get-XIOVolumeFolder`**:  from `Snapshot`, `Volume`, `VolumeFolder`
 		- `-RelatedObject` parameter replaces VolumeId parameter, which is now gone
 
-Known Issues:
+Known Issues as of v1.1.0:
 
 - Getting objects from pipeline with `SnapshotScheduler` as the `-RelatedObject` in a multi-cluster XMS scenario may return more that just one of given object type:  the XIOS API does not have cluster-specificity for `SnapshotScheduler` objects, so objects related to `SnapshotScheduler` are retrieved only by name and XMS computer name for now (until better filtering based on GUID is in place); if objects of same name exist across mutliple clusters in this XMS, all of those objects will be returned
 - When connected to a multi-cluster XMS, getting the following objects in the given ways may fail with, "cluster\_id\_is\_required" message:
@@ -47,7 +106,9 @@ Known Issues:
 - Specifying `-ParentFolder` parameter to `New-XIOVolume` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Command Syntax Error: Invalid property ig-folder-name"; again, potentially due changed API in which folder support is now different/gone
 	- Workaround:  do not specify `-ParentFolder` parameter (of course), which creates volume without volume tag
 
+------
 
+<a id="v1.0.0"></a>
 ### v1.0.0
 05 May 2016
 
@@ -57,6 +118,9 @@ Oh, my -- v1.0.0! Added the other set of cmdlets still needed, the Remove-XIO* c
 - \[new] Added [Pester](https://github.com/pester/Pester "Pester GitHub repo") tests for New-XIO* and Remove-XIO* cmdlets, with an additional test that verifies that the same number of XtremIO inventory objects exist after testing as did before testing -- to get a feel for whether any testing crumbs were left behind
 - \[bugfix] Fixed issue where `New-XIOSnapshotScheduler` for multi-cluster XMS requires `cluster-id` property in the JSON body, but the cmdlet was not passing it if not explicitly specified by user; the cmdlet now takes it from the `-RelatedObject`'s `Cluster` property if `-Cluster` parameter not specified
 
+------
+
+<a id="v0.14.0"></a>
 ### v0.14.0
 22 Apr 2016
 
@@ -65,6 +129,9 @@ Now, with Set-XIO* cmdlets!  This release brings a bevy of new Set-XIO* cmdlets:
 - \[new] Set-XIO* cmdlets:  `Set-XIOAlertDefinition`, `Set-XIOConsistencyGroup`, `Set-XIOEmailNotifier`, `Set-XIOInitiator`, `Set-XIOInitiatorGroup`, `Set-XIOInitiatorGroupFolder`, `Set-XIOLdapConfig`, `Set-XIOSnapshotScheduler`, `Set-XIOSnapshotSet`, `Set-XIOSnmpNotifier`, `Set-XIOSyslogNotifier`, `Set-XIOTag`, `Set-XIOTarget`, `Set-XIOUserAccount`, `Set-XIOVolume`, `Set-XIOVolumeFolder`.  These all accept from pipeline the object upon which to operate for maximum ease of use.
 - \[new] A couple of new properties for `Cluster` objects:  `DebugCreationTimeoutLevel`, `ObfuscateDebugInformation`
 
+------
+
+<a id="v0.12.0"></a>
 ### v0.12.0
 08 Apr 2016
 
@@ -75,6 +142,9 @@ New properties!  This release was all about fleshing out the properties of retur
 - \[deprecated] deprecated properties `ClusterId`, `ClusterName`, and `SysId`, with the new `Cluster` property being the direction forward, for fourteen object types that had one or more of said properties.  Affected object types: `BBU`, `Brick`, `ConsistencyGroup`, `DAE`, `DAEController`, `DAEPsu`, `LocalDisk`, `Slot`, `Snapshot`, `SnapshotSet`, `Ssd`, `StorageControllerPsu`, `TargetGroup`, `Volume`
 - \[new] added various new properties to twenty-seven object types
  
+------
+
+<a id="olderVersions"></a>
 ### v0.11.0
 20 Mar 2016
 
@@ -83,6 +153,8 @@ This release brings four (4) new cmdlets for creating XtremIO configuration item
 - \[new] New cmdlets: `New-XIOConsistencyGroup`, `New-XIOSnapshotScheduler`, `New-XIOTag`, and `New-XIOUserAccount`
 - \[improvement] the `New-XIOInitiator` cmdlet now provides the `-OperatingSystem` parameter for specifying the OS type of the host whose HBA is involved with the new `Initiator` object, and `Initiator` objects now have the `OperatingSystem` property
 - \[improvement] Better reporting for when a web exception does happen, for easier issue identification/troubleshooting (mostly useful/applicable during development and API exploration)
+
+------
 
 ### v0.10.0
 08 Mar 2016
@@ -108,6 +180,7 @@ Some further details about this release:
 - \[improvement] restructured/cleaned-up project directory:  segregated module-specific files into new subdirectory
 - \[bugfixes] fixed issues with using the module in PowerShell v5 (WMF 5 RTM re-release from 24 Feb 2016)
 
+------
 
 ### v0.9.5
 03 Jan 2016
@@ -210,7 +283,7 @@ See below for the full list of changes.
 - \[bugfix] Fixed issue where `BuildNumber` property of XMS object did not handle all possible values.  Usually the value received from the API call is an Int32, but can be string. **CHANGED:**  This property was renamed to `Build` and is now a `String` instead of an `Int32`
 
 
-
+------
 
 ### v0.9.0
 14 Nov 2015
@@ -251,22 +324,30 @@ Other notes:
 - not yet adding support for SYR Notifiers. While the XIOS v4 release notes talk about API support for these objects, the API on the few systems on which I tested did not surface this object type
 - the new cmdlets are at the base level -- on the to-do list are things like extending/improving them to bring in the additional power of supporting pipelining
 
+------
+
 ### v0.8.3
 Sep 2015
 
 - \[improvement] updated supporting function `New-XioApiURI` such that communications testing can be controlled (say, only at, `Connect-XIOServer` time) -- previously, communications were tested with every cmdlet call.  Once verified with the `Connection-XIOServer` call, the assumption is that the port does not change on the destination XMS appliance in the session (or, probably ever), so, for the sake of performance, the test is not performed at every call, now
 - \[update] added handling of `DataReduction` property calculation on `Cluster` objects that accounts for the now-missing property `data-reduction-ratio` from the XMS appliance on at least the 4.0.0-54 beta and 4.0.1-7 XIOS versions. Without this, `DataReduction` value for connections to XMS appliance of these XIOS versions would return just the `DedupeRatio` value for  `DataReduction` property
 
+------
+
 ### v0.8.2
 24 Jun 2015
 
 - \[bugfix] fixed issue where some `VolSizeTB` and `UsedLogicalTB` properties were defined as `Int32` types in the type definition, which lead to lack of precision due to subsequent rounding in the casting process. Corrected, defining them as `Double` items
+
+------
 
 ### v0.8.1
 08 Jun 2015
 
 - \[improvement] updated `Connect-XIOServer` to return "legit" object type, instead of PSObject with inserted typename of `XioItemInfo.XioConnection` (so that things like `$oConnection -is [XioItemInfo.XioConnection]` return `$true`)
 - [correction] fixed incorrect examples in changelog
+
+------
 
 ### v0.8.0
 22 May 2015
@@ -351,6 +432,7 @@ Several great improvements in this release, most of which were centered around a
 - \[bugfix] fixed ParameterSet bug where specifying URI to most `Get-XIO*` cmdlets (excluding the `Get-XIO*Performance` cmdlets) was also passing the `-ItemType` to internal function, which caused problems/errors
 - \[bugfix] corrected minor typo in changelog (thanks AC)
 
+------
 
 ### v0.7.0 ###
 30 Nov 2014
@@ -373,6 +455,8 @@ Hottest new feature:  Added `Connect-XIOServer` and `Disconnect-XIOServer` cmdle
 	- added URI property to `Get-XIOItemInfo` output objects
 	- renamed "ig-name" property to "InitiatorGroup" for `XioItemInfo.Lun-Map` objects (as returned by `Get-XIOLunMap`)
 
+------
+
 ### v0.6.0 ###
 24 Sep 2014
 
@@ -391,6 +475,8 @@ Added discreet `Get-*` cmdlets for the types supported by this module, added `Pe
 - added FCIssue property and additional configuration properties to `targets` info
 - updated `PowerShellVersion` of module to 4.0
 
+------
+
 ### v0.5.6 ###
 10 Jun 2014
 
@@ -404,6 +490,8 @@ The list:
 - updated `Get-XIOItemInfo`, `New-XIOVolume`, and `New-XIOInitiatorGroup` to check for stored credential and use it, if no credential value was provided
 - updated `Get-XIOItemInfo` to return precise values, and handle the output formatting with ps1xml (was previously returning less precise values)
 
+------
+
 ### v0.5.5 ###
 28 May 2014
 
@@ -414,12 +502,16 @@ The list:
 - changed module name to "XtremIO.Utils", as module now does more than just "get" operations
 - updated IOPS property types to be [int64] instead of the default [string] that they were
 
+------
+
 ### v0.5.1 ###
 
 25 Apr 2014
 
 - added new ItemType types of `targets` and `controllers`
 - updated format.ps1xml to include formatting for two new types
+
+------
 
 ### v0.5.0 ###
 
