@@ -2,7 +2,7 @@
 
 Contents:
 
-- [v1.2.0](#v1.2.0)
+- [v1.2.0](#v1.2.0), 17 Nov 2016
 - [Known Issues](#currentKnownIssues)
 - [v1.1.0](#v1.1.0), 30 Jun 2016
 - [v1.0.0](#v1.0.0), 05 May 2016
@@ -14,6 +14,8 @@ Contents:
 
 <a id="v1.2.0"></a>
 ### v1.2.0
+17 Nov 2016
+
 This release brought new cmdlets for managing Tag assignments on objects, a small new cmdlet to quickly open the WebUI on XMS appliances, some lifecycle management of object types and properties, and various bugfixes/updates.  See below for the exciting list: 
 
 - \[new] added ability to assign/remove Tag for an object; done via new cmdlets `New-XIOTagAssignment` and `Remove-XIOTagAssignment`
