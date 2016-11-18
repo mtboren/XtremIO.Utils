@@ -545,7 +545,7 @@ function Get-XIOConsistencyGroup {
 				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
 					$oThisRelatedObj = $_
 
-					## Cluster will be $null if RelatedObject is SnapshotScheduler
+					## In REST API v2.0, Cluster will be $null if RelatedObject is SnapshotScheduler; this goes away in API v2.1
 					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
 					$hshParamsForGetXioInfo["Name"] = $(if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
@@ -2669,7 +2669,9 @@ function Get-XIOSnapshotScheduler {
 		[switch]$ReturnFullResponse,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
 	) ## end param
 
 	Begin {

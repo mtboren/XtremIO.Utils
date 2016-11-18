@@ -83,5 +83,7 @@ $hshCfg = @{
 	MessageStrings = @{
 		## when RelatedObject of non-supported type is passed; expects to be used as base for a string formatting expression, where {0} is the full typename of the non-supported object
 		NonsupportedRelatedObjectType = "RelatedObject was not of expected/accepted type (was of type [{0}]). The valid RelatedObject types supported by this cmdlet are:  {1}"
+		## when Entity of non-supported type is passed; expects to be used as base for a string formatting expression, where {0} is the full typename of the non-supported object
+		NonsupportedEntityObjectType = "Entity was not of expected/accepted type (was of type [{0}]). The valid Entity types supported by this cmdlet are:  {1}"
 	} ## end hash
 } ## end hashtable

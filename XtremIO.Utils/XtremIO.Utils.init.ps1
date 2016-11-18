@@ -9,7 +9,12 @@ namespace XioItemInfo {
 		public String AssociatedObjIndex;
 		public String AssociatedObjName;
 		public String Class;
+		public XioItemInfo.Cluster Cluster;
+		// deprecated after rel v1.1.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterId;
+		// deprecated after rel v1.1.0
+		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Cluster' instead", false)]
 		public String ClusterName;
 		public DateTime CreationTime;
 		public String Description;
@@ -131,8 +136,8 @@ namespace XioItemInfo {
 		public String DebugCreationTimeoutLevel;
 		public System.Nullable<Decimal> DedupeRatio;
 		public String EncryptionMode;
-		public System.Nullable<Int32> ExpansionDataTransferPct;
 		public System.Nullable<Boolean> EncryptionSupported;
+		public System.Nullable<Int32> ExpansionDataTransferPct;
 		public String FcPortSpeed;
 		public String FreespaceLevel;
 		public System.Nullable<Double> FreeSSDTB;
@@ -562,6 +567,7 @@ namespace XioItemInfo {
 	}
 
 	public class LunMap : InfoBase {
+		public String Certainty;
 		public XioItemInfo.Cluster Cluster;
 		public String InitiatorGroup;
 		public System.Nullable<Int32> InitiatorGrpIndex;
@@ -623,6 +629,7 @@ namespace XioItemInfo {
 	// Snapshot Scheduler
 	public class SnapshotScheduler {
 		public String Name;
+		public XioItemInfo.Cluster Cluster;
 		public Boolean Enabled;
 		public String Guid;
 		public Int32 Index;
@@ -761,7 +768,6 @@ namespace XioItemInfo {
 		public String SsdId;
 		public String SSDLink1Health;
 		public String SSDLink2Health;
-		public String SSDPositionState;
 		public String SsdRGrpState;
 		public String SsdUid;
 		public String SwapLED;
@@ -796,8 +802,6 @@ namespace XioItemInfo {
 		// deprecated in about rel v0.9.5
 		[System.ObsoleteAttribute("This property is deprecated and will go away in a future release. Use property 'Enabled' instead", false)]
 		public String EnabledState;
-		public String EncryptionMode;
-		public String EncryptionSwitchStatus;
 		public Object FcHba;
 		public String FWVersionError;
 		public String HealthState;
@@ -905,6 +909,17 @@ namespace XioItemInfo {
 
 		// Implicit constructor
 		public Tag () {}
+
+		public override string ToString() {return Name;}
+	}
+
+	// TagAssignment
+	public class TagAssignment {
+		public XioItemInfo.Tag Tag;
+		public Object Entity;
+
+		// Implicit constructor
+		public TagAssignment () {}
 	}
 
 	// Target (iSCSI/FC target)
@@ -1021,6 +1036,7 @@ namespace XioItemInfo {
 		public System.Nullable<Double> UsedLogicalTB;
 		public String VaaiTPAlertsCfg;
 		public String VolId;
+		public System.Nullable<Double> VolSizeGB;
 		public System.Nullable<Double> VolSizeTB;
 
 		// Implicit constructor
@@ -1129,14 +1145,13 @@ namespace XioItemInfo {
 // Enumerations
 namespace XioItemInfo.Enums.PerfCounter {
 	public enum AggregationType {avg, min, max}
-	//public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Tag, Target, TargetGroup, Volume, XEnv, Xms}
 	public enum EntityType {Cluster, DataProtectionGroup, Initiator, InitiatorGroup, SnapshotGroup, SSD, Target, TargetGroup, Volume, XEnv, Xms}
 	public enum Granularity {auto, one_minute, ten_minutes, one_hour, one_day, raw}
 	public enum TimeFrame {real_time, last_hour, last_day, last_week, last_year}
 } // end namespace
 namespace XioItemInfo.Enums.Tag {
 	// Entity type names that are valid for values as new Tag entity types
-	public enum EntityType {BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SSD, SnapshotScheduler, SnapshotSet, StorageController, Target, Volume}
+	public enum EntityType {BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, Volume}
 } // end namespace
 namespace XioItemInfo.Enums.General {
 	// Operating System "types", as used by Initiator objects

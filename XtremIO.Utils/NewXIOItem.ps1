@@ -157,7 +157,7 @@ function New-XIOConsistencyGroup {
 			## for ByVolume, populate "vol-list"
 			"ByVolume" {
 				## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
-				$arrSrcVolumeNames = @(if (($Volume | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$Volume.Name} else {$Volume})
+				$arrSrcVolumeNames = @(if ("XioItemInfo.Volume", "XioItemInfo.Snapshot" -contains ($Volume | Get-Member | Select-Object -Unique TypeName).TypeName) {$Volume.Name} else {$Volume})
 				$hshNewItemSpec["vol-list"] = $arrSrcVolumeNames
 				break
 			} ## end case
@@ -197,10 +197,13 @@ function New-XIOConsistencyGroup {
 	New-XIOInitiatorGroup -Name testIG0
 	Create an initiator-group named testIG0 with no initiators defined therein
 	.Example
-	New-XIOInitiatorGroup -Name testIG1 -ParentFolder "/testIGs" -InitiatorList @{'"myserver-hba2"' = '"10:00:00:00:00:00:00:F4"'; '"myserver-hba3"' = '"10:00:00:00:00:00:00:F5"'}
-	Create an initiator-group named testIG1 with two initiators defined therein (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0). And, notice the keys/values in the InitatorList hashtable:  they are made to include quotes in them by wrapping the double-quoted value in single quotes. This is a "feature" of XIOS REST API v1.0 -- these values need to reach the REST API with quotes around them
+	New-XIOInitiatorGroup -Name testIG1 -InitiatorList @{myserver_hba2 = "10:00:00:00:00:00:00:F0"; myserver_hba3 = "10:00:00:00:00:00:00:F1"} | New-XIOTagAssignment -Tag (Get-XIOTag /InitiatorGroup/testIGs)
+	Create an initiator-group named testIG1 with two initiators defined therein, and then assign the Tag "/InitiatorGroup/testIGs" to the new initiator group
 	.Example
-	New-XIOInitiatorGroup -Name testIG2 -Cluster myCluster0 -InitiatorList @{"myserver2-hba2" = "10:00:00:00:00:00:00:F6"; "myserver2-hba3" = "10:00:00:00:00:00:00:F7"}
+	New-XIOInitiatorGroup -Name testIG2 -ParentFolder /testIGs -InitiatorList @{'"myserver_hba2"' = '"10:00:00:00:00:00:00:F4"'; '"myserver_hba3"' = '"10:00:00:00:00:00:00:F5"'}
+	Deprecated:  Create an initiator-group named testIG2 with two initiators defined therein (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0). And, notice the keys/values in the InitatorList hashtable:  they are made to include quotes in them by wrapping the double-quoted value in single quotes. This is a "feature" of XIOS REST API v1.0 -- these values need to reach the REST API with quotes around them
+	.Example
+	New-XIOInitiatorGroup -Name testIG3 -Cluster myCluster0 -InitiatorList @{myserver2_hba2 = "10:00:00:00:00:00:00:F6"; myserver2_hba3 = "10:00:00:00:00:00:00:F7"}
 	Create an initiator-group named testIG3 with two initiators defined therein, and for XIO Cluster "myCluster0" (-Cluster being handy/necessary for connection to XMS that manages multiple XIO Clusters).  Notice, no additional quoting needed for InitiatorList hashtable keys/values -- the XIOS REST API v2 does not have the "feature" described in the previous example
 	.Outputs
 	XioItemInfo.InitiatorGroup object for the newly created object if successful
@@ -217,10 +220,10 @@ function New-XIOInitiatorGroup {
 		[string[]]$Cluster,
 		## The initiator-name and port-address for each initiator you want to add to the group, if any (why not, though?). Each key/value pair shall use initiator-name as the key, and the corresponding port-address for the value.
 		#For the port addresses, valid values are colon-separated hex numbers, non-separated hex numbers, or non-separated hex numbers prefixed with "0x".  That is, the following formats are acceptable for port-address values:  XX:XX:XX:XX:XX:XX:XX:XX, XXXXXXXXXXXXXXXX, or 0xXXXXXXXXXXXXXXXX
-		#Example hashtable for two initiators named "myserver-hba2" and "myserver-hba3":
-		#    @{"myserver-hba2" = "10:00:00:00:00:00:00:F4"; "myserver-hba3" = "10:00:00:00:00:00:00:F5"}
+		#Example hashtable for two initiators named "myserver_hba2" and "myserver_hba3":
+		#    @{"myserver_hba2" = "10:00:00:00:00:00:00:F4"; "myserver_hba3" = "10:00:00:00:00:00:00:F5"}
 		[System.Collections.Hashtable]$InitiatorList_hsh,
-		## The initiator group's parent folder. The folder's Folder Type must be IG. If omitted, the volume will be added to the root IG folder. Example value: "/IGsForMyCluster0"
+		## Deprecated:  The initiator group's parent folder. The folder's Folder Type must be IG. If omitted, the volume will be added to the root IG folder. Example value: "/IGsForMyCluster0"
 		[ValidateScript({$_.StartsWith("/")})][string]$ParentFolder_str
 	) ## end param
 
@@ -272,13 +275,13 @@ function New-XIOInitiatorGroup {
 	.Notes
 	Does not yet support creating iSCSI initiators
 	.Example
-	New-XIOInitiator -Name myserver0-hba2 -InitiatorGroup myserver0 -PortAddress 0x100000000000ab56
+	New-XIOInitiator -Name myserver0_hba2 -InitiatorGroup myserver0 -PortAddress 0x100000000000ab56
 	Create a new initiator in the initiator group "myserver0"
 	.Example
-	New-XIOInitiator -Name myserver0-hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54 -OperatingSystem ESX
+	New-XIOInitiator -Name myserver0_hba3 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:54 -OperatingSystem ESX
 	Create a new initiator in the initiator group "myserver0" on all XIO Clusters in the connected XMS, and specifies "ESX" for the Operating System type
 	.Example
-	New-XIOInitiator -Name myserver0-hba4 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
+	New-XIOInitiator -Name myserver0_hba4 -Cluster myCluster0 -InitiatorGroup myserver0 -PortAddress 10:00:00:00:00:00:00:55
 	Create a new initiator in the initiator group "myserver0", on specified XIO Cluster only
 	.Outputs
 	XioItemInfo.Initiator object for the newly created object if successful
@@ -345,6 +348,10 @@ function New-XIOInitiator {
 
 <#	.Description
 	Create a new XtremIO initiator-group-folder
+	.Synopsis
+	Deprecated cmdlet for creating legacy "folder" objects
+	.Notes
+	Folders have been replaced with Tags in newer XIOS releases.  Support for *Folder cmdlets is deprecated, and the cmdlets will be removed at some point.  Use Tags instead of folders.
 	.Example
 	New-XIOInitiatorGroupFolder -Name someDeeperFolder -ParentFolder /myMainIGroups
 	Create a subfolder "someDeeperFolder" in parent folder "/myMainIGroups"
@@ -463,13 +470,12 @@ function New-XIOLunMap {
 
 <#	.Description
 	Create a new XtremIO Tag. Note:  As of XIOS v4.0.2, this cmdlet can make Tags for the fifteen entity types supported by the API.  However, the XMS management interface only displays Tags for six of these entity types (ConsistencyGroup, Initiator, InitatorGroup, SnapshotScheduler, SnapshotSet, and Volume).  The Get-XIOTag cmdlet _will_ show all tags, not just for these six entity types.
-	To see the entity types supported for Tag objects, get the values of the XioItemInfo.Enums.Tag.EntityType enumeration, via:  [System.Enum]::GetNames([XioItemInfo.Enums.Tag.EntityType])
 	.Example
-	New-XIOTag -Name MyVols -EntityType Volume
-	Create a new tag "MyVols", nested in the "/Volume" parent tag, to be used for Volume entities. This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
+	New-XIOTag -Name MyVols -EntityType Volume -Color ffcc99
+	Create a new tag "MyVols", nested in the "/Volume" parent tag, to be used for Volume entities, and with the given hex RGB color (-Color supported by XtremIO REST API starting in v2.1).  This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
 	.Example
 	New-XIOTag -Name /Volume/MyVols2/someOtherTag/superImportantVols -EntityType Volume
-	Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.
+	Create a new tag "superImportantVols", nested in the "/Volume/MyVols/someOtherTag" parent tag, to be used for Volume entities.  Notice that none of the "parent" tags needed to exist before issuing this command -- the are created appropriately as required for creating the "leaf" tag.  And, the maximum tag depth seems to be four (three "parent" tag levels, and then the fourth level being the "leaf" tag "superImportantVols" in this example)
 	.Example
 	New-XIOTag -Name /X-Brick/MyTestXBrickTag -EntityType Brick
 	Create a new tag "/X-Brick/MyTestXBrickTag", to be used for XtremIO Brick entities
@@ -482,10 +488,12 @@ function New-XIOTag {
 	param(
 		## XMS address to use
 		[parameter(Position=0)][string[]]$ComputerName,
-		## Name for new tag being made
+		## Name for new tag being made.  Can specify "deep" tags (nested tags), up to four total levels.
 		[parameter(Mandatory=$true)][string]$Name,
-		## Type of entity to which this tag can be applied
-		[parameter(Mandatory=$true)][XioItemInfo.Enums.Tag.EntityType]$EntityType
+		## Type of entity to which this tag can be applied.  Entity types supported for Tag objects:  get the values of the XioItemInfo.Enums.Tag.EntityType enumeration, via:  [System.Enum]::GetNames([XioItemInfo.Enums.Tag.EntityType])
+		[parameter(Mandatory=$true)][XioItemInfo.Enums.Tag.EntityType]$EntityType,
+		## Color to assign this tag (as seen in an XMS UI), in the form of six hexadecimal characters (a 'hex triplet'), representing the red, green, and blue components of the color.  Supported by XtremIO REST API starting in v2.1.  Examples:  FFFFFF for white, or FF0000 for red.  Read more about such color things at https://en.wikipedia.org/wiki/Web_colors
+		[ValidateScript({$_ -match "^[0-9a-f]{6}$"})][string]$Color
 	) ## end param
 
 	Begin {
@@ -500,6 +508,9 @@ function New-XIOTag {
 			## get the URI entity type value to use for this PSModule entity typename (need to do .ToString() to get the typename string, as it is a XioItemInfo.Enums.Tag.EntityType enum value)
 			"entity" = $hshCfg.TagEntityTypeMapping[$EntityType.ToString()]
 		} ## end hashtable
+
+		## if the Color was specified, add it (prefixing a '#' to the hex triplet, as that is how the color values are seemingly stored in the XMS, though it also seems that it is not mandatory, as the API will accept other values)
+		if ($PSBoundParameters.ContainsKey("Color")) {$hshNewItemSpec['color'] = "#{0}" -f $Color.ToUpper()}
 
 		## the params to use in calling the helper function to actually create the new object
 		$hshParamsForNewItem = @{
@@ -536,7 +547,7 @@ function New-XIOUserAccount {
 		## XMS address to use
 		[string[]]$ComputerName,
 		## Credentials from which to make new user account (from the credential's username and password)
-		[parameter(Position=0)][parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")]$Credential,
+		[parameter(Position=0)][parameter(Mandatory=$true,ParameterSetName="SpecifyCredential")][System.Management.Automation.PSCredential]$Credential,
 		## If specifying a public key for a user, instead of a credential, this is the username for the new user; use either -Credential or (-UserName and -UserPublicKey)
 		[parameter(Mandatory=$true,ParameterSetName="SpecifyPublicKey")][string]$UserName,
 		## If specifying a public key for a user, instead of a credential, this is the public key for the new user; use either -Credential or (-UserName and -UserPublicKey)
@@ -590,14 +601,17 @@ function New-XIOUserAccount {
 	New-XIOVolume -Name testvol03 -SizeGB 2KB
 	Create a 2TB (which is 2048GB, as represented by the "2KB" value for the -SizeGB param) volume named testvol0
 	.Example
-	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol04 -SizeGB 5120 -ParentFolder "/testVols"
-	Create a 5TB volume named testvol04 in the given parent folder (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0)
+	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol04 -SizeGB 5120 | New-XIOTagAssignment -Tag (Get-XIOTag /Volumes/testVols)
+	Create a 5TB volume named testvol04 and assign the given Tag to the new volume
 	.Example
 	New-XIOVolume -Name testvol05 -SizeGB 5KB -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert
 	Create a 5TB volume named testvol05 with all three alert types enabled
 	.Example
 	New-XIOVolume -Name testvol10 -Cluster myxio05,myxio06 -SizeGB 1024
 	Create two 1TB volumes named "testvol10", one on each of the two given XIO clusters (expects that the XMS is using at least v2.0 of the REST API, which is available as of XIOS v4.0)
+	.Example
+	New-XIOVolume -ComputerName somexms01.dom.com -Name testvol11 -SizeGB 5120 -ParentFolder "/testVols"
+	Deprecated:  Create a 5TB volume named testvol04 in the given parent folder (specifying parent folder no longer supported in XIOS REST API v2.0, which came in XIOS v4.0)
 	.Outputs
 	XioItemInfo.Volume object for the newly created object if successful
 #>
@@ -618,7 +632,7 @@ function New-XIOVolume {
 		## The disk space size of the volume in GB. This parameter reflects the size of the volume available to the initiators. It does not indicate the actual SSD space this volume may consume
 		#   Must be an integer greater than 0 and a multiple of 1 MB.
 		[parameter(Mandatory=$true)][ValidateScript({$_ -gt 0})][int]$SizeGB_int,
-		## Identifies the volume folder to which this volume will initially belong. The folder's Folder Type must be Volume. If omitted, the volume will be added to the root volume folder. Example value: "/myBigVolumesFolder"
+		## Deprecated:  Identifies the volume folder to which this volume will initially belong. The folder's Folder Type must be Volume. If omitted, the volume will be added to the root volume folder. Example value: "/myBigVolumesFolder"
 		##   Note:  parameter is obsolete, no longer supported in XIOS API v2.0
 		[ValidateScript({$_.StartsWith("/")})][string]$ParentFolder_str,
 		## Switch:  Enable small IO alerts for this volume?  They are disabled by default
@@ -678,6 +692,10 @@ function New-XIOVolume {
 
 <#	.Description
 	Create a new XtremIO volume-folder
+	.Synopsis
+	Deprecated cmdlet for creating legacy "folder" objects
+	.Notes
+	Folders have been replaced with Tags in newer XIOS releases.  Support for *Folder cmdlets is deprecated, and the cmdlets will be removed at some point.  Use Tags instead of folders.
 	.Example
 	New-XIOVolumeFolder -Name someDeeperFolder -ParentFolder /myMainVols
 	Create a subfolder "someDeeperFolder" in parent folder "/myMainVols"
@@ -813,7 +831,7 @@ function New-XIOSnapshot {
 				## get the array of names to use from the param; if param values are of given type, access the .Name property of each param object; else, param should be System.String types
 				$arrSrcVolumeNames = @(if (($oParamOfInterest | Get-Member | Select-Object -Unique TypeName).TypeName -eq "XioItemInfo.Volume") {$oParamOfInterest.Name} else {$oParamOfInterest})
 				$hshNewItemSpec["volume-list"] = $arrSrcVolumeNames
-				$strNameForCheckingForExistingItem = "$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"
+				$strNameForCheckingForExistingItem = ($arrSrcVolumeNames | Select-Object -First 1),$SnapshotSuffix -join "."
 				break
 			} ## end case
 			## if this is ByConsistencyGroup, or ByRelatedObject where the object is a ConsistencyGroup
@@ -827,7 +845,7 @@ function New-XIOSnapshot {
 				} ## end else
 				$hshNewItemSpec["consistency-group-id"] = $strSrcCGName
 				## set the name for checking; may need updated for when receiving ConsistencyGroup value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
-				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcCGName$SnapshotSuffix"}
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {($arrSrcVolumeNames | Select-Object -First 1),$SnapshotSuffix -join "."} else {$strSrcCGName,$SnapshotSuffix -join "."}
 				break
 			} ## end case
 			## if this is BySnapshotSet, or ByRelatedObject where the object is a SnapshotSet
@@ -841,7 +859,7 @@ function New-XIOSnapshot {
 				} ## end else
 				$hshNewItemSpec["snapshot-set-id"] = $strSrcSnapsetName
 				## set the name for checking; may need updated for when receiving SnapshotSet value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
-				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$strSrcSnapsetName$SnapshotSuffix"}
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {($arrSrcVolumeNames | Select-Object -First 1), $SnapshotSuffix -join "."} else {$strSrcSnapsetName,$SnapshotSuffix -join "."}
 				break
 			} ## end case
 			## if this is ByTag, or ByRelatedObject where the object is a Tag
@@ -856,7 +874,7 @@ function New-XIOSnapshot {
 				## needs to be an array, so that the JSON will be correct for the API call, which expects an array of values
 				$hshNewItemSpec["tag-list"] = $arrSrcTagNames
 				## set the name for checking; may need updated for when receiving Tag value by name (won't have volume list, and won't be able to check for an existing volume of the given name)
-				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {"$($arrSrcVolumeNames | Select-Object -First 1)$SnapshotSuffix"} else {"$($arrSrcTagNames | Select-Object -First 1)$SnapshotSuffix"}
+				$strNameForCheckingForExistingItem = if (($arrSrcVolumeNames | Measure-Object).Count -gt 0) {($arrSrcVolumeNames | Select-Object -First 1),$SnapshotSuffix -join "."} else {($arrSrcTagNames | Select-Object -First 1),$SnapshotSuffix -join "."}
 				break
 			} ## end case
 		} ## end switch
@@ -884,12 +902,14 @@ function New-XIOSnapshot {
 <#	.Description
 	Create a new XtremIO SnapshotScheduler. Can schedule on given time interval, or on explicit day of the week (or everyday), and can specify the number of snapshots to keep or the duration for which to keep snapshots.  The maximums are 511 snapshots or an age of 5 years, whichever is lower. That is, if specifying a "Friday" schedule and "500" for the number of snapshots to keep, the system will keep the last 260 snapshots, since 5 years is the max, 5years * 52snaps/year = 260 snaps.
 	.Notes
-	XIO API does not yet provide means by which to specify a name for the new scheduler, so the name property will be an empty string (not $null), and the XMS GUI will show the SnapshotScheduler's name as "[Scheduler5]", where 5 is the given SnapshotScheduler's index
+	XIO API does not require a name for the new SnapshotScheduler (a.k.a., "Scheduler" or "Protection Scheduler".  If you specify no value for -Name parameter, the name property of the new SnapshotScheduler will be an empty string (not $null).  The XMS Java-based GUI will show the SnapshotScheduler's name as "[Scheduler5]", and the XMS WebUI will show the SnapshotScheduler's name as "[Protection Scheduler5]", where 5 is the given SnapshotScheduler's index.
+
+	API version support for specifying name:  the XtremIO REST API v2.0 does not seem to support specifying the name for a new SnapshotScheduler, but the REST API v2.1 (and newer, presumably) does support specifying the name.
 	.Example
 	New-XIOSnapshotScheduler -RelatedObject (Get-XIOVolume someVolume0) -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20
 	Create new SnapshotScheduler from a Volume, using an interval between snapshots, and specifying a particular number of Snapshots to retain
 	.Example
-	New-XIOSnapshotScheduler -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -Cluster myCluster0 -Enabled:$false
+	New-XIOSnapshotScheduler -Name mySnapScheduler0 -RelatedObject (Get-XIOConsistencyGroup testCG0) -ExplicitDay Sunday -ExplicitTimeOfDay 10:16pm -SnapshotRetentionDuration (New-Timespan -Days 10 -Hours 12) -Cluster myCluster0 -Enabled:$false
 	Create new SnapshotScheduler from a ConsistencyGroup, with an explict schedule, specifying duration for which to keep Snapshots, on the given XIO cluster, and set the scheduler as user-disabled
 	.Example
 	Get-XIOSnapshotSet -Name testSnapshotSet0.1455845074 | New-XIOSnapshotScheduler -ExplicitDay EveryDay -ExplicitTimeOfDay 3am -SnapshotRetentionCount 500 -Suffix myScheduler0
@@ -903,6 +923,8 @@ function New-XIOSnapshotScheduler {
 	param(
 		## XMS address to use
 		[string[]]$ComputerName,
+		## The name for the new SnapshotScheduler. Supported starting with XtremIO REST API v2.1.
+		[parameter(Position=0)][string]$Name,
 		## The name of the XIO Cluster on which to make new snapshot scheduler. This parameter may be omitted if there is only one cluster defined in the XtremIO Storage System.
 		[string[]]$Cluster,
 		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, or ConsistencyGroup
@@ -983,6 +1005,8 @@ function New-XIOSnapshotScheduler {
 					$hshNewItemSpec["time"] = $("{0}:{1}:{2}" -f $intNumberOfDayOfTheWeek, $ExplicitTimeOfDay.Hour, $ExplicitTimeOfDay.Minute)
 				} ## end case
 		} ## end switch
+		## if Name was specified, add it to the config spec
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshNewItemSpec["scheduler-name"] = $Name}
 		## if Suffix was specified, add it to the config spec
 		if ($PSBoundParameters.ContainsKey("Suffix")) {$hshNewItemSpec["suffix"] = $Suffix}
 		## if Cluster not specified explicitly, add (else, subsequent New-XIOItem call adds it already)
@@ -992,7 +1016,7 @@ function New-XIOSnapshotScheduler {
 		$hshParamsForNewItem = @{
 			ComputerName = $ComputerName
 			ItemType_str = $strThisItemType
-			Name = "new no-name scheduler (XIO API does not yet support name for new scheduler)"
+			Name = $(if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {"<new no-name scheduler>"})
 			SpecForNewItem_str = $hshNewItemSpec | ConvertTo-Json
 		} ## end hashtable
 
@@ -1003,5 +1027,75 @@ function New-XIOSnapshotScheduler {
 
 		## call the function to actually make this new item
 		New-XIOItem @hshParamsForNewItem
+	} ## end process
+} ## end function
+
+
+<#	.Description
+	Create a new XtremIO Tag assignment (assign a Tag to an XIO entity)
+	.Example
+	New-XIOTagAssignment -Tag (Get-XIOTag /Initiator/myInitiatorTag0) -Entity (Get-XIOInitiator myServer0-Init*)
+	Tag the Initiators myServer0-Init* with the initiator Tag "/Initiator/myInitiatorTag0"
+	.Example
+	Get-XIOVolume myVol[01] | New-XIOTagAssignment -Tag (Get-XIOTag /Volume/favoriteVolumes)
+	Tag the Volumes myVol0, myVol1 with the volume Tag "/Volume/favoriteVolumes"
+	.Outputs
+	XioItemInfo.TagAssignment object with information about the newly created assignment if successful
+#>
+function New-XIOTagAssignment {
+	[CmdletBinding(SupportsShouldProcess=$true)]
+	[OutputType([XioItemInfo.TagAssignment])]
+	param(
+		## XtremIO entity to which to apply/assign the given Tag. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, or Volume
+		[parameter(ValueFromPipeline=$true, Mandatory=$true)][PSObject[]]$Entity,
+		## The Tag object to apply/assign to the given Entity object(s)
+		[parameter(Mandatory=$true)][XioItemInfo.Tag]$Tag
+	) ## end param
+
+	Begin {
+		## this item type (singular)
+		# $strThisItemType = "tag"
+		## TypeNames of supported Entity objects
+		$arrTypeNamesOfSupportedEntityObj = Write-Output BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, Volume | Foreach-Object {"XioItemInfo.$_"}
+	} ## end begin
+
+	Process {
+		$Entity | Foreach-Object {
+			$oThisEntity = $_
+			if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedEntityObj) {
+				## the Tag object that will get updated
+				$oThisTag = $Tag
+
+				## the API-specific pieces that define the new properties to add to the given XIO Tag object
+				$hshSetItemSpec = ([ordered]@{
+					"tag-id" = @($oThisTag.Guid, $oThisTag.Name, $oThisTag.Index)
+					## get the URI entity type value to use for this Entity type shortname
+					"entity" = $hshCfg.TagEntityTypeMapping[$oThisEntity.GetType().Name]
+					"entity-details" = @($oThisEntity.Guid, $oThisEntity.Name, $oThisEntity.Index)
+				}) ## end hashtable
+
+				## add cluster-id if suitable
+				if ($oThisEntity -is [XioItemInfo.Cluster]) {$hshSetItemSpec["cluster-id"] = @($oThisEntity.Guid, $oThisEntity.Name, $oThisEntity.Index)}
+				## SnapshotScheduler object in REST API v2.0 has $null Cluster property value
+				else {if ($null -ne $oThisEntity.Cluster) {$hshSetItemSpec["cluster-id"] = $oThisEntity.Cluster.Name}}
+
+				## the params to use in calling the helper function to actually update the Tag object
+				$hshParamsForSetItem = @{
+					SpecForSetItem = $hshSetItemSpec | ConvertTo-Json
+					## the Set-XIOItemInfo cmdlet derives the ComputerName to use from the .ComputerName property of this tag object being acted upon; so, not taking -ComputerName as param to New-XIOTagAssignment
+					XIOItemInfoObj = $oThisTag
+					Confirm = $false
+				} ## end hashtable
+
+				## call the function to make this new item, which is actually setting properties on a Tag object
+				try {
+					$oUpdatedTag = Set-XIOItemInfo @hshParamsForSetItem
+					if ($null -ne $oUpdatedTag) {New-Object -Type XioItemInfo.TagAssignment -Property ([ordered]@{Tag = $oUpdatedTag; Entity = Get-XIOItemInfo -Uri $oThisEntity.Uri})}
+				} ## end try
+				## currently just throwing caught error
+				catch {Throw $_}
+			} ## end if
+			else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedEntityObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedEntityObj -join ", "))}
+		} ## end foreach-object
 	} ## end process
 } ## end function
