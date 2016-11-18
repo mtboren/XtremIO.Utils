@@ -239,7 +239,7 @@ move "Latest" tag to master commit
 make .zip of just PSModule files
 make Latest release on GitHub
 add version-specific tag
-make version-specific release on GitHub (Latest and version number)
+make version-specific release on GitHub
 
 
 ## for observing property changes to handle between versions
