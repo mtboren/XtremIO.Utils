@@ -214,7 +214,6 @@ should do next:
 
 
 doing:
-- update examples in GitHub Pages page
 
 done:
 - finished tests
@@ -269,7 +268,7 @@ move "Latest" tag to master commit
 make .zip of just PSModule files
 make Latest release on GitHub
 add version-specific tag
-make version-specific release on GitHub
+make version-specific release on GitHub (Latest and version number)
 
 
 ## for observing property changes to handle between versions
