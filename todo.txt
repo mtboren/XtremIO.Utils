@@ -216,38 +216,9 @@ should do next:
 doing:
 
 done:
-- finished tests
-- updated ChangeLog, ReadMe
-
 
 ## things below here are in changelog/readme
-[feat_MiscUpdates]
-- enabled assigning Tag for an object -- done via New-XIOTagAssignment cmdlet (with corresponding Remove-XIOTagAssignment cmdlet); may have Get-XIOTagAssignment in future, but one can at least get the Tags assigned to an object via Get-XIOTag for now)
-	- New-XIOTagAssignment:  takes Entity or Tag from pipeline; needs cluster-id, entity-details (entity name) and entity (entity type) from Entity, tag-id name from Tag
-		- can use @(guid, name, index) for entity-details, tag-id, cluster-id spec properties
-		- uses Set-XIOItemInfo (actual act of "tagging" an entity is a call to modify the existing Tag object)
-		- "entity" property must have one of the following values: InfinibandSwitch, DAE, Initiator, BatteryBackupUnit, Scheduler, StorageController, DataProtectionGroup, X-Brick, Volume, Cluster, InitiatorGroup, SSD, SnapshotSet, ConsistencyGroup, Target
-		- returns a new obj type TagAssignment with just Tag and Entity properties
-		- updated other cmdlets' Help examples to include use of New-XIOTagAssignment, particularly in place of where -ParentFolder param is used
-		- added tests for New-XIOTagAssignment
-	- Remove-XIOTagAssignment:  take Entity from pipeline; need cluster-id, entity-details (entity name) and entity (entity type) from Entity; need Tag object
-		- added tests for Remove-XIOTagAssignment
-- updated Set-XIOTag to support setting tag color via new -Color parameter -- only supported by XIO REST API starting in v2.1
-- added -Color param to New-XIOTag -- only supported by XIO REST API starting in v2.1 (seems to be supported per events, but not listed in API doc)
-- added Open-XIOXMSWebUI cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
-- added -Name parameter to New-XIOSnapshotScheduler:   "scheduler-name" param for creating new XIO SnapshotScheduler -- works in XIOS REST API v2.1, not in API v2.0
-	- verified that Get-XIO* cmdlets that take SnapshotScheduler obj from pipeline for RelatedObject gleen Cluster from SnapshotScheduler
-- fixed order of items in [XioItemInfo.Enums.Tag.EntityType] enum ("SSD" is out of alpha-order)
-- fixed: added DefaultParameterSetName to Set-XIOUserAccount, as some parameter combinations resulted in "Parameter set cannot be resolved using the specified named parameters" error
-- added type to -Credential param declaration for New-XIOUserAccount (none was specified previously)
-- added -Cluster param to Get-XIOSnapshotScheduler
-- Properties added/removed/deprecated:
-	- for Alert:  added Cluster property, deprecated ClusterId and ClusterName properties
-	- for LunMap:  added "Certainty"
-	- for SnapshotScheduler: added Cluster property (available via XIO REST API starting in v2.1; will be $null in SnapshotScheduler objects returned from XIO REST API v2.0)
-	- for SSD:  removed obsolete property SSDPositionState (values were returned from API as "obsolete")
-	- for StorageController:  removed obsolete properties EncryptionMode, EncryptionSwitchStatus (values were returned from API as "obsolete")
-	- for Volume, Snapshot:  added VolSizeGB property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
+
 
 done for previous versions:  moved to done.txt
 
