@@ -580,11 +580,20 @@
 			<Name>XioItem_volumes</Name>
 			<ViewSelectedBy><TypeName>XioItemInfo.Volume</TypeName></ViewSelectedBy>
 			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader><Width>28</Width></TableColumnHeader>
+					<TableColumnHeader><Width>18</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>15</Width></TableColumnHeader>
+					<TableColumnHeader></TableColumnHeader>
+				</TableHeaders>
 				<TableRowEntries>
 					<TableRowEntry>
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NaaName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>VolSizeGB</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>VolSizeTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>UsedLogicalTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>
@@ -601,6 +610,7 @@
 					<TableColumnHeader><Width>28</Width></TableColumnHeader>
 					<TableColumnHeader><Width>18</Width></TableColumnHeader>
 					<TableColumnHeader><Width>11</Width></TableColumnHeader>
+					<TableColumnHeader><Width>11</Width></TableColumnHeader>
 					<TableColumnHeader><Width>15</Width></TableColumnHeader>
 					<TableColumnHeader></TableColumnHeader>
 					<TableColumnHeader><Width>24</Width></TableColumnHeader>
@@ -610,6 +620,7 @@
 						<TableColumnItems>
 							<TableColumnItem><PropertyName>Name</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>NaaName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>VolSizeGB</PropertyName></TableColumnItem>
 							<TableColumnItem><PropertyName>VolSizeTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>UsedLogicalTB</PropertyName><FormatString>{0:n2}</FormatString></TableColumnItem>
 							<TableColumnItem><PropertyName>IOPS</PropertyName></TableColumnItem>

@@ -1171,6 +1171,7 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"lun-maps" {
 				[ordered]@{
+					Certainty = $oContent.certainty
 					Cluster = _New-XioClusterObjFromSysId -SysId $oContent."sys-id"
 					Guid = $oContent.guid
 					Index = $oContent.index
@@ -1249,7 +1250,6 @@ function _New-Object_fromItemTypeAndContent {
 					SsdId = $oContent."ssd-id"[0]
 					SSDLink1Health = $oContent."ssd-link1-health-state"
 					SSDLink2Health = $oContent."ssd-link2-health-state"
-					SSDPositionState = $oContent."ssd-position-state"
 					SsdRGrpState = $oContent."ssd-rg-state"
 					SsdUid = $oContent."ssd-uid"
 					StatusLED = $oContent."status-led"
@@ -1291,8 +1291,6 @@ function _New-Object_fromItemTypeAndContent {
 					}) ## end New-Object
 					Enabled = ($oContent."enabled-state" -eq "enabled")
 					EnabledState = $oContent."enabled-state"
-					EncryptionMode = $oContent."encryption-mode"
-					EncryptionSwitchStatus = $oContent."encryption-switch-status"
 					FcHba = New-Object -Type PSObject -Property @{
 						## renamed property in XIO module from "fc-hba-fw-version"
 						FWVersion = $oContent."fc-hba-fw-version"
@@ -1639,6 +1637,7 @@ function _New-Object_fromItemTypeAndContent {
 					UnalignedIORatioLevel = $oContent."unaligned-io-ratio-level"
 					VaaiTPAlertsCfg = $oContent."vaai-tp-alerts"
 					VolId = $(if ($null -ne $oContent."vol-id") {$oContent."vol-id"[0]})  ## renamed from "vol-id"
+					VolSizeGB = $(if ($null -ne $oContent."vol-size") {$oContent."vol-size" / 1MB})
 					VolSizeTB = $(if ($null -ne $oContent."vol-size") {$oContent."vol-size" / 1GB})
 					XmsId = $oContent."xms-id"
 				} ## end ordered dictionary
@@ -1759,6 +1758,7 @@ function _New-Object_fromItemTypeAndContent {
 					AssociatedObjIndex = $oContent."assoc-obj-index"
 					AssociatedObjName = $oContent."assoc-obj-name"
 					Class = $oContent."class-name"
+					Cluster = _New-XioClusterObjFromSysId -SysId $oContent."sys-id"
 					ClusterId = $oContent."sys-id"[0]
 					ClusterName = $oContent."sys-name"
 					## is milliseconds since UNIX epoch (not seconds like a "regular" UNIX epoch time)
@@ -2103,6 +2103,8 @@ function _New-Object_fromItemTypeAndContent {
 				break} ## end case
 			"schedulers" {
 				[ordered]@{
+					## "sys-id" property is be $null in older versions of XIOS API, which would result in an empty XioItemInfo.Cluster object
+					Cluster = (_New-XioClusterObjFromSysId -SysId $oContent."sys-id")
 					Guid = $oContent.guid
 					Index = $oContent.index
 					Enabled = ($oContent."enabled-state" -eq "enabled")

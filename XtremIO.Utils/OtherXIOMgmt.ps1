@@ -63,6 +63,53 @@ function Open-XIOMgmtConsole {
 	} ## end process
 } ## end function
 
+
+
+<#	.Description
+	Opens the WebUI web management page in the default web browser on the invoking system.  Assumes that the WebUI has been enabled on the given XMS appliance.
+	.Example
+	Open-XIOXMSWebUI -Computer somexmsappl01.dom.com
+	Opens the WebUI for XMS somexmsappl01.dom.com in a web browser
+	.Example
+	Open-XIOXMSWebUI -Computer myxms* -Verbose
+	Opens the WebUI for all of the XMS appliances to which this PowerShell session has a connection (as made via Connect-XIOServer) whose name is like "myxms*".  Writes out the URLs that the cmdlet is opening, too.
+#>
+function Open-XIOXMSWebUI {
+	[CmdletBinding()]
+	param(
+		## Name(s) of XMS appliances for which to open the WebUI page
+		[parameter(Mandatory=$true)][string[]]$ComputerName
+	) ## end param
+
+	Begin {
+		## string to add to messages written by this function; function name in square brackets
+		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
+	} ## end begin
+
+	Process {
+		$ComputerName | Foreach-Object {
+			$strThisXmsName = $_
+			## if already connected to this/these XMS, use the ComputerName property to make array of XMS names whose WebUI to open
+			if ($($arrTheseXioConnections = $DefaultXmsServers | Where-Object {$_.ComputerName -like $strThisXmsName}; ($arrTheseXioConnections | Measure-Object).Count -gt 0)) {
+				$arrXmsAddrToUse = $arrTheseXioConnections.ComputerName
+			} ## end if
+			## else, make sure this name is legit (in DNS)
+			else {
+				Try {$oIpAddress = [System.Net.DNS]::GetHostAddresses($strThisXmsName); $arrXmsAddrToUse = @($strThisXmsName)}
+				Catch [System.Net.Sockets.SocketException] {Write-Warning "Not connected to any XMS whose name is like '$strThisXmsName', and '$strThisXmsName' not found in DNS. Valid name?"; break;}
+			} ## end else
+			## for each XMS address, open the WebUI
+			$arrXmsAddrToUse | Foreach-Object {
+				$strURIToOpen = "https://$_/webui"
+				Write-Verbose "Opening '$strURIToOpen'"
+				Start-Process -FilePath $strURIToOpen
+			} ## end foreach-object
+		} ## end foreach-object
+	} ## end process
+} ## end function
+
+
+
 <#	.Description
 	Function to get the stored, encrypted credentials from file (if one exists)
 	.Example
@@ -86,6 +133,7 @@ function Get-XIOStoredCred {
 } ## end function
 
 
+
 <#	.Description
 	Function to create a new stored, encrypted credentials file
 	.Example
@@ -104,6 +152,7 @@ function New-XIOStoredCred {
 	hExport-PSCredential -Credential $Credential -Path $hshCfg["EncrCredFilespec"]
 	if ($true -eq $PassThru_sw) {$Credential}
 } ## end function
+
 
 
 <#	.Description
@@ -125,6 +174,7 @@ function Remove-XIOStoredCred {
 		} else {Write-Warning "Creds file '$strStoredXioCredFilespec' does not exist; no action to take"}
 	} ## end process
 } ## end function
+
 
 
 <#	.Description
@@ -207,6 +257,7 @@ function Connect-XIOServer {
 		} ## end Foreach-Object
 	} ## end process
 } ## end function
+
 
 
 <#	.Description
