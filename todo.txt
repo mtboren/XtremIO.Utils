@@ -205,12 +205,14 @@ From module release v1.1.0
 
 
 should do next:
--improve Get-XIOLunMap:
-	-add -Name param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
-	-revisit pipelining:  sufficient for now, until adding Filtering support in later release?
--update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
--update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
-	-?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
+- improve `Get-XIOLunMap`:
+	- add `-Name` param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
+	- revisit pipelining:  sufficient for now, until adding Filtering support in later release?
+		- add support for -RelatedItem on Get-XIOLunMap when employing Filtering (like InitiatorGroup and Volume related types)
+- update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
+- add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline
+- update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
+	- ?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
 
 
 doing:
