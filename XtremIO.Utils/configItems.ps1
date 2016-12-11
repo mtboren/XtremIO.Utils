@@ -28,6 +28,8 @@ $hshCfg = @{
 	EncrCredFilespec = "${env:temp}\xioCred_by_${env:username}_on_${env:computername}.enc.xml"
 	VerboseDatetimeFormat = "yyyy.MMM.dd HH:mm:ss"
 	GetEventDatetimeFormat = "yyyy-MM-dd HH:mm:ss"
+	## minimump REST API version that provides Filtering support
+	MinimumRESTAPIVerForFiltering = [System.Version]"2.0"
 	## the API type names that are available at the given minimum XIOS version
 	ItemTypeInfoPerXiosVersion = @{
 		"3.0" = "clusters", "data-protection-groups", "events", "ig-folders", "initiator-groups", "initiators", "lun-maps", "target-groups", "targets", "volumes", "volume-folders", "bricks", "snapshots", "ssds", "storage-controllers", "xenvs"

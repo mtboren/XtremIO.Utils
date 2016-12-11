@@ -1,23 +1,34 @@
 <#	.Description
 	Function to get XtremIO item info using REST API with XtremIO Management Server (XMS); Apr 2014, Matt Boren.  Tries to do some auto-detection of the API version (and, so, the URIs to use) by determining on which port the XMS is listening for API requests.  There was a change from v2.2.2 to v2.2.3 of the XMS in which they stopped listening on the non-SSL port 42503, and began listening on 443.
+
 	.Example
 	Get-XIOItemInfo
 	Request info from XMS and return an object with the "cluster" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOItemInfo -ComputerName somexmsappl01.dom.com -ItemType initiator
 	Return some objects with info about the defined intiators on the given XMS
+
 	.Example
 	Get-XIOItemInfo -ItemType volume
 	Return objects with info about each LUN mapping on the XMS
+
 	.Example
 	Get-XIOItemInfo -ItemType cluster -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Example
 	Get-XIOItemInfo -ItemType lun-map -Property VolumeName,LunID
 	Get LunMap objects, but just retrieve the two specified properties instead of the default of retrieving all properties
+
+	.Example
+	Get-XIOItemInfo -ItemType lun-map -Property VolumeName,LunID -Filter "filter=ig-name:eq:myIG0"
+	Get LunMap objects for which the ig-name property is "myIG0" (effectively, get the LunMaps for the initiator group "myIG0"), retrieving just the two specified properties instead of the default of retrieving all properties
+
 	.Example
 	Get-XIOItemInfo -Uri https://xms.dom.com/api/json/types -ReturnFullResponse | Select-Object -ExpandProperty children
 	Return PSCustomObject that contains the full data from the REST API response (this particular example returns the HREFs for all of the base types supported by the given XMS's API -- helpful for spelunking for when new API versions come out and this XtremIO PowerShell module is not yet updated to cover new types that may have come to be)
+
 	.Outputs
 	PSCustomObject
 #>
@@ -26,6 +37,7 @@ function Get-XIOItemInfo {
 	param(
 		## XMS address to which to connect
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName_arr,
+
 		## Item type for which to get info; currently supported types:
 		##   for all XIOS versions:                "cluster", "initiator-group", "initiator", "lun-map", target-group", "target", "volume"
 		##   and, for XIOS versions 2.2.3 and up:  "brick", "snapshot", "ssd", "storage-controller", "xenv"
@@ -34,20 +46,30 @@ function Get-XIOItemInfo {
 		[parameter(ParameterSetName="ByComputerName")]
 		[ValidateSet("alert-definition", "alert", "bbu", "cluster", "consistency-group", "dae", "dae-controller", "dae-psu", "data-protection-group", "email-notifier", "event", "ig-folder", "infiniband-switch", "initiator-group", "initiator", "ldap-config", "local-disk", "lun-map", "performance", "scheduler", "slot", "snmp-notifier", "target-group", "target", "user-account", "volume", "volume-folder", "brick", "snapshot", "snapshot-set", "ssd", "storage-controller", "storage-controller-psu", "syslog-notifier", "tag", "xenv", "xms")]
 		[string]$ItemType_str = "cluster",
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
-		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
-		[switch]$ReturnFullResponse_sw,
+
+		## Switch: Use the API v2 feature of "full=1", which returns full object details, instead of just name and HREF for the given XIO object?
+		[parameter(ParameterSetName="ByComputerName")][Switch]$UseApiFullFeature,
+
+		## XtremIO REST API filter string for refining the get operation. Filtering is supported starting in version 2.0 of the XIOS REST API. See the "Filtering Logics" section of the XtremIO Storage Array RESTful API guide. Filter syntax is: "filter=<propertyName>:<comparisonOperator>:<value>". Very brief example of syntax:  "filter=vol-size:eq:10240&filter=name:eq:production"
+		[parameter(ParameterSetName="ByComputerName")][ValidatePattern("^(filter=.+:.+:.+)+")][string]$Filter,
+
+		## Select properties to retrieve/return for given object type, instead of retrieving all (default). This capability is available as of the XIOS REST API v2
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Property,
+
+		## Name of XtremIO Cluster whose child objects to get
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+
 		## Additional parameters to use in the REST call (like those used to return a subset of events instead of all)
-		[string]$AdditionalURIParam,
+		[parameter(ParameterSetName="ByComputerName")][string]$AdditionalURIParam,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
-		## Switch: Use the API v2 feature of "full=1", which returns full object details, instead of just name and HREF for the given XIO object?
-		[Switch]$UseApiFullFeature,
-		## Select properties to retrieve/return for given object type, instead of retrieving all (default). This capability is available as of the XIOS REST API v2
-		[string[]]$Property,
-		## Name of XtremIO Cluster whose child objects to get
-		[string[]]$Cluster
+
+		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
+		[switch]$ReturnFullResponse_sw
 	) ## end param
 
 	Begin {
@@ -159,10 +181,19 @@ function Get-XIOItemInfo {
 							#     volume-folders and ig-folders:  the property is "folders"; so, need to use "folders" if either of those two types are used here
 							#     xms:  the property is "xmss"
 							$strPropertyNameToAccess = Switch ($strItemType_plural) {
-															{"volume-folders","ig-folders" -contains $_} {"folders"; break}
-															"xms" {"xmss"; break}
-															default {$strItemType_plural}
-														} ## end switch
+								{"volume-folders","ig-folders" -contains $_} {"folders"; break}
+								"xms" {"xmss"; break}
+								default {$strItemType_plural}
+							} ## end switch
+
+							## if there was a Filter specified, add it to the query string
+							if ($PSBoundParameters.ContainsKey("Filter")) {
+								if ($oThisXioConnection.RestApiVersion -ge $hshCfg["MinimumRESTAPIVerForFiltering"]) {
+									## add the "?filter=..." or "&filter=..." bit to the REST command (the command may already have a ?<someparam>=<blahh> piece)
+									$hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] += "{0}{1}" -f $(if ($hshParamsForGetXioInfo_allItemsOfThisType["RestCommand_str"] -match "\?") {"&"} else {"?"}), $Filter
+								} ## end if
+								else {Write-Warning "Version of REST API ('$($oThisXioConnection.RestApiVersion)') on XMS '$($oThisXioConnection.ComputerName)' does not support filtering (min API version for filtering support is '$($hshCfg["MinimumRESTAPIVerForFiltering"])'). Ignoring the -Filter parameter in this call"}
+							} ## end if
 
 							## if v2 or higher API is available and "full" object views can be gotten directly (without subesquent calls for every object), and the -UseApiFullFeature switch was specified
 							if (($UseApiFullFeature -or $PSBoundParameters.ContainsKey("Property")) -and ($oThisXioConnection.RestApiVersion -ge [System.Version]"2.0")) {
@@ -1144,7 +1175,7 @@ function Get-XIOLunMap {
 		## LUN ID on which to filter returned LUN mapping info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName")][int[]]$HostLunId,
 		## Select properties to retrieve/return for given object type, instead of retrieving all (retriving all is default). This capability is available as of the XIOS REST API v2
-		[string[]]$Property,
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Property,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
