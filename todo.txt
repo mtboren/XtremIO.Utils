@@ -214,12 +214,6 @@ should do next:
 
 
 doing:
-[feat_ImproveGetXIOLunMap]
-- improved `Get-XIOLunMap`:
-	- revisited pipelining, since Filtering support is in place in `Get-XIOItemInfo`
-	- added `-RelatedItem` parameter, which supports InitiatorGroup, Volume, and Snapshot items
-	- added `-Name` param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again)
-
 
 done:
 [feat_AddFilterSupport]
@@ -234,6 +228,11 @@ done:
 		returned full-response object has three properties:  <item-type> (plural), params, and links; links seems to just be to base object type URL (no object index included in URL)
 	- without &full=1:
 		returned full-response object has just two properties:  <item-type> (plural) that has (href property:  the item-specific URL w/o cluster, name property:  name of the object) and links; links seems to just be to base object type URL (no object index included in URL)
+[feat_ImproveGetXIOLunMap]
+- improved `Get-XIOLunMap`:
+	- revisited pipelining, since Filtering support is in place in `Get-XIOItemInfo`
+	- added `-RelatedItem` parameter, which supports InitiatorGroup, Volume, and Snapshot items
+	- added `-Name` param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again)
 
 
 ## things below here are in changelog/readme
