@@ -79,6 +79,15 @@ Describe -Tags "Get" -Name "Get-XIOItemInfo" {
 	}
 }
 
+Describe -Tags "Get" -Name "Get-XIOItemInfo (using -Filter)" {
+	It "Gets XIO LUN Map objects as directed, ensuring that the LunMap retrieved using a -Filter matches (based on GUID) the subject LunMap (the first LunMap retrieved)" {
+		$oSomeXIOLunMap = Get-XIOLunMap -ComputerName $strXmsComputerName -Property VolumeName,LunId | Select -First 1
+		$oXIOLunMapGottenByFilter = Get-XIOItemInfo -ComputerName $strXmsComputerName -ItemType lun-map -Filter ("filter=lun:eq:{0}&filter=vol-name:eq:{1}" -f $oSomeXIOLunMap.LunId,$oSomeXIOLunMap.VolumeName)
+		$bGetsSameLunMapItem = $oSomeXIOLunMap.Guid -eq $oXIOLunMapGottenByFilter.Guid
+		$bGetsSameLunMapItem | Should Be $true
+	}
+}
+
 Describe -Tags "Get" -Name "Get-XIOLunMap (choice properties)" {
 	It "Gets XIO LUN Map objects as directed, retrieving just the given properties" {
 		$arrReturnTypes = Get-XIOLunMap -ComputerName $strXmsComputerName -Property VolumeName,LunId | Get-Member | Select-Object -Unique -ExpandProperty TypeName
