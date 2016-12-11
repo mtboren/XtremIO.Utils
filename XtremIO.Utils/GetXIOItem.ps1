@@ -69,6 +69,7 @@ function Get-XIOItemInfo {
 			$arrXioClusterNamesToPotentiallyUse = if ($PSBoundParameters.ContainsKey("Cluster")) {$Cluster} else {$oThisXioConnection.Cluster}
 			## data hashtables for getting XIO info (not gotten via the "full view" API feature)
 			$arrDataHashtablesForGettingXioInfo = @()
+
 			## if full URI specified, use it to populate hashtables for getting XIO info
 			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {
 				## get the plural item type from the URI (the part of the URI after "/types/")
@@ -79,7 +80,8 @@ function Get-XIOItemInfo {
 					arrHrefsToGetItemsInfo = $URI_str
 				} ## end hashtable
 			} ## end if
-			## else, use ItemType
+
+			## else, not SpecifyFullUri, so use ItemType
 			else {
 				## from the param value, make the plural form (the item types in the API are all plural; adding "s" here to the singular form used for valid param values, the singular form being the standard for PowerShell-y things)
 				$strItemType_plural = Switch ($ItemType_str) {
@@ -88,19 +90,16 @@ function Get-XIOItemInfo {
 					{@("email-notifier", "performance", "snmp-notifier", "syslog-notifier", "xms") -notcontains $_} {"${ItemType_str}s"; break}
 					default {$ItemType_str}
 				} ## end switch
-			} ## end else
 
-			## is this a type that is supported in this XioConnection's XIOS version? (and, was this not a "by URI" request? excluding those so that user can explore other objects, like /json/api/types)
-			if (($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") -and -not (_Test-XIOObjectIsInThisXIOSVersion -XiosVersion $oThisXioConnection.XmsVersion -ApiItemType $strItemType_plural)) {
-				Write-Warning $("Type '$strItemType_plural' does not exist in $($oThisXioConnection.ComputerName)'s XIOS version{0}. This is possibly an object type that was introduced in a later XIOS version" -f $(if (-not [String]::IsNullOrEmpty($_.XmsSWVersion)) {" ($($_.XmsSWVersion))"}))
-			} ## end if
-			## else, the Item type _does_ exist in this XIOS version -- get its info
-			else {
-				## if not FullUri, need to get the other attributes to use for query (not full URI)
-				if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {
+
+				## is this a type that is supported in this XioConnection's XIOS version? (and, was this not a "by URI" request? excluding those so that user can explore other objects, like /json/api/types)
+				if (-not (_Test-XIOObjectIsInThisXIOSVersion -XiosVersion $oThisXioConnection.XmsVersion -ApiItemType $strItemType_plural)) {
+					Write-Warning $("Type '$strItemType_plural' does not exist in $($oThisXioConnection.ComputerName)'s XIOS version{0}. This is possibly an object type that was introduced in a later XIOS version" -f $(if (-not [String]::IsNullOrEmpty($_.XmsSWVersion)) {" ($($_.XmsSWVersion))"}))
+				} ## end if
+				## else, the Item type _does_ exist in this XIOS version -- get its info
+				else {
 					## the base portion of the REST command to issue (not including any "?cluster-name=<blahh>" portion, yet)
 					$strRestCmd_base = "/types/${strItemType_plural}"
-
 					## this XMS name
 					$strThisXmsName = $oThisXioConnection.ComputerName
 
@@ -137,8 +136,9 @@ function Get-XIOItemInfo {
 							} ## end hashtable
 						} ## end foreach-object
 					} ## end if
+
 					## do all the necessary things to populate $arrDataHashtablesForGettingXioInfo with individual XIO item's HREFs
-					else { ## making arrDataHashtablesForGettingXioInfo from "default" view via API, or array of objets with "full" properties, as is supported in XIOS API v2
+					else { ## making arrDataHashtablesForGettingXioInfo from "default" view via API, or array of objects with "full" properties, as is supported in XIOS API v2
 
 						## if type supports cluster-name param, iterate through the specified (or default) clusters; else, do not include "cluster-name" in the URIs (passing empty string to Foreach-Object that will not get used, as the designated boolean is $false)
 						$(if ($hshCfg["ItemTypesSupportingClusterNameInput"] -contains $strItemType_plural) {$bUseClusterNameInUri = $true; $arrXioClusterNamesToPotentiallyUse} else {$bUseClusterNameInUri = $false; ""}) | Foreach-Object {
@@ -241,31 +241,33 @@ function Get-XIOItemInfo {
 							} ## end else
 						} ## end of foreach-object on XIO Cluster names
 
-					} ## end else "making arrDataHashtablesForGettingXioInfo"
-				} ## end if "not full URI"
+					} ## end else "making arrDataHashtablesForGettingXioInfo"; end if "not full URI"
+				} ## end else (item type _does_ exist in this XIOS version)
+			} ## end else (was not SpecifyFullUri, so used ItemType)
 
-				## if there are hrefs from which to get item info, do so for each
-				if (($arrDataHashtablesForGettingXioInfo | Measure-Object).Count -gt 0) {
-					$arrDataHashtablesForGettingXioInfo | Foreach-Object {
-						## $_ is a hsh of DataForGettingInfoFromThisXmsAppl, with key arrHrefsToGetItemsInfo that has HREFs for getting items' info
-						$_.arrHrefsToGetItemsInfo | Foreach-Object {
-							$strUriThisItem = $_
-							## make the params hash for this item
-							$hshParamsForGetXioInfo_thisItem = @{
-								Credential = $oThisXioConnection.Credential
-								URI_str = $strUriThisItem
-							} ## end hsh
-							$hshParamsForGetXioInfo_thisItem["TrustAllCert_sw"] = $oThisXioConnection.TrustAllCert
-							## call main Get-Info function with given params, getting a web response object back
-							$oResponseCustObj = Get-XIOInfo @hshParamsForGetXioInfo_thisItem
+
+			## get and return the actual info items, if any
+			## if there are hrefs from which to get item info, do so for each
+			if (($arrDataHashtablesForGettingXioInfo | Measure-Object).Count -gt 0) {
+				$arrDataHashtablesForGettingXioInfo | Foreach-Object {
+					## $_ is a hsh of DataForGettingInfoFromThisXmsAppl, with key arrHrefsToGetItemsInfo that has HREFs for getting items' info
+					$_.arrHrefsToGetItemsInfo | Foreach-Object {
+						$strUriThisItem = $_
+						## make the params hash for this item
+						$hshParamsForGetXioInfo_thisItem = @{
+							Credential = $oThisXioConnection.Credential
+							URI_str = $strUriThisItem
+						} ## end hsh
+						$hshParamsForGetXioInfo_thisItem["TrustAllCert_sw"] = $oThisXioConnection.TrustAllCert
+						## call main Get-Info function with given params, getting a web response object back
+						$oResponseCustObj = Get-XIOInfo @hshParamsForGetXioInfo_thisItem
 ## for returnfullresponse, need to include the cluster-name to make proper, full URI?
-							if ($ReturnFullResponse_sw) {$oResponseCustObj}
-							else {_New-ObjectFromApiObject -ApiObject $oResponseCustObj -ItemType $strItemType_plural -ComputerName $oThisXioConnection.ComputerName -ItemURI $strUriThisItem}
-						} ## end foreach-object
+						if ($ReturnFullResponse_sw) {$oResponseCustObj}
+						else {_New-ObjectFromApiObject -ApiObject $oResponseCustObj -ItemType $strItemType_plural -ComputerName $oThisXioConnection.ComputerName -ItemURI $strUriThisItem}
 					} ## end foreach-object
-				} ## end "if there are hrefs from which to get item info, do so for each"
-				elseif (-not $bReturnedObjects) {Write-Verbose "no matching objects found"}
-			} ## end else (item type _does_ exist in this XIOS version)
+				} ## end foreach-object
+			} ## end "if there are hrefs from which to get item info, do so for each"
+			elseif (-not $bReturnedObjects) {Write-Verbose "no matching objects found"}
 		} ## end foreach-object
 	} ## end process
 } ## end function

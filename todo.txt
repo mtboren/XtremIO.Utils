@@ -1,11 +1,12 @@
 todo:
 -enable adding/removing volume to/from ConsistencyGroup (via Set-XIOConsistencyGroup, or via Add-XIOVolumeToConsistencyGroup, Remove-XIOVolumeFromConsistencyGroup?)
--add Filtering support in some way, possible only in API v2 (need to handle how to only "enable" it for XIOSv4+ XMSs)
-	-see the "Filter" support that came in API v2 in the API guide (pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide)
-	-good for speeding up LunMap retrieval and the likes
-	-for Get-XIOSnapshot:  add Param option for "ancestor-vol-id", implement via Filter -- available via xmcli
-	-for Get-XIOVolume:  add Param option for "sg-id" (snapshot group ID), implement via Filter -- available via xmcli
-	-potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, so that can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
+- after Filter support is in place:
+	- add -Filter param to the Get-XIO* cmdlets for which it makes sense
+	- for Get-XIOSnapshot:  add Param option for "ancestor-vol-id", implement via Filter -- available via xmcli
+	- for Get-XIOVolume:  add Param option for "sg-id" (snapshot group ID), implement via Filter -- available via xmcli
+	- potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
+	- improve Get-XIOLunMap:
+		- take InitiatorGroup and Volume by object by pipeline
 -expand availability of -Property parameter on other Get-* cmdlets as it makes sense (already done on Get-XIOLunMap)
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
@@ -27,8 +28,6 @@ todo:
 -improve New-XIOLunMap:
 	-take initiatorgroup from pipeline (by property of InitGrpId); currently expects IG _name_, and doesn't accept by pipeline (weak)
 	-update -Volume to accept vol objects or vol name (just does name right now), and take Volume obj from pipeline
--improve Get-XIOLunMap:
-	-take InitiatorGroup and Volume by object by pipeline (after filtering support is in place?)
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume/snapshot/snapset (and, accept from pipeline, too) as related object
 -for when removing InitiatorGrpIdList from IgFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
@@ -216,6 +215,25 @@ should do next:
 
 
 doing:
+[feat_AddFilterSupport]
+- add initial Filtering support, possible only in API v2+ (need to handle how to only "enable" it for XIOSv4+ XMSs)
+	- see the "Filter" support that came in API v2 in the API guide (pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide)
+	- good for speeding up LunMap retrieval and the likes
+	- if filtering in URI or in new param to Get-XIOItemInfo, need to have new code that either:
+		- with &full=1:  does something to handle return-obj creation from "&full=1" object; about line 263 in GetXIOItem.ps1
+		- without &full=1:  does additional call to Get-XIOItemInfo of just the URL (for each URL) from the <item-type> property of object returned from filtered call, and does not do the rest of the Get-XIOItemInfo call that was in the works when the original call w/ the URI with filter was passed
+	- if SpecifyFullUri parameter set:
+		- no AdditionalURIParam, UseApiFullFeature, Property, Cluster parameters (make those part of the ByComputerName parameter set only)
+		- expect (require?) that caller is using "&full=1" when doing "filter=..."?
+			- if so, no additional calls to Get-XIOInfo
+			- else, only the HREFs of matching items are returned up to a point, and then any "&prop=" query string things would be not have been handled; there would need to be an additional call to Get-XIOInfo on that resulting set of HREFs (and persist the "&prop" query string params)
+	- add -Filter param in ByComputerName parameter set that is just a string in the EMC-specified filter format; will put this into the query string of the URI for the Get-XIOInfo call (and add "&full=1"?)
+	## notes/observations on getting items w/ filtering:
+	- returned full-response object does not have "content" property on which the creation of new return object in XtremIO.Utils module is based
+	- with &full=1:
+		returned full-response object has three properties:  <item-type> (plural), params, and links; links seems to just be to base object type URL (no object index included in URL)
+	- without &full=1:
+		returned full-response object has just two properties:  <item-type> (plural) that has (href property:  the item-specific URL w/o cluster, name property:  name of the object) and links; links seems to just be to base object type URL (no object index included in URL)
 
 done:
 
