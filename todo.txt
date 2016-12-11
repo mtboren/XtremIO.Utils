@@ -8,8 +8,8 @@ todo:
 	- for Get-XIOSnapshot:  add Param option for "ancestor-vol-id", implement via Filter -- available via xmcli
 	- for Get-XIOVolume:  add Param option for "sg-id" (snapshot group ID), implement via Filter -- available via xmcli
 	- potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
-	- improve Get-XIOLunMap:
-		- take InitiatorGroup and Volume by object by pipeline
+	- once assuming that min XIO REST API version is 2.0 (after dropping support for XMS older than v4) improve Get-XIOLunMap:
+		- change the -Volume, -HostLunId, and -InitiatorGroup params to use -Filter on Get-XIOItemInfo (do away with -Volume and -InitiatorGroup, since those are handled via -RelatedObject?)
 -expand availability of -Property parameter on other Get-* cmdlets as it makes sense (already done on Get-XIOLunMap)
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
@@ -207,10 +207,6 @@ From module release v1.1.0
 
 
 should do next:
-- improve `Get-XIOLunMap`:
-	- add `-Name` param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again?)
-	- revisit pipelining:  sufficient for now, until adding Filtering support in later release?
-		- add support for -RelatedItem on Get-XIOLunMap when employing Filtering (like InitiatorGroup and Volume related types)
 - update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
 - add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline
 - update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
@@ -218,6 +214,11 @@ should do next:
 
 
 doing:
+[feat_ImproveGetXIOLunMap]
+- improved `Get-XIOLunMap`:
+	- revisited pipelining, since Filtering support is in place in `Get-XIOItemInfo`
+	- added `-RelatedItem` parameter, which supports InitiatorGroup, Volume, and Snapshot items
+	- added `-Name` param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again)
 
 
 done:

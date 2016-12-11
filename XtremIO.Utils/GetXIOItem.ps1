@@ -1142,6 +1142,15 @@ function Get-XIOLocalDisk {
 	Get-XIOLunMap
 	Request info from current XMS connection and return an object with the "LUN map" info for the logical storage entity defined on the array
 	.Example
+	Get-XIOVolume myVolume0 | Get-XIOLunMap
+	Get the LunMap objects that involve volume "myVolume0". Leverages the filtering capability available in version 2.0 and higher of the XtremIO REST API
+	.Example
+	Get-XIOSnapshot mySnap0 | Get-XIOLunMap -Property VolumeName,LunId
+	Get the LunMap objects that involve snapshot "mySnap0", and retrieves/returns LunMap values only for the specified properties. Leverages the filtering capability available in version 2.0 and higher of the XtremIO REST API
+	.Example
+	Get-XIOInitiatorGroup myIG0,myIG1 | Get-XIOLunMap
+	Get the LunMap objects that involve InitiatorGroups "myIG0", "myIG1". Leverages the filtering capability available in version 2.0 and higher of the XtremIO REST API
+	.Example
 	Get-XIOLunMap -Volume myVolume0
 	Get the "LUN map" objects for volume myVolume0
 	.Example
@@ -1168,6 +1177,8 @@ function Get-XIOLunMap {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+		## Name of LunMap object to get, in the unlikely event that this is deemed a "handy" property by which to get a LunMap. Value like "1_3_1"
+		[parameter(ParameterSetName="ByComputerName",Position=0)][string[]]$Name,
 		## Volume name(s) for which to get LUN mapping info (or, all volumes' mappings if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Volume,
 		## Specific initiator group for which to get LUN mapping info; if not specified, return all
@@ -1175,7 +1186,9 @@ function Get-XIOLunMap {
 		## LUN ID on which to filter returned LUN mapping info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName")][int[]]$HostLunId,
 		## Select properties to retrieve/return for given object type, instead of retrieving all (retriving all is default). This capability is available as of the XIOS REST API v2
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Property,
+		[parameter(ParameterSetName="ByComputerName")][parameter(ParameterSetName="ByRelatedObject")][string[]]$Property,
+		## Related object from which to determine the LunMap to get. Can be an XIO object of type InitiatorGroup, Snapshot, or Volume. Uses Filtering feature of XtremIO REST API (requires at least v2.0 of this REST API)
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject,
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
@@ -1194,20 +1207,44 @@ function Get-XIOLunMap {
 		$hshParamsForGetXioItemInfo = @{}
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output InitiatorGroup, Snapshot, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {"Volume","InitiatorGroup","HostLunId" -notcontains $_} | Foreach-Object {$hshParamsForGetXIOItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
-		## if the Volume was specified, return just LUN mappings involving that volume
-		if ($PSBoundParameters.ContainsKey("Volume")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($Volume | Where-Object {$oThisItem.VolumeName -like $_}).Count -gt 0}}
-		## if InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
-		if ($PSBoundParameters.ContainsKey("InitiatorGroup")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGroup | Where-Object {$oThisItem.InitiatorGroup -like $_}).Count -gt 0}}
-		## if HostLunId was specified, return just LUN mappings involving that HostLunId
-		if ($PSBoundParameters.ContainsKey("HostLunId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$HostLunId -contains $_.LunId}}
-		return $arrItemsToReturn
+		if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			## add -Property param if used here
+			if ($PSBoundParameters.ContainsKey("Property")) {$hshParamsForGetXIOItemInfo["Property"] = $Property}
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					## make a filter for LunMaps involving this RelatedObject
+					$hshParamsForGetXIOItemInfo["Filter"] = Switch ($oThisRelatedObj.GetType().FullName) {
+						## if the related object is a Snapshot or a Volume
+						{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {"filter=vol-name:eq:{0}" -f $oThisRelatedObj.Name; break}
+						"XioItemInfo.InitiatorGroup" {"filter=ig-name:eq:{0}&filter=ig-index:eq:{1}" -f $oThisRelatedObj.Name, $oThisRelatedObj.Index; break}
+					} ## end switch
+
+					## get the actual item using this particular Filter
+					Get-XIOItemInfo @hshParamsForGetXioItemInfo
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		## else, use the 'old' way of trying to filter, but that is after-the-fact of having retrieve all LunMap objects already
+		else {
+			## get the params for Get-XIOItemInfo (exclude some choice params)
+			$PSBoundParameters.Keys | Where-Object {"Volume","InitiatorGroup","HostLunId" -notcontains $_} | Foreach-Object {$hshParamsForGetXIOItemInfo[$_] = $PSBoundParameters[$_]}
+			## call the base function to get the given item
+			$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
+			## if the Volume was specified, return just LUN mappings involving that volume
+			if ($PSBoundParameters.ContainsKey("Volume")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($Volume | Where-Object {$oThisItem.VolumeName -like $_}).Count -gt 0}}
+			## if InitiatorGroup was specified, return just LUN mappings involving that InitiatorGroup
+			if ($PSBoundParameters.ContainsKey("InitiatorGroup")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($InitiatorGroup | Where-Object {$oThisItem.InitiatorGroup -like $_}).Count -gt 0}}
+			## if HostLunId was specified, return just LUN mappings involving that HostLunId
+			if ($PSBoundParameters.ContainsKey("HostLunId")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$HostLunId -contains $_.LunId}}
+			return $arrItemsToReturn
+		} ## end else
 	} ## end process
 } ## end function
 
