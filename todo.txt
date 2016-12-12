@@ -209,7 +209,6 @@ From module release v1.1.0
 
 
 should do next:
-- add to Known Issues about filtering and that it is not cluster-specific (not implemented as such, and API does not seem to support it)
 - fix typo "multple" in help for `Set-XIOLdapConfig`
 - update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
 - add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline
