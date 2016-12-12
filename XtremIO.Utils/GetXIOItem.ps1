@@ -1224,6 +1224,9 @@ function Get-XIOLunMap {
 						{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {"filter=vol-name:eq:{0}" -f $oThisRelatedObj.Name; break}
 						"XioItemInfo.InitiatorGroup" {"filter=ig-name:eq:{0}&filter=ig-index:eq:{1}" -f $oThisRelatedObj.Name, $oThisRelatedObj.Index; break}
 					} ## end switch
+					$hshParamsForGetXIOItemInfo["ComputerName"] = $oThisRelatedObj.ComputerName
+					## if Cluster property is populated (which it should be almost without exception)
+					if (-not [System.String]::IsNullOrEmpty($oThisRelatedObj.Cluster)) {$hshParamsForGetXIOItemInfo["Cluster"] = $oThisRelatedObj.Cluster}
 
 					## get the actual item using this particular Filter
 					Get-XIOItemInfo @hshParamsForGetXioItemInfo
