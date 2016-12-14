@@ -180,6 +180,12 @@ todo:
 
 
 -known issues / considerations:
+From module release v1.3.0
+- in XtremIO REST API v2.1:
+	- removal of Tag objects as "folders" fails; `Remove-XIOInitiatorGroupFolder` and `Remove-XIOVolumeFolder` no longer work; use `Remove-XIOTag` instead (since the "folders" are accessible as Tag objects)
+	- some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Investigating with vendor
+
+
 From module release v1.2.0
 
 - User must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
@@ -219,6 +225,7 @@ should do next:
 doing:
 
 done:
+fixed bug in Remove-XIOUserAccount that was caused by change of input parameter name in XtremIO REST API v2.1 (docs say "user-id", but actual parameter name is "usr-id"); fix kept compatibility w/ REST API v2.0
 [feat_AddFilterSupport]
 - add initial Filtering support, possible only in API v2+ (need to handle how to only "enable" it for XIOSv4+ XMSs)
 	- see the "Filter" support that came in API v2 in the API guide (pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide)

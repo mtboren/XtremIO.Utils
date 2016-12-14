@@ -485,7 +485,7 @@ function Remove-XIOUserAccount {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			## UserAccount's user-id (name or index, but, using name, of course, because by-index is no fun)
-			"user-id" = $UserAccount.Name
+			"usr-id" = $UserAccount.Name
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
