@@ -215,7 +215,8 @@ From module release v1.1.0
 
 should do next:
 - fix typo "multple" in help for `Set-XIOLdapConfig`
-- update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.;
+- update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.; add update about opening WebUI
+- update GH Pages examples
 - add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline
 - update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 	- ?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
