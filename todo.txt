@@ -12,6 +12,7 @@ todo:
 		- change the -Volume, -HostLunId, and -InitiatorGroup params to use -Filter on Get-XIOItemInfo (do away with -Volume and -InitiatorGroup, since those are handled via -RelatedObject?)
 - improve `Set-XIOLdapConfig`:
 	- add ability to append a role mapping (instead of user having to specify full RoleMapping value for every Set operation)
+- investigate improving `Set-XIOSnapshotScheduler` to support renaming of SnapshotScheduler (in XtremIO REST API v2.1 or newer); rename in web UI seems to use "rename" command with "new_name" parameter, like:  {obj_class="Scheduler", obj_id=["", "None", "1"], new_name="some new name", new_caption=None, sys_id=["", "", "2"]}
 -expand availability of -Property parameter on other Get-* cmdlets as it makes sense (already done on Get-XIOLunMap)
 	-include "translation" config item to go from "nice" property names (as returned on XIOItemInfo.* objects) to API Objects' property names, so that consumer does not need to know the API property names
 	-will need to update type definitions and the hsh table definitions for the eventual New-Object call to expect/handle/allow $null values, so as to be able to populate only some property values for the return object, as done for Volume/Snapshot, LunMap objects
@@ -182,7 +183,6 @@ todo:
 -known issues / considerations:
 From module release v1.3.0
 - in XtremIO REST API v2.1:
-	- removal of Tag objects as "folders" fails; `Remove-XIOInitiatorGroupFolder` and `Remove-XIOVolumeFolder` no longer work; use `Remove-XIOTag` instead (since the "folders" are accessible as Tag objects)
 	- some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Investigating with vendor
 
 
@@ -201,7 +201,6 @@ From module release v1.1.0
 	- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
 	- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
 	- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
-- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
 - `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
 	- folder support will be removed from this PowerShell module eventually, so these may not get addressed
 	- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
@@ -225,25 +224,6 @@ should do next:
 doing:
 
 done:
-fixed bug in Remove-XIOUserAccount that was caused by change of input parameter name in XtremIO REST API v2.1 (docs say "user-id", but actual parameter name is "usr-id"); fix kept compatibility w/ REST API v2.0
-[feat_AddFilterSupport]
-- add initial Filtering support, possible only in API v2+ (need to handle how to only "enable" it for XIOSv4+ XMSs)
-	- see the "Filter" support that came in API v2 in the API guide (pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide)
-	- good for speeding up LunMap retrieval and the likes
-	- put into ByComputerName parameterset (should not be valid in SpecifyFullUri parameterset):
-		- AdditionalURIParam, UseApiFullFeature, Property, Cluster parameters
-	## notes/observations on getting items w/ filtering:
-	- returned full-response object does not have "content" property on which the creation of new return object in XtremIO.Utils module is based
-	- with &full=1:
-		returned full-response object has three properties:  <item-type> (plural), params, and links; links seems to just be to base object type URL (no object index included in URL)
-	- without &full=1:
-		returned full-response object has just two properties:  <item-type> (plural) that has (href property:  the item-specific URL w/o cluster, name property:  name of the object) and links; links seems to just be to base object type URL (no object index included in URL)
-[feat_ImproveGetXIOLunMap]
-- improved `Get-XIOLunMap`:
-	- revisited pipelining, since Filtering support is in place in `Get-XIOItemInfo`
-	- added `-RelatedItem` parameter, which supports InitiatorGroup, Volume, and Snapshot items
-	- added `-Name` param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again)
-
 
 ## things below here are in changelog/readme
 
@@ -259,7 +239,7 @@ done for previous versions:  moved to done.txt
 ## release items
 merge branches into dev
 rev module version
-test in PSv4, PSv5, on XIOS 4.0-multicluster, and test with multiple XIO connections, if not already tested
+test in PSv4, PSv5, on XIOS 4.0-multicluster, test with multiple XIO connections, test across REST API versions, if not already tested
 update changelog/readme, including release date, and verify that Known Issues are current
 commit to dev
 merge to master
