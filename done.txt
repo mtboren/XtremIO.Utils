@@ -1,3 +1,24 @@
+done for version 1.3.0:
+fixed bug in Remove-XIOUserAccount that was caused by change of input parameter name in XtremIO REST API v2.1 (docs say "user-id", but actual parameter name is "usr-id"); fix kept compatibility w/ REST API v2.0
+[feat_AddFilterSupport]
+- add initial Filtering support, possible only in API v2+ (need to handle how to only "enable" it for XIOSv4+ XMSs)
+	- see the "Filter" support that came in API v2 in the API guide (pp15-16 in EMC® XtremIO Storage Array Versions 4.0 and 4.0.1 RESTful API (Ver. 2.0) Guide)
+	- good for speeding up LunMap retrieval and the likes
+	- put into ByComputerName parameterset (should not be valid in SpecifyFullUri parameterset):
+		- AdditionalURIParam, UseApiFullFeature, Property, Cluster parameters
+	## notes/observations on getting items w/ filtering:
+	- returned full-response object does not have "content" property on which the creation of new return object in XtremIO.Utils module is based
+	- with &full=1:
+		returned full-response object has three properties:  <item-type> (plural), params, and links; links seems to just be to base object type URL (no object index included in URL)
+	- without &full=1:
+		returned full-response object has just two properties:  <item-type> (plural) that has (href property:  the item-specific URL w/o cluster, name property:  name of the object) and links; links seems to just be to base object type URL (no object index included in URL)
+[feat_ImproveGetXIOLunMap]
+- improved `Get-XIOLunMap`:
+	- revisited pipelining, since Filtering support is in place in `Get-XIOItemInfo`
+	- added `-RelatedItem` parameter, which supports InitiatorGroup, Volume, and Snapshot items
+	- added `-Name` param, for the off chance that someone wants to get LunMap by "1_3_1" kind of name (say, for once you've just gotten a LunMap in some other way, and want to quickly get just that one again)
+
+
 done for version 1.2.0:
 [feat_MiscUpdates]
 - enabled assigning Tag for an object -- done via New-XIOTagAssignment cmdlet (with corresponding Remove-XIOTagAssignment cmdlet); may have Get-XIOTagAssignment in future, but one can at least get the Tags assigned to an object via Get-XIOTag for now)

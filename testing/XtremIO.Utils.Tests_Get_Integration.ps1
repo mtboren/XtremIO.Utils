@@ -35,6 +35,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	InitiatorGroup = Write-Output Initiator, InitiatorGroupFolder, LunMap, Snapshot, Volume
 	InitiatorGroupFolder = Write-Output InitiatorGroup, InitiatorGroupFolder
 	LocalDisk = Write-Output StorageController
+	LunMap = Write-Output InitiatorGroup, Snapshot, Volume
 	Snapshot = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Volume, VolumeFolder
 	SnapshotSet = Write-Output Snapshot, SnapshotScheduler, Volume
 	Ssd = Write-Output Brick, Slot

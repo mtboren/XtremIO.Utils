@@ -2,8 +2,9 @@
 
 Contents:
 
-- [v1.2.0](#v1.2.0)
+- [v1.3.0](#v1.3.0), 14 Dec 2016
 - [Known Issues](#currentKnownIssues)
+- [v1.2.0](#v1.2.0), 17 Nov 2016
 - [v1.1.0](#v1.1.0), 30 Jun 2016
 - [v1.0.0](#v1.0.0), 05 May 2016
 - [v0.14.0](#v0.14.0), 22 Apr 2016
@@ -12,28 +13,30 @@ Contents:
 
 ------
 
-<a id="v1.2.0"></a>
-### v1.2.0
-This release brought new cmdlets for managing Tag assignments on objects, a small new cmdlet to quickly open the WebUI on XMS appliances, some lifecycle management of object types and properties, and various bugfixes/updates.  See below for the exciting list: 
+<a id="v1.3.0"></a>
+### v1.3.0
+14 Dec 2016
 
-- \[new] added ability to assign/remove Tag for an object; done via new cmdlets `New-XIOTagAssignment` and `Remove-XIOTagAssignment`
-- \[new] added `Open-XIOXMSWebUI` cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
-- \[updated] `New-XIOTag`, `Set-XIOTag` cmdlets now support specifying Tag color via new `-Color` parameter
-- \[updated] added `-Name` parameter to `New-XIOSnapshotScheduler` (available via XIO REST API starting in v2.1)
-- \[updated] added/removed/deprecated following properties for given object types:
-	- for `Alert`:  added `Cluster` property, deprecated `ClusterId` and `ClusterName` properties
-	- for `LunMap`:  added `Certainty`
-	- for `SnapshotScheduler`: added `Cluster` property (available via XIO REST API starting in v2.1; will be `$null` in `SnapshotScheduler` objects returned from XIO REST API v2.0)
-	- for `SSD`:  removed obsolete property `SSDPositionState` (values were returned from API as "obsolete")
-	- for `StorageController`:  removed obsolete properties `EncryptionMode`, `EncryptionSwitchStatus` (values were returned from API as "obsolete")
-	- for `Volume`, `Snapshot`:  added `VolSizeGB` property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
-- \[fixed] fixed order of items in `[XioItemInfo.Enums.Tag.EntityType]` enumeration
-- \[fixed] added DefaultParameterSetName to `Set-XIOUserAccount`, as some parameter combinations resulted in "Parameter set cannot be resolved using the specified named parameters" error
-- \[updated] various minor updates/fixes to cmdlets and their parameters, for improving the overall experience
- 
+This release brought the first implementation of filtering support for the module, along with a fix and an improvement here and there.  This filtering support provides the basis for great speed improvements in future updates, as some queries will benifit in a big way from leveraging such filtering.  The list for this release:
+
+- \[new] added initial Filtering support, which is supported the XtremIO REST API v2.0 and up
+	- first added to `Get-XIOItemInfo` cmdlet as a parameter (`-Filter`)
+	- can facilitate surgical selection of objects to return, providing for vastly improved retrieval of objects (like is characteristic of server-side filtering)
+	- utilized in improved `Get-XIOLunMap` cmdlet (mentioned below)
+	- see `Get-XIOItemInfo` for brief help and examples, and see the "Filter" section towards the start of the XtremIO "RESTful API Guide" for complete syntax
+- \[fixed] fixed bug in `Remove-XIOUserAccount` that was caused by change of input parameter name in XtremIO REST API v2.1 and inaccurate API docs; this fix maintained compatibility with XtremIO REST API v2.0
+- \[improvement] improved `Get-XIOLunMap`:
+	- added `-RelatedItem` parameter, which supports `InitiatorGroup`, `Volume`, and `Snapshot` items (and, from pipeline, too); this uses new Filtering capabilities, which bring great speed improvements
+	- added `-Name` param, for the off chance that someone wants to get LunMap by `1_3_1` kind of name
+
 
 <a id="currentKnownIssues"></a>
-**Known Issues as of v1.2.0:**
+**Known Issues as of v1.3.0:**
+
+From module release v1.3.0
+
+- in XtremIO REST API v2.1:
+	- some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Investigating with vendor
 
 From module release v1.2.0
 
@@ -50,7 +53,6 @@ From module release v1.1.0
 	- `Get-XIOInitiatorGroup` when using an `IgFolder` as the `-RelatedObject` parameter value
 	- This is due to `VolumeFolder` and `IgFolder` objects not having a `Cluster` property
 	- this may not get resolved, as support for `VolumeFolder`/`IgFolder` objects is going away (they have been replaced with `Tag` objects)
-- `Remove-XIOUserAccount` via the XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property user-id" due to potentially changed API parameter (not confirmed, but events on XMS show param name as "usr_id", API ref until this point says "user-id", with the dash/underscore being insignificant, as they seem interchangable, but with the "usr" vs. user" difference possibly being the issue)
 - `Remove-XIOInitiatorGroupFolder`, `Remove-VolumeFolder` via XIO API v2.1 (on at least XMS version 4.2.0-33) -- fails with message "Invalid property", which is "ig-folder-name" for `IgFolder` objects, "folder-type" for `VolumeFolder` objects; potentially due changed API in which folder support is now different/gone
 	- folder support will be removed from this PowerShell module eventually, so these may not get addressed
 	- Workaround:  these items show up as `Tag` objects, too, so one can use `Get-XIOTag` to get them, and `Remove-XIOTag` to remove them
@@ -58,6 +60,28 @@ From module release v1.1.0
 	- Workaround:  do not specify `-ParentFolder` parameter, which creates volume without volume tag
 
 ------
+
+<a id="v1.2.0"></a>
+### v1.2.0
+17 Nov 2016
+
+This release brought new cmdlets for managing Tag assignments on objects, a small new cmdlet to quickly open the WebUI on XMS appliances, some lifecycle management of object types and properties, and various bugfixes/updates.  See below for the exciting list:
+
+- \[new] added ability to assign/remove Tag for an object; done via new cmdlets `New-XIOTagAssignment` and `Remove-XIOTagAssignment`
+- \[new] added `Open-XIOXMSWebUI` cmdlet for opening the WebUI web management interface of the given XMS appliance(s)
+- \[updated] `New-XIOTag`, `Set-XIOTag` cmdlets now support specifying Tag color via new `-Color` parameter
+- \[updated] added `-Name` parameter to `New-XIOSnapshotScheduler` (available via XIO REST API starting in v2.1)
+- \[updated] added/removed/deprecated following properties for given object types:
+	- for `Alert`:  added `Cluster` property, deprecated `ClusterId` and `ClusterName` properties
+	- for `LunMap`:  added `Certainty`
+	- for `SnapshotScheduler`: added `Cluster` property (available via XIO REST API starting in v2.1; will be `$null` in `SnapshotScheduler` objects returned from XIO REST API v2.0)
+	- for `SSD`:  removed obsolete property `SSDPositionState` (values were returned from API as "obsolete")
+	- for `StorageController`:  removed obsolete properties `EncryptionMode`, `EncryptionSwitchStatus` (values were returned from API as "obsolete")
+	- for `Volume`, `Snapshot`:  added `VolSizeGB` property for ease of reading for when the volume size is less than 1TB, updated output format to include these in default table view
+- \[fixed] fixed order of items in `[XioItemInfo.Enums.Tag.EntityType]` enumeration
+- \[fixed] added DefaultParameterSetName to `Set-XIOUserAccount`, as some parameter combinations resulted in "Parameter set cannot be resolved using the specified named parameters" error
+- \[updated] various minor updates/fixes to cmdlets and their parameters, for improving the overall experience
+
 
 <a id="v1.1.0"></a>
 ### v1.1.0
@@ -141,7 +165,7 @@ New properties!  This release was all about fleshing out the properties of retur
 - \[change] updated `Cluster` property to be an `XioItemInfo.Cluster` object instead of just a `String`  on object types `DataProtectionGroup` and `StorageController`
 - \[deprecated] deprecated properties `ClusterId`, `ClusterName`, and `SysId`, with the new `Cluster` property being the direction forward, for fourteen object types that had one or more of said properties.  Affected object types: `BBU`, `Brick`, `ConsistencyGroup`, `DAE`, `DAEController`, `DAEPsu`, `LocalDisk`, `Slot`, `Snapshot`, `SnapshotSet`, `Ssd`, `StorageControllerPsu`, `TargetGroup`, `Volume`
 - \[new] added various new properties to twenty-seven object types
- 
+
 ------
 
 <a id="olderVersions"></a>
@@ -166,7 +190,7 @@ The behavior for multi-cluster scenarios is:
 - For `Get-XIO*` cmdlets:
 	- if `-Cluster` parameter/value specified, the `Get-XIO*` cmdlet will only consider the given cluster(s) when querying for XIO objects
 	- if no `-Cluster` parameter/value specified, the `Get-XIO*` cmdlet will return any matching XIO object from all clusters managed by the XMS devices to which current session is connected
-- For `New-XIO*` cmdlets:  you must specify one or more values for `-Cluster` for `New-XIO*` cmdlets for objects that are cluster-specific; otherwise, the cmdlets return an error (though, as the `-Cluster` parameter is not necessary for single-cluster scenarios, the parameter itself is not made proper "Mandatory" from a PowerShell standpoint) 
+- For `New-XIO*` cmdlets:  you must specify one or more values for `-Cluster` for `New-XIO*` cmdlets for objects that are cluster-specific; otherwise, the cmdlets return an error (though, as the `-Cluster` parameter is not necessary for single-cluster scenarios, the parameter itself is not made proper "Mandatory" from a PowerShell standpoint)
 
 And, `-Cluster` is now valid for all of the cmdlets that deal with XtremIO objects that are cluster-specific (like, `Volumes`, `LunMaps`, etc. -- not XMS-specific things like `Alerts` and `SnmpNotifiers`).  This consists of 22 object-specific `Get-XIO*` cmdlets, six (6) object-specific performance cmdlets, the general `Get-XIOPerformanceCounter` cmdlet, and five (5) `New-XIO*` cmdlets.  You can see which cmdlets support the `-Cluster` parameter like:
 
@@ -187,7 +211,7 @@ Some further details about this release:
 
 This version is a collection of improvements, bug fixes, feature additions, and standardization.  Fixed are several bugs relating to using the module in PowerShell v5, and changes in behavior due to changes in the XMS (particularly, the launching of the Java management console).
 
-A couple of improvements around speed/efficiency take advantage of capabilities provided by v2.0 of the XtremIO REST API (which came to be in XIOS v4).  Firstly, we can now retrieve all objects of a given type in one web call, instead of one web call per object.  Also, we can specify just the properties to return, instead of always receiving all properties of the given objects.  While this can help greatly with the speed and efficiency of the cmdlets, it introduces a new potential for issue:  the size of the JSON response might be larger than 2MB, the maximum size currently supported by the PowerShell cmdlet from Microsoft used in this module for JSON handling (`ConvertFrom-Json`).  The use of the `-Property` parameter can help keep the response size under the current 2MB max.  If Microsoft does not make change this cmdlet in the near future, we will need to explore other means for JSON handling. 
+A couple of improvements around speed/efficiency take advantage of capabilities provided by v2.0 of the XtremIO REST API (which came to be in XIOS v4).  Firstly, we can now retrieve all objects of a given type in one web call, instead of one web call per object.  Also, we can specify just the properties to return, instead of always receiving all properties of the given objects.  While this can help greatly with the speed and efficiency of the cmdlets, it introduces a new potential for issue:  the size of the JSON response might be larger than 2MB, the maximum size currently supported by the PowerShell cmdlet from Microsoft used in this module for JSON handling (`ConvertFrom-Json`).  The use of the `-Property` parameter can help keep the response size under the current 2MB max.  If Microsoft does not make change this cmdlet in the near future, we will need to explore other means for JSON handling.
 
 See below for the full list of changes.
 
@@ -314,7 +338,7 @@ The focus for this version was on updating the module to support new things avai
 		Get-XIOXMS
 
 - \[new] added `Get-XIOPerformanceCounter` cmdlet for getting performance counter values for given entity types, and exposing the ability to set granularity of the counter values and timeframe from which to get the data. Note:  not yet supporting getting performance counters based on Tag entity type, as there may be some further research needed, possibly involving discussions with the vendor
-- \[new] added feature that allows for graceful determination of valid types for given XioConnection; so, executing `Get-XIOTag` when connected to an XIOS v3 or older XMS will not throw error due to non-existent object types, but rather will return verbose message that given type is not available on XMS at older XIOS (API) version 
+- \[new] added feature that allows for graceful determination of valid types for given XioConnection; so, executing `Get-XIOTag` when connected to an XIOS v3 or older XMS will not throw error due to non-existent object types, but rather will return verbose message that given type is not available on XMS at older XIOS (API) version
 - \[improvement] added XIOS REST API version and full XMS version to `XioItemInfo.XioConnection` object (if available via XMS type, which it _is_ for XIOS v4+).  The new properties on the XioConnection type are `RestApiVersion`, `XmsDBVersion`, `XmsSWVersion` (string representation, like "4.0.1-41"), and `XmsVersion`
 - \[bugfix] fixed issue in return-object-creation where *in-progress properties from XIOS v4 DataProtectionGroup API objects might have values other than "true" and "false". Module was expecting just these two strings and converting them to boolean; this could have failed in XIOS v4 environments. Affected cmdlets were `Get-XIODataProtectionGroup` and `Get-XIODataProtectionGroupPerformance`
 
