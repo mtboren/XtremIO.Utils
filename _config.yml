@@ -1,1 +1,4 @@
 theme: jekyll-theme-cayman
+title: Xtremio.Utils PowerShell Module
+description: A PowerShell module for interacting with EMC XtremIO storage arrays via their XtremIO Management Server REST API
+show_downloads: true

@@ -1,17 +1,10 @@
----
-title: Xtremio.Utils PowerShell Module
-name: Xtremio.Utils
-tagline: A PowerShell module for interacting with EMC XtremIO storage arrays via their XtremIO Management Server REST API
-description: A PowerShell module for interacting with EMC XtremIO storage arrays via their XtremIO Management Server REST API
----
-
 ### XtremIO.Utils PowerShell module
 
 Some examples and their sample output (see each cmdlet's help for more examples):
 
 #### Create new stored credential, connect to an XIO XMS
 
-```PowerShell
+```powershell
 PS C:\> New-XIOStoredCred -Credential (Get-Credential admin)
 Windows PowerShell credential request
 Enter your credentials.
@@ -29,7 +22,7 @@ xms01.dom.com                   12/15/2015 6:36:31 PM                   443
 
 #### Get XtremIO hardware and configuration items
 
-```PowerShell
+```powershell
 PS C:\> Get-XIOCluster
 Name           TotSSDTB    UsedSSDTB   FreeSSDTB   UsedLogicalTB  TotProvTB  DataReduction  IOPS
 ----           --------    ---------   ---------   -------------  ---------  -------------  ----
@@ -78,7 +71,7 @@ someTestCG0             xio01               2                    xms            
 
 #### Fun with intitators, intiator groups, volumes
 
-```PowerShell
+```powershell
 PS C:\> Get-XIOInitiatorGroup vmhost06
 Name                    Index                   NumInitiator            NumVol             IOPS
 ----                    -----                   ------------            ------             ----
@@ -169,7 +162,7 @@ clus01.xio01.002                      22      vmhost06                          
 
 #### Use -Property parameter to retrieve only given property values (good for efficiency)
 
-```PowerShell
+```powershell
 PS C:\> Get-XIOLunMap -Property VolumeName,LunId
 VolumeName                            LunId   InitiatorGroup                       TargetGrpName
 ----------                            -----   --------------                       -------------
@@ -182,7 +175,7 @@ testvol03                             102
 
 #### Get Events
 
-```PowerShell
+```powershell
 PS C:\> Get-XIOEvent -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
 EventID  DateTime               Severity     EntityDetails    Description
 -------  --------               --------     -------------    -----------
@@ -224,7 +217,7 @@ EventID  DateTime               Severity     EntityDetails    Description
 
 #### Get Performance information
 
-```PowerShell
+```powershell
 PS C:\> Get-XIOPerformanceCounter -EntityType Volume -TimeFrame real_time
 Name              EntityType  DateTime                Granularity  Counters
 ----              ----------  --------                -----------  --------
@@ -295,7 +288,7 @@ xio01.008  11.037       1587      41.355      1441     52.393   3028  1299774854
 
 #### Get raw API return items, and check out the "children" property for v1 and v2 of the API
 
-```PowerShell
+```powershell
 PS C:\> Get-XIOItemInfo -Uri https://xms01.dom.com/api/json/types -ReturnFullResponse | `
 >> Select-Object -ExpandProperty children | ft -a
 href                                                                   name
@@ -388,7 +381,7 @@ https://xms01.dom.com/api/json/v2/types/xms                            xms
 
 #### Create some things
 
-```PowerShell
+```powershell
 PS C:\> New-XIOVolume -Name testvol02 -SizeGB 5KB -ParentFolder /someTest2 -EnableVAAITPAlert `
 >> -WhatIf
 What if: Performing the operation "Create new 'volume' object named 'testvol02'" on target
@@ -417,7 +410,7 @@ someTestVol1.snapsh...                 0.00        0.00           0      12/15/2
 
 #### Get and remove stored credentials
 
-```PowerShell
+```powershell
 PS C:\> Get-XIOStoredCred
 UserName                                     Password
 --------                                     --------
@@ -430,6 +423,6 @@ VERBOSE: Performing the operation "Remove file" on target
 
 #### Open the Java management console
 
-```PowerShell
+```powershell
 PS C:\> Open-XIOMgmtConsole xms01.dom.com
 ```
