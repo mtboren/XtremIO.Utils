@@ -1,3 +1,10 @@
+---
+title: Xtremio.Utils PowerShell Module
+name: Xtremio.Utils
+tagline: A PowerShell module for interacting with EMC XtremIO storage arrays via their XtremIO Management Server REST API
+description: A PowerShell module for interacting with EMC XtremIO storage arrays via their XtremIO Management Server REST API
+---
+
 ### XtremIO.Utils PowerShell module
 
 Some examples and their sample output (see each cmdlet's help for more examples):
