@@ -173,6 +173,69 @@ testvol03                             102
 ...
 ```
 
+#### Use API filtering feature (available in XtremIO REST API v2.0 and up)
+Initially supported in `Get-XIOItemInfo` cmdlet
+
+```powershell
+PS C:\> Get-XIOItemInfo -ItemType lun-map -Filter "filter=vol-name:eq:myVol02"
+VolumeName           LunId   InitiatorGroup     TargetGrpName
+----------           -----   --------------     -------------
+myVol02              21      myIG0              Default
+```
+
+#### Create things
+
+```powershell
+PS C:\> New-XIOVolume -Name testvol02 -SizeGB 5KB -EnableVAAITPAlert -WhatIf
+What if: Performing the operation "Create new 'volume' object named 'testvol02'" on target
+"xms01.dom.com".
+
+
+PS C:\> New-XIOVolume -Name testvol02 -SizeGB 5KB -EnableVAAITPAlert | New-XIOTagAssignment -Tag `
+>> (Get-XIOTag -Name /Volume/myTestVolumes)
+Tag                                  Entity
+---                                  ------
+/Volume/myTestVolumes                XioItemInfo.Volume
+
+
+PS C:\> New-XIOLunMap -InitiatorGroup vmhost0IG,vmhost1IG -Volume testvol02 -HostLunId 101
+VolumeName                   LunId   InitiatorGroup                       TargetGrpName
+----------                   -----   --------------                       -------------
+testvol02                    101     vmhost00IG                           Default
+testvol02                    101     vmhost10IG                           Default
+
+
+PS C:\> Get-XIOConsistencyGroup someTestCG0 | New-XIOSnapshot -Type ReadOnly
+Name                     NaaName       VolSizeTB   UsedLogicalTB  IOPS   CreationTime
+----                     -------       ---------   -------------  ----   ------------
+someTestVol0.snapsh...                 0.00        0.00           0      12/15/2015 6:58:06 PM
+someTestVol1.snapsh...                 0.00        0.00           0      12/15/2015 6:58:06 PM
+
+
+PS C:\> New-XIOUserAccount -Credential (Get-Credential test_RoUser) -Role read_only
+Windows PowerShell credential request
+Enter your credentials.
+Password for user test_RoUser: *****************
+
+Name                 Role               InactivityTimeoutMin   IsExternal
+----                 ----               --------------------   ----------
+test_RoUser          read_only          10                     False
+
+
+PS C:\> New-XIOSnapshotScheduler -RelatedObject (Get-XIOVolume myVol02) -Interval `
+>> (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount 20 -Name PeriodicSnaps_myVol
+Name                   SnapType   Enabled  NumSnapToKeep  Retain         LastActivated
+----                   --------   -------  -------------  ------         -------------
+PeriodicSnaps_myVol    regular    False    20             1825.00:00:00
+
+
+PS C:\> Get-XIOVolume myVol03 | New-XIOSnapshotScheduler -ExplicitDay EveryDay -ExplicitTimeOfDay `
+>> 3am -SnapshotRetentionCount 500 -Suffix myScheduler0 -Name DailySnaps_myVol
+Name                   SnapType   Enabled  NumSnapToKeep  Retain         LastActivated
+----                   --------   -------  -------------  ------         -------------
+DailySnaps_myVol       regular    False    500            1825.00:00:00
+```
+
 #### Get Events
 
 ```powershell
@@ -379,35 +442,6 @@ https://xms01.dom.com/api/json/v2/types/xenvs                          xenvs
 https://xms01.dom.com/api/json/v2/types/xms                            xms
 ```
 
-#### Create some things
-
-```powershell
-PS C:\> New-XIOVolume -Name testvol02 -SizeGB 5KB -ParentFolder /someTest2 -EnableVAAITPAlert `
->> -WhatIf
-What if: Performing the operation "Create new 'volume' object named 'testvol02'" on target
-"xms01.dom.com".
-
-
-PS C:\> New-XIOVolume -Name testvol02 -SizeGB 5KB -ParentFolder /someTest2 -EnableVAAITPAlert
-Name                    NaaName                 VolSizeTB          UsedLogicalTB      IOPS
-----                    -------                 ---------          -------------      ----
-testvol02                                       5.00               0.00               0
-
-
-PS C:\> New-XIOLunMap -InitiatorGroup vmhost0IG,vmhost1IG -Volume testvol02 -HostLunId 101
-VolumeName                   LunId   InitiatorGroup                       TargetGrpName
-----------                   -----   --------------                       -------------
-testvol02                    101     vmhost00IG                           Default
-testvol02                    101     vmhost10IG                           Default
-
-
-PS C:\> Get-XIOConsistencyGroup someTestCG0 | New-XIOSnapshot -Type ReadOnly
-Name                     NaaName       VolSizeTB   UsedLogicalTB  IOPS   CreationTime
-----                     -------       ---------   -------------  ----   ------------
-someTestVol0.snapsh...                 0.00        0.00           0      12/15/2015 6:58:06 PM
-someTestVol1.snapsh...                 0.00        0.00           0      12/15/2015 6:58:06 PM
-```
-
 #### Get and remove stored credentials
 
 ```powershell
@@ -421,8 +455,10 @@ VERBOSE: Performing the operation "Remove file" on target
 "C:\Users\someuser0\AppData\Local\Temp\xioCred_by_someuser0_on_somecomputer0.enc.xml".
 ```
 
-#### Open the Java management console
+#### Open the Java management console and the WebUI
 
 ```powershell
 PS C:\> Open-XIOMgmtConsole xms01.dom.com
+
+PS C:\> Open-XIOXMSWebUI xms01.dom.com
 ```
