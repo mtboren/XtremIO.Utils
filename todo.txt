@@ -10,6 +10,7 @@ todo:
 	- potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
 	- once assuming that min XIO REST API version is 2.0 (after dropping support for XMS older than v4) improve Get-XIOLunMap:
 		- change the -Volume, -HostLunId, and -InitiatorGroup params to use -Filter on Get-XIOItemInfo (do away with -Volume and -InitiatorGroup, since those are handled via -RelatedObject?)
+- investigate bug where Tag objects' DirectObjectList objects may have properties that do not correspond to the actual type of object the given DirectObjects are; like, an IG Tag with a "nested" Tag object:  that nested tag object in the parent Tag's DirectObjectList may have properties like "InitiatorGrpId", instead of something that denotes that the value is actually the Tag ID; these child Tags seem to show up properly in the parent Tag's ChildTagList property, but incorrectly in the DirectObjectList property
 - improve `Set-XIOLdapConfig`:
 	- add ability to append a role mapping (instead of user having to specify full RoleMapping value for every Set operation)
 - investigate improving `Set-XIOSnapshotScheduler` to support renaming of SnapshotScheduler (in XtremIO REST API v2.1 or newer); rename in web UI seems to use "rename" command with "new_name" parameter, like:  {obj_class="Scheduler", obj_id=["", "None", "1"], new_name="some new name", new_caption=None, sys_id=["", "", "2"]}
@@ -154,6 +155,7 @@ todo:
 -add ability to create ISCSI initiators via New-XIOInitiator
 -add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+-?revisit -RelatedObject items from pipeline:  currently using Name property for getting desired objects, but other properties are available (like GUID and whatnot) -- use more unique item like GUID instead of Name?
 -?gracefully handle Entity-type / Tag-type mismatch in New-XIOTagAssignment?  Right now, user must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
 -?if adding this project to that EMC {code} site, add things to ReadMe related to "EMC {code}" (see requirements/suggestions on EMC {code} site)
 -?add something that handles return of objects such that only one instance of each unique object is returned?  For example:  should "Get-XIOInitiatorGroup | select -First 5 | Get-XIOSnapshot -Name mysnap044.*" only return one object for "mysnap044.lastweeksnap", even if that snapshot is mapped to all of the five InitiatorGroups passed as RelateObjects to Get-XIOSnapshot?  The, "return only unique objects" behavior is how some other modules do it, like PowerCLI, for example
@@ -214,15 +216,34 @@ From module release v1.1.0
 
 
 should do next:
-- fix typo "multple" in help for `Set-XIOLdapConfig`
 - update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.; add update about opening WebUI
 - update GH Pages examples
-- add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline
 - update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 	- ?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
 
 
 doing:
+[feat_AcceptTagFromPipeline]
+- fix typo "multple" in help for `Set-XIOLdapConfig`
+- add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline:
+	- Get-XIOBBU
+	- Get-XIOBrick
+	- Get-XIOCluster
+	- Get-XIOConsistencyGroup
+	- Get-XIODAE
+	- Get-XIODataProtectionGroup
+	- Get-XIOInfinibandSwitch
+	- Get-XIOInitiator
+	- Get-XIOSnapshot
+	- Get-XIOSnapshotScheduler
+	- Get-XIOSnapshotSet
+	- Get-XIOSsd
+	- Get-XIOStorageController
+	- Get-XIOTarget
+	- Get-XIOVolume
+	- working on it:
+	- done:  Get-XIOInitiatorGroup
+
 
 done:
 

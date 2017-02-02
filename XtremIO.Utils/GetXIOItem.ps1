@@ -894,30 +894,43 @@ function Get-XIOInitiator {
 
 <#	.Description
 	Function to get XtremIO InitiatorGroup info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOInitiatorGroup
 	Request info from current XMS connection and return an object with the "InitiatorGroup" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOInitiatorGroup myIG0
 	Get the "InitiatorGroup" named myIG0
+
 	.Example
 	Get-XIOInitiator mysvr-hba* | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup" of which the given initiator is a part
+
 	.Example
 	Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup(s)" that are directly in the given InitiatorGroupFolder
+
+	.Example
+	Get-XIOTag /InitiatorGroup/someIGTag | Get-XIOInitiatorGroup
+	Get the "InitiatorGroup(s)" to which the given InitiatorGroup Tag is assigned
+
 	.Example
 	Get-XIOVolume myVol0 | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup(s)" that are mapped to the given volume
+
 	.Example
 	Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup(s)" that are mapped to the given snapshot
+
 	.Example
 	Get-XIOInitiatorGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "InitiatorGroup" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOInitiatorGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.InitiatorGroup
 #>
@@ -927,16 +940,21 @@ function Get-XIOInitiatorGroup {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the InitiatorGroup to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, or Volume
+
+		## Related object from which to determine the InitiatorGroup to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, Tag, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -946,7 +964,7 @@ function Get-XIOInitiatorGroup {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator-group"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Initiator, IgFolder, LunMap, Snapshot, Volume | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Initiator, IgFolder, LunMap, Snapshot, Tag, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -961,6 +979,8 @@ function Get-XIOInitiatorGroup {
 						Switch ($oThisRelatedObj.GetType().FullName) {
 							"XioItemInfo.LunMap" {$oThisRelatedObj."InitiatorGroup"; break} ## end case
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.LunMapList.InitiatorGroup.Name; break} ## end case
+							## if it is a Tag object, and the tagged ObjectType is InitiatorGroup (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "InitiatorGroup")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
 							default {$oThisRelatedObj."InitiatorGroup".Name}
 						} ## end switch
