@@ -825,24 +825,35 @@ function Get-XIOInfinibandSwitch {
 
 <#	.Description
 	Function to get XtremIO initiator info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOInitiator
 	Request info from current XMS connection and return an object with the "initiator" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOInitiator mysvr-hba*
 	Get the "initiator" objects whose name are like mysvr-hba*
+
 	.Example
 	Get-XIOInitiator -PortAddress 10:00:00:00:00:00:00:01
 	Get the "initiator" object with given port address
+
 	.Example
 	Get-XIOInitiatorGroup someIG | Get-XIOInitiator
 	Get the "initiator" object in the given initiator group
+
+	.Example
+	Get-XIOTag /Initiator/myInitTag0 | Get-XIOInitiator
+	Get the "initiator" objects to which the given Tag is assigned
+
 	.Example
 	Get-XIOInitiator -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "initiator" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOInitiator -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Initiator
 #>
@@ -852,19 +863,28 @@ function Get-XIOInitiator {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
+
 		## Specific initiator Port Address for which to get initiator info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName")][ValidatePattern("([0-9a-f]{2}:){7}([0-9a-f]{2})")][string[]]$PortAddress,
+
 		## Specific initiator group ID for which to get initiator info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][string[]]$InitiatorGrpId,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+
+		## Related object from which to determine the Initiator to get. Can be an XIO object of type InitiatorGroup or Tag
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -872,17 +892,49 @@ function Get-XIOInitiator {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator"
-		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{}
-		## if not getting Initiator by URI of item, add the ItemType key/value to the Params hashtable
-		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Tag | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("PortAddress","InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if it is a Tag object, and the tagged ObjectType is InitiatorGroup (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "Initiator")} {$oThisRelatedObj.DirectObjectList.Name; break} ## end case
+							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
+							default {$null}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters}
+			else {
+				## initialize new hashtable to hold params for Get-XIOItemInfo call
+				$hshParamsForGetXioItemInfo = @{}
+				## get the params for Get-XIOItemInfo (exclude some choice params)
+				$PSBoundParameters.Keys | Where-Object {@("PortAddress","InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
+				@{ItemType = $ItemType_str} + $hshParamsForGetXioItemInfo
+			} ## end else
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrItemsToReturn = $arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+
 		## if the PortAddress was specified, return just initiator involving that PortAddress
 		if ($PSBoundParameters.ContainsKey("PortAddress")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($PortAddress | Where-Object {$oThisItem.PortAddress -eq $_}).Count -gt 0}}
 		## if the InitiatorGrpId was specified, return just initiators involving that InitiatorGroup
@@ -980,7 +1032,7 @@ function Get-XIOInitiatorGroup {
 							"XioItemInfo.LunMap" {$oThisRelatedObj."InitiatorGroup"; break} ## end case
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.LunMapList.InitiatorGroup.Name; break} ## end case
 							## if it is a Tag object, and the tagged ObjectType is InitiatorGroup (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
-							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "InitiatorGroup")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "InitiatorGroup")} {$oThisRelatedObj.DirectObjectList.Name; break} ## end case
 							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
 							default {$oThisRelatedObj."InitiatorGroup".Name}
 						} ## end switch

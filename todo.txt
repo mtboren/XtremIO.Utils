@@ -4,7 +4,7 @@ todo:
 	- with &full=1 in URI:  needs to do something to handle return-obj creation from "&full=1" object; near the "_New-ObjectFromApiObject" call in Get-XIOItemInfo
 	- without &full=1 in URI:  needs to do additional call to Get-XIOItemInfo of just the URL (for each URL) from the <item-type> property of object returned from filtered call, and does not do the rest of the Get-XIOItemInfo call that was in the works when the original call w/ the URI with filter was passed; needs to consider (and preserve / pass-on) the "prop=..." bits from original URI, if any
 - after Filter support is in place:
-	- add -Filter param to the Get-XIO* cmdlets for which it makes sense
+	- add -Filter param to the Get-XIO* cmdlets for which it makes sense; ex:  Get-XIOInitiator should filter when taking IntiatorGroup from pipeline (filter on Initiators that have given InitiatorGrpId value)
 	- for Get-XIOSnapshot:  add Param option for "ancestor-vol-id", implement via Filter -- available via xmcli
 	- for Get-XIOVolume:  add Param option for "sg-id" (snapshot group ID), implement via Filter -- available via xmcli
 	- potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
@@ -233,7 +233,6 @@ doing:
 	- Get-XIODAE
 	- Get-XIODataProtectionGroup
 	- Get-XIOInfinibandSwitch
-	- Get-XIOInitiator
 	- Get-XIOSnapshot
 	- Get-XIOSnapshotScheduler
 	- Get-XIOSnapshotSet
@@ -242,7 +241,9 @@ doing:
 	- Get-XIOTarget
 	- Get-XIOVolume
 	- working on it:
-	- done:  Get-XIOInitiatorGroup
+	- done:
+		Get-XIOInitiator
+		Get-XIOInitiatorGroup
 
 
 done:
