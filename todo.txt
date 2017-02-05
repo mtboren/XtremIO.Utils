@@ -236,7 +236,6 @@ doing:
 	- Get-XIOStorageController (eventually)
 	- Get-XIOTarget (eventually)
 	- Get-XIOConsistencyGroup
-	- Get-XIOSnapshotSet
 	- Get-XIOSsd
 	- working on it:
 	- done:
@@ -244,6 +243,7 @@ doing:
 		Get-XIOInitiator
 		Get-XIOInitiatorGroup
 		Get-XIOSnapshot
+		Get-XIOSnapshotSet
 		Get-XIOVolume
 
 

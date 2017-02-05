@@ -1542,7 +1542,7 @@ function Get-XIOSnapshot {
 							## if the related object is a Snapshot or a Volume, get the Snapshot name from some subsequent object's properties
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
 							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
-							## if it is a Tag object, and the tagged ObjectType is UPS (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							## if it is a Tag object, and the tagged ObjectType is Volume (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
 							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "Volume")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## this gets both volume and snapshot names, but, as the Get-XIOItemInfo call gets only Snapshots here, the names of Volumes will not "hit", so just Snapshots will come back
 							"XioItemInfo.VolumeFolder" {$oThisRelatedObj.Volume.Name; break} ## end case
@@ -1588,6 +1588,10 @@ function Get-XIOSnapshot {
 	Get the "SnapshotSet" item related to this Volume
 
 	.Example
+	Get-XIOTag /SnapshotSet/mySnapSetTag0 | Get-XIOSnapshotSet
+	Get the "SnapshotSet" item to which the given Tag is assigned
+
+	.Example
 	Get-XIOSnapshot myImportantSnap | Get-XIOSnapshotSet
 	Get the "SnapshotSet" item related to this Snapshot
 
@@ -1604,16 +1608,21 @@ function Get-XIOSnapshotSet {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the SnapshotSet to get. Can be an XIO object of type Snapshot, SnapshotScheduler, or Volume
+
+		## Related object from which to determine the SnapshotSet to get. Can be an XIO object of type Snapshot, SnapshotScheduler, Tag, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1623,7 +1632,7 @@ function Get-XIOSnapshotSet {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "snapshot-set"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, Volume | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, Tag, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -1644,6 +1653,8 @@ function Get-XIOSnapshotSet {
 								else {$null} ## end else
 								break
 							} ## end case
+							## if it is a Tag object, and the tagged ObjectType is SnapSet (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "SnapSet")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has a SnapshotSet property
 							default {$oThisRelatedObj."SnapshotSet".Name}
 						} ## end switch
