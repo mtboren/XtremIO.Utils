@@ -1476,6 +1476,10 @@ function Get-XIOSlot {
 	Get the "Snapshot" object that was made from source volume "myVolume0"
 
 	.Example
+	Get-XIOTag /Volume/myImportantSnaps0 | Get-XIOSnapshot
+	Get the "Snapshot" object(s) to which the given Tag is assigned
+
+	.Example
 	Get-XIOSnapshot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Snapshot" items from the given XMS appliance, and only for the given XIO Clusters
 
@@ -1492,16 +1496,21 @@ function Get-XIOSnapshot {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Snapshot to get. Can be an XIO object of type InitiatorGroup, Snapshot, SnapshotSet, Volume, or VolumeFolder
+
+		## Related object from which to determine the Snapshot to get. Can be an XIO object of type InitiatorGroup, Snapshot, SnapshotSet, Tag, Volume, or VolumeFolder
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1515,7 +1524,7 @@ function Get-XIOSnapshot {
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Tag, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -1533,6 +1542,8 @@ function Get-XIOSnapshot {
 							## if the related object is a Snapshot or a Volume, get the Snapshot name from some subsequent object's properties
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
 							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
+							## if it is a Tag object, and the tagged ObjectType is UPS (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "Volume")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## this gets both volume and snapshot names, but, as the Get-XIOItemInfo call gets only Snapshots here, the names of Volumes will not "hit", so just Snapshots will come back
 							"XioItemInfo.VolumeFolder" {$oThisRelatedObj.Volume.Name; break} ## end case
 							"XioItemInfo.InitiatorGroup" {"*"; break}

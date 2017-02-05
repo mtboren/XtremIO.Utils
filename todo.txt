@@ -27,6 +27,7 @@ todo:
 	-either send ParentFolder property as part of tag_list value (need to test), or do not include -ParentFolder in same paramset as -Cluster?
 -fix bug in Get-XIOSnapshotScheduler when using by URI:  must have "?cluster-name=<blahh>" in the URI, or request returns error:  "message": "cluster_id_is_required"
 	-encountered when connected to multi-cluster XMS and creating new SnapshotScheduler
+-fix bug in `New-XIOTagAssignment` when the entity is a Snapshot:  the "entity" property does not get populated on body of submission, and the call then fails
 -once pipelining supports getting SnapshotScheduler by Volume/Snapshot, add bit to Remove-XIOVolume that checks first if Volume/Snapshot is part of a SnapshotScheduler, throwing an error if so (instead of the current behavior that does not check and that results in an error from the API call, "cannot_remove_volume_that_has_a_scheduler")
 -investigate adding New-XIOLdapConfig (the POST how-to is not specified in the API reference -- present but not documented? -- if not, add cmdlet once (if ever) this method is supported for this object type)
 	-same for adding Remove-XIOLdapConfig (the DELETE how-to is not specified in the API reference)
@@ -235,7 +236,6 @@ doing:
 	- Get-XIOStorageController (eventually)
 	- Get-XIOTarget (eventually)
 	- Get-XIOConsistencyGroup
-	- Get-XIOSnapshot
 	- Get-XIOSnapshotSet
 	- Get-XIOSsd
 	- working on it:
@@ -243,6 +243,7 @@ doing:
 		Get-XIOBBU
 		Get-XIOInitiator
 		Get-XIOInitiatorGroup
+		Get-XIOSnapshot
 		Get-XIOVolume
 
 
