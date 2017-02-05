@@ -501,7 +501,7 @@ function Set-XIOLdapConfig {
 		[int]$Timeout,
 		## CA public SSL certificate string in PEM format (starts with "-----BEGIN CERTIFICATE-----" line)
 		[ValidateLength(16,2048)][string]$CAPublicCertData,
-		## Role mapping for users/groups. Can provide multple, like:  -RoleMapping "<roleName>:cn=group0,ou=ou0,dc=dom,dc=com","<roleName>:cn=group1,ou=ou2,dc=dom,dc=com".  Valid role names are "read_only", "configuration", and "admin".  Overwrites previous role definitions for this LdapConfig
+		## Role mapping for users/groups. Can provide multiple, like:  -RoleMapping "<roleName>:cn=group0,ou=ou0,dc=dom,dc=com","<roleName>:cn=group1,ou=ou2,dc=dom,dc=com".  Valid role names are "read_only", "configuration", and "admin".  Overwrites previous role definitions for this LdapConfig
 		[string[]]$RoleMapping
 	) ## end param
 

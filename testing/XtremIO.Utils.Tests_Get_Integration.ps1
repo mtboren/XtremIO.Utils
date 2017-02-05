@@ -25,7 +25,7 @@
 
 ## hashtable of Types to test and the corresponding "RelatedObject" Types that each should accept
 $hshTypesToGetFromRelatedObjInfo = [ordered]@{
-	BBU = Write-Output Brick, StorageController
+	BBU = Write-Output Brick, StorageController, Tag
 	Brick = Write-Output BBU, Cluster, DAE, DAEController, DAEPsu, DataProtectionGroup, LocalDisk, Slot, Ssd, StorageController, StorageControllerPsu, Target, Xenv
 	Cluster = Write-Output BBU, Brick, ConsistencyGroup, DAE, DAEController, DAEPsu, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, LunMap, Slot, Snapshot, SnapshotSet, Ssd, StorageController, StorageControllerPsu, Target, TargetGroup, Volume, Xenv
 	ConsistencyGroup = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Volume
