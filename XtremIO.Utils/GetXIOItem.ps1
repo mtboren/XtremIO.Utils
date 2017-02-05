@@ -589,16 +589,21 @@ function Get-XIOConsistencyGroup {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the ConsistencyGroup to get. Can be an XIO object of type Snapshot, SnapshotScheduler, SnapshotSet, or Volume
+
+		## Related object from which to determine the ConsistencyGroup to get. Can be an XIO object of type Snapshot, SnapshotScheduler, SnapshotSet, Tag, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -608,7 +613,7 @@ function Get-XIOConsistencyGroup {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "consistency-group"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Volume | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -630,6 +635,8 @@ function Get-XIOConsistencyGroup {
 								else {$null} ## end else
 								break
 							} ## end case
+							## if it is a Tag object, and the tagged ObjectType is SnapSet (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "ConsistencyGroup")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has a ConsistencyGroup property
 							default {$oThisRelatedObj."ConsistencyGroup".Name}
 						} ## end switch

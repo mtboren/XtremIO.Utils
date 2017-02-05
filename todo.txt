@@ -235,11 +235,11 @@ doing:
 	- Get-XIOSnapshotScheduler (eventually)
 	- Get-XIOStorageController (eventually)
 	- Get-XIOTarget (eventually)
-	- Get-XIOConsistencyGroup
 	- Get-XIOSsd
 	- working on it:
 	- done:
 		Get-XIOBBU
+		Get-XIOConsistencyGroup
 		Get-XIOInitiator
 		Get-XIOInitiatorGroup
 		Get-XIOSnapshot
