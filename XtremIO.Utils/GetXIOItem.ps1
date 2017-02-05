@@ -577,6 +577,10 @@ function Get-XIOCluster {
 	Get the "ConsistencyGroup" items related to this Volume
 
 	.Example
+	Get-XIOTag /ConsistencyGroup/myProdCG0 | Get-XIOConsistencyGroup
+	Get the "ConsistencyGroup" to which the given Tag is assigned
+
+	.Example
 	Get-XIOSnapshotScheduler mySnapSched0 | Get-XIOConsistencyGroup
 	Get the "ConsistencyGroup" items related to this SnapshotScheduler.  Only returns anything for a SnapshotScheduler whose snapshotted object is a ConsistencyGroup
 
@@ -1708,6 +1712,10 @@ function Get-XIOSnapshotSet {
 	Get the "SSD" info for the SSD in the given Slot
 
 	.Example
+	Get-XIOTag /SSD/mySsds_NearEOL | Get-XIOSsd
+	Get the "SSD" objects to which the given Tag is assigned
+
+	.Example
 	Get-XIOSsd -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
 
@@ -1720,16 +1728,21 @@ function Get-XIOSsd {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Ssd to get. Can be an XIO object of type Brick or Slot
+
+		## Related object from which to determine the Ssd to get. Can be an XIO object of type Brick, Slot, or Tag
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1739,7 +1752,7 @@ function Get-XIOSsd {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ssd"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, Slot | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, Slot, Tag | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -1755,6 +1768,8 @@ function Get-XIOSsd {
 						Switch ($oThisRelatedObj.GetType().FullName) {
 							## if the related object is a Slot, get the SSD name from some subsequent object's properties
 							"XioItemInfo.Slot" {$oThisRelatedObj.SsdUid; break} ## end case
+							## if it is a Tag object, and the tagged ObjectType is SSD (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "SSD")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has an SSD property
 							default {$oThisRelatedObj."SSD".Name}
 						} ## end switch

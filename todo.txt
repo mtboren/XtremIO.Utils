@@ -157,7 +157,8 @@ todo:
 -add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
 - for New-XIO*, make -Name param only positional param (none right now?), so that one need not specify -Name for something like `New-XIOVolume myTestVol -SizeGB 5KB`
--?revisit -RelatedObject items from pipeline:  currently using Name property for getting desired objects, but other properties are available (like GUID and whatnot) -- use more unique item like GUID instead of Name?
+-revisit -RelatedObject items from pipeline:  currently using Name property for getting desired objects, but other properties are available (like GUID and whatnot) -- use more unique item like GUID instead of Name for when switching to using API v2 that supports filtering -- can use GUID instead of name
+- eventually add Tag type as accepted type by `-RelatedObject` parameter to rest of Get-XIO* cmdlets (did not add immediately, as these objects are less likely to get tagged in standard practice):  `Get-XIOBrick`, `Get-XIOCluster`, `Get-XIODAE`, `Get-XIODataProtectionGroup`, `Get-XIOInfinibandSwitch`, `Get-XIOSnapshotScheduler`, `Get-XIOStorageController`, `Get-XIOTarget`
 -?gracefully handle Entity-type / Tag-type mismatch in New-XIOTagAssignment?  Right now, user must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
 -?if adding this project to that EMC {code} site, add things to ReadMe related to "EMC {code}" (see requirements/suggestions on EMC {code} site)
 -?add something that handles return of objects such that only one instance of each unique object is returned?  For example:  should "Get-XIOInitiatorGroup | select -First 5 | Get-XIOSnapshot -Name mysnap044.*" only return one object for "mysnap044.lastweeksnap", even if that snapshot is mapped to all of the five InitiatorGroups passed as RelateObjects to Get-XIOSnapshot?  The, "return only unique objects" behavior is how some other modules do it, like PowerCLI, for example
@@ -222,33 +223,17 @@ should do next:
 - update GH Pages examples
 - update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 	- ?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
+- update to Filter as much as possible in place of relying on by-name things (in -RelatedObject types of scenarios, for example) -- this is the break from supporting API v1 (XMS v3 and older)
 
 
 doing:
 [feat_AcceptTagFromPipeline]
-- add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline:
-	- Get-XIOBrick (eventually)
-	- Get-XIOCluster (eventually)
-	- Get-XIODAE (eventually)
-	- Get-XIODataProtectionGroup (eventually)
-	- Get-XIOInfinibandSwitch (eventually)
-	- Get-XIOSnapshotScheduler (eventually)
-	- Get-XIOStorageController (eventually)
-	- Get-XIOTarget (eventually)
-	- Get-XIOSsd
-	- working on it:
-	- done:
-		Get-XIOBBU
-		Get-XIOConsistencyGroup
-		Get-XIOInitiator
-		Get-XIOInitiatorGroup
-		Get-XIOSnapshot
-		Get-XIOSnapshotSet
-		Get-XIOVolume
-
+- test Get-XIO* after updates
 
 done:
 [feat_AcceptTagFromPipeline]
+- add Tag type as accepted type by `-RelatedObject` parameter to main Get-XIO* cmdlets:
+	`Get-XIOBBU`, `Get-XIOConsistencyGroup`, `Get-XIOInitiator`, `Get-XIOInitiatorGroup`, `Get-XIOSnapshot`, `Get-XIOSnapshotSet`, `Get-XIOSsd`, `Get-XIOVolume`
 - fixed typo "multple" in help for `Set-XIOLdapConfig`
 
 ## things below here are in changelog/readme
