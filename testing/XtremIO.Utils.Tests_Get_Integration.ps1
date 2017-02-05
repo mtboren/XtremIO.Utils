@@ -44,7 +44,7 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	StorageControllerPsu = Write-Output StorageController
 	Tag = Write-Output BBU, Brick, Cluster, ConsistencyGroup, DAE, InfinibandSwitch, Initiator, InitiatorGroup, LocalDisk, Snapshot, SnapshotSet, Ssd, Target, TargetGroup, Volume, Xenv
 	TargetGroup = Write-Output Target
-	Volume = Write-Output ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, VolumeFolder
+	Volume = Write-Output ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume, VolumeFolder
 	VolumeFolder = Write-Output Snapshot, Volume, VolumeFolder
 } ## end hash
 

@@ -155,6 +155,7 @@ todo:
 -add ability to create ISCSI initiators via New-XIOInitiator
 -add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+- for New-XIO*, make -Name param only positional param (none right now?), so that one need not specify -Name for something like `New-XIOVolume myTestVol -SizeGB 5KB`
 -?revisit -RelatedObject items from pipeline:  currently using Name property for getting desired objects, but other properties are available (like GUID and whatnot) -- use more unique item like GUID instead of Name?
 -?gracefully handle Entity-type / Tag-type mismatch in New-XIOTagAssignment?  Right now, user must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
 -?if adding this project to that EMC {code} site, add things to ReadMe related to "EMC {code}" (see requirements/suggestions on EMC {code} site)
@@ -227,22 +228,22 @@ doing:
 - add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline:
 	- Get-XIOBrick (eventually)
 	- Get-XIOCluster (eventually)
-	- Get-XIOConsistencyGroup
 	- Get-XIODAE (eventually)
 	- Get-XIODataProtectionGroup (eventually)
 	- Get-XIOInfinibandSwitch (eventually)
-	- Get-XIOSnapshot
 	- Get-XIOSnapshotScheduler (eventually)
-	- Get-XIOSnapshotSet
-	- Get-XIOSsd
 	- Get-XIOStorageController (eventually)
 	- Get-XIOTarget (eventually)
-	- Get-XIOVolume
+	- Get-XIOConsistencyGroup
+	- Get-XIOSnapshot
+	- Get-XIOSnapshotSet
+	- Get-XIOSsd
 	- working on it:
 	- done:
 		Get-XIOBBU
 		Get-XIOInitiator
 		Get-XIOInitiatorGroup
+		Get-XIOVolume
 
 
 done:
