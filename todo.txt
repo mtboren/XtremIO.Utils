@@ -184,7 +184,15 @@ todo:
 
 
 -known issues / considerations:
+From module release v1.next
+
+- in XtremIO REST API v2.1:
+	- UPDATE on item: some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Update:  vendor confirmed this as a bug, and that said bug should be fixed in upcoming release currently slated for end of Q1 2017
+	- Getting objects from related Tag object may return more than just the tagged objects in a multi-cluster XMS environment with objects of the same name across multiple clusters. This is due to the current compatibility mode of the module which does not rely on XMS REST API v2+ feature of filtering. A future module release will handle this by filtering on unique properties, but the current solution uses object names from the Tag (clearly not the best key to try to use), and Tag objects are XMS-wide (not cluster specific).
+
+
 From module release v1.3.0
+
 - in XtremIO REST API v2.1:
 	- some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Investigating with vendor
 
