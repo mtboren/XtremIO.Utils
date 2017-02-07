@@ -48,34 +48,58 @@ $hshTypesToGetFromRelatedObjInfo = [ordered]@{
 	VolumeFolder = Write-Output Snapshot, Volume, VolumeFolder
 } ## end hash
 
+## hsh to map between XIO Item Info object shortname and the corresponding Tag ObjectType (for the ones that differ)
+$hshTagObjectTypePropMapping = @{
+	BBU = "UPS"
+	SnapshotSet = "SnapSet"
+} ## end hsh
+
 $hshTypesToGetFromRelatedObjInfo.GetEnumerator() | Foreach-Object {
+	## the XIO object to get with cmdlet call
 	$strXIOObjectTypeToGet = $_.Key
+	## the XIO Info Item object return type shortname to expect
 	$strXIOObjReturnTypeShortname = if ($strXIOObjectTypeToGet -ne "InitiatorGroupFolder") {$strXIOObjectTypeToGet} else {"IgFolder"}
+	## the accepted/supported RelatedObject Types for this cmdlet
 	$arrXioRelatedObjectTypesToAccept = $_.Value
 	Describe -Tags "Get" -Name "Get-XIO$strXIOObjectTypeToGet" {
 		$arrXioRelatedObjectTypesToAccept | Foreach-Object {
 			$strThisRelatedObjectType = $_
 			## Get related objects.  These will be used to test the targeted cmdlet
-			$arrRelatedObjects = Switch ($strXIOObjectTypeToGet) {
-				## specific tests for Get-XIOConsistencyGroup with RelatedObject of Volume, get such items that have ConsistencyGroup property populated
-				{($_ -eq "ConsistencyGroup") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.ConsistencyGroup | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
-				## specific tests for Get-XIOSnapshot with RelatedObject of Snapshot or Volume, get such items that have DestinationSnapshot property populated
-				{($_ -eq "Snapshot") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.DestinationSnapshot | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
-				## specific tests for Get-XIOSnapshotSet with RelatedObject of Snapshot or Volume, get such items that have SnapshotSet property populated
-				{($_ -eq "SnapshotSet") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.SnapshotSet | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
-				## specific tests for Get-XIOVolume with RelatedObject of Volume, get such items that have DestinationSnapshot property populated
-				{($_ -eq "Volume") -and ("Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.DestinationSnapshot | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
-				## specific tests for Get-XIOVolume with RelatedObject of Snapshot, get such items that have AncestorVolume property populated
-				{($_ -eq "Volume") -and ("Snapshot" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.AncestorVolume | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
-				## Get up to five of the related objects
-				default {& "Get-XIO$strThisRelatedObjectType" | Select-Object -First 5}
-			} ## end switch
-			It "Gets XIO $strXIOObjReturnTypeShortname object, based on related $strThisRelatedObjectType object" {
-		 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$strXIOObjectTypeToGet" -RelatedObject $arrRelatedObjects}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
-		    	New-Variable -Name "bGetsOnly${strXIOObjReturnTypeShortname}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strXIOObjReturnTypeShortname")
-		    	(Get-Variable -ValueOnly -Name "bGetsOnly${strXIOObjReturnTypeShortname}Type") | Should Be $true
+			$arrRelatedObjects = if (($strThisRelatedObjectType -eq "Tag") -and ($strXIOObjectTypeToGet -ne "Snapshot")) {
+				## the Tag "ObjectProperty" value that corresponds to this XIO Item Info shortname
+				$strXIOObjectTypePerXIOTag = if ($hshTagObjectTypePropMapping.ContainsKey($strXIOObjectTypeToGet)) {$hshTagObjectTypePropMapping[$strXIOObjectTypeToGet]} else {$strXIOObjectTypeToGet}
+				Get-XIOTag | Where-Object {$_.ObjectType -eq $strXIOObjectTypePerXIOTag} | Select-Object -First 5
+			} else {
+				Switch ($strXIOObjectTypeToGet) {
+					## specific tests for Get-XIOConsistencyGroup with RelatedObject of Volume, get such items that have ConsistencyGroup property populated
+					{($_ -eq "ConsistencyGroup") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.ConsistencyGroup | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+					## specific tests for Get-XIOSnapshot with RelatedObject of InitiatorGroup
+					{($_ -eq "Snapshot") -and ("InitiatorGroup" -contains $strThisRelatedObjectType)} {Get-XIOSnapshot | Where-Object {$_.InitiatorGrpIdList.Count -gt 0} | Select-Object -First 5 | Get-XIOInitiatorGroup; break}
+					## specific tests for Get-XIOSnapshot with RelatedObject of Snapshot or Volume, get such items that have DestinationSnapshot property populated
+					{($_ -eq "Snapshot") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.DestinationSnapshot | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+					## specific tests for Get-XIOSnapshot with RelatedObject of Tag
+					{($_ -eq "Snapshot") -and ("Tag" -contains $strThisRelatedObjectType)} {Get-XIOSnapshot | Where-Object {$null -ne $_.TagList} | Select-Object -First 5 | Get-XIOTag; break}
+					## specific tests for Get-XIOSnapshotSet with RelatedObject of Snapshot or Volume, get such items that have SnapshotSet property populated
+					{($_ -eq "SnapshotSet") -and ("Snapshot","Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.SnapshotSet | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+					## specific tests for Get-XIOTag
+					"Tag" {& "Get-XIO$strThisRelatedObjectType" | Where-Object {$null -ne $_.TagList} | Select -First 5}
+					## specific tests for Get-XIOVolume with RelatedObject of Volume, get such items that have DestinationSnapshot property populated
+					{($_ -eq "Volume") -and ("Volume" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.DestinationSnapshot | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+					## specific tests for Get-XIOVolume with RelatedObject of Snapshot, get such items that have AncestorVolume property populated
+					{($_ -eq "Volume") -and ("Snapshot" -contains $strThisRelatedObjectType)} {& "Get-XIO$strThisRelatedObjectType" | Where-Object {($_.AncestorVolume | Measure-Object).Count -gt 0} | Select-Object -First 5; break}
+					## Get up to five of the related objects
+					default {& "Get-XIO$strThisRelatedObjectType" | Select-Object -First 5}
+				} ## end switch
+			} ## end else
+			## params for "It" call; Skip the test if there are no related objects with which to test
+			$hshParamsForIt = @{Skip = ($null -eq $arrRelatedObjects)}
+ 			if ($hshParamsForIt["Skip"]) {Write-Verbose -Verbose "No related objects of type '$strThisRelatedObjectType' found for testing 'Get-XIO$strXIOObjectTypeToGet'"}
+			It "Gets XIO $strXIOObjReturnTypeShortname object, based on related $strThisRelatedObjectType object" @hshParamsForIt {
+				$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {& "Get-XIO$strXIOObjectTypeToGet" -RelatedObject $arrRelatedObjects}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
+				New-Variable -Name "bGetsOnly${strXIOObjReturnTypeShortname}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strXIOObjReturnTypeShortname")
+				(Get-Variable -ValueOnly -Name "bGetsOnly${strXIOObjReturnTypeShortname}Type") | Should Be $true
 			}
-			It "Gets XIO $strXIOObjReturnTypeShortname object, based on related $strThisRelatedObjectType object from pipeline" {
+			It "Gets XIO $strXIOObjReturnTypeShortname object, based on related $strThisRelatedObjectType object from pipeline" @hshParamsForIt {
 		 		$arrReturnTypes = if ($arrTmpObj = Invoke-Command -ScriptBlock {$arrRelatedObjects | & "Get-XIO$strXIOObjectTypeToGet"}) {$arrTmpObj | Get-Member -ErrorAction:Stop | Select-Object -Unique -ExpandProperty TypeName} else {$null}
 		    	New-Variable -Name "bGetsOnly${strXIOObjReturnTypeShortname}Type" -Value ($arrReturnTypes -eq "XioItemInfo.$strXIOObjReturnTypeShortname")
 		    	(Get-Variable -ValueOnly -Name "bGetsOnly${strXIOObjReturnTypeShortname}Type") | Should Be $true
