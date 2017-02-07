@@ -306,18 +306,27 @@ function Get-XIOItemInfo {
 
 <#	.Description
 	Function to get XtremIO BBU info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOBBU
 	Get the "BBU" items
+
 	.Example
 	Get-XIOBBU -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "BBU" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOStorageController -Name X1-SC2 -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIOBBU
 	Get the BBU that is associated with the StorageController "X1-SC2" from the given XMS appliance and XIO Cluster
+
 	.Example
 	Get-XIOBrick -Name X1 -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIOBBU -Name X2-BBU
 	Get the BBU of the given name, and that is associated with the Brick "X1" from the given XMS appliance and XIO Cluster
+
+	.Example
+	Get-XIOTag /BatteryBackupUnit/myBBUTag0 | Get-XIOBBU
+	Get the BBU(s) to which the given Tag is assigned
+
 	.Outputs
 	XioItemInfo.BBU
 #>
@@ -327,16 +336,21 @@ function Get-XIOBBU {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the BBU to get. Can be an XIO object of type Brick or StorageController
+
+		## Related object from which to determine the BBU to get. Can be an XIO object of type Brick, StorageController, or Tag
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -346,7 +360,7 @@ function Get-XIOBBU {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "bbu"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, StorageController | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, StorageController, Tag | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -354,9 +368,16 @@ function Get-XIOBBU {
 		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
 			$RelatedObject | Foreach-Object {
 				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
 					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
 					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
-					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {$_."BBU".Name}
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name")) {$Name} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if it is a Tag object, and the tagged ObjectType is UPS (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "UPS")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
+							default {$oThisRelatedObj."BBU".Name}
+						} ## end switch
+					} ## end else
 					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
 					$hshParamsForGetXioInfo
 				} ## end if
@@ -376,24 +397,31 @@ function Get-XIOBBU {
 
 <#	.Description
 	Function to get XtremIO brick info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOBrick
 	Request info from current XMS connection and return an object with the "brick" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOBrick X3
 	Get the "brick" named X3
+
 	.Example
 	Get-XIOBrick -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Brick" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOBBU -Name X3-BBU | Get-XIOBrick
 	Get the "Brick" item associated with the given BBU
+
 	.Example
 	Get-XIOTarget X4-SC2-fc2 | Get-XIOBrick
 	Get the "Brick" item associated with the given fiber channel target
+
 	.Example
 	Get-XIOBrick -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Brick
 #>
@@ -454,24 +482,31 @@ function Get-XIOBrick {
 
 <#	.Description
 	Function to get XtremIO cluster info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOCluster
 	Request info from current XMS connection and return an object with the "Cluster" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOCluster myCluster
 	Get the "Cluster" named myCluster
+
 	.Example
 	Get-XIOInitiatorGroup myIG0 | Get-XIOCluster
 	Get the "Cluster" in which this IntiatorGroup is defined
+
 	.Example
 	Get-XIOSsd -Name wwn-0x5000000000000001 | Get-XIOCluster
 	Get the "Cluster" for which this SSD provides storage
+
 	.Example
 	Get-XIOVolume myVol0 | Get-XIOCluster
 	Get the "Cluster" in which this Volume is defined
+
 	.Example
 	Get-XIOCluster -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Cluster
 #>
@@ -528,18 +563,27 @@ function Get-XIOCluster {
 
 <#	.Description
 	Function to get XtremIO ConsistencyGroup info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOConsistencyGroup
 	Get the "ConsistencyGroup" items
+
 	.Example
 	Get-XIOConsistencyGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "ConsistencyGroup" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOVolume myVol0 | Get-XIOConsistencyGroup
 	Get the "ConsistencyGroup" items related to this Volume
+
+	.Example
+	Get-XIOTag /ConsistencyGroup/myProdCG0 | Get-XIOConsistencyGroup
+	Get the "ConsistencyGroup" to which the given Tag is assigned
+
 	.Example
 	Get-XIOSnapshotScheduler mySnapSched0 | Get-XIOConsistencyGroup
 	Get the "ConsistencyGroup" items related to this SnapshotScheduler.  Only returns anything for a SnapshotScheduler whose snapshotted object is a ConsistencyGroup
+
 	.Outputs
 	XioItemInfo.ConsistencyGroup
 #>
@@ -549,16 +593,21 @@ function Get-XIOConsistencyGroup {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the ConsistencyGroup to get. Can be an XIO object of type Snapshot, SnapshotScheduler, SnapshotSet, or Volume
+
+		## Related object from which to determine the ConsistencyGroup to get. Can be an XIO object of type Snapshot, SnapshotScheduler, SnapshotSet, Tag, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -568,7 +617,7 @@ function Get-XIOConsistencyGroup {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "consistency-group"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Volume | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -590,6 +639,8 @@ function Get-XIOConsistencyGroup {
 								else {$null} ## end else
 								break
 							} ## end case
+							## if it is a Tag object, and the tagged ObjectType is SnapSet (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "ConsistencyGroup")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has a ConsistencyGroup property
 							default {$oThisRelatedObj."ConsistencyGroup".Name}
 						} ## end switch
@@ -614,18 +665,23 @@ function Get-XIOConsistencyGroup {
 
 <#	.Description
 	Function to get XtremIO DAE (Disk Array Enclosure) info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIODAE
 	Get the "DAE" items
+
 	.Example
 	Get-XIODAE -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "DAE" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOBrick -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIODAE
 	Get the "DAE" items for just the related Brick object
+
 	.Example
 	Get-XIODAEController X1-DAE-LCC-B -Cluster myCluster0 -ComputerName somexmsappl01.dom.com | Get-XIODAE
 	Get the "DAE" items for just the related DAEController object
+
 	.Outputs
 	XioItemInfo.DAE
 #>
@@ -684,24 +740,31 @@ function Get-XIODAE {
 
 <#	.Description
 	Function to get XtremIO DataProtectionGroup info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIODataProtectionGroup
 	Request info from current XMS connection and return an object with the "DataProtectionGroup " info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIODataProtectionGroup X[34]-DPG
 	Get the DataProtectionGroup objects named X3-DPG and X4-DPG
+
 	.Example
 	Get-XIODataProtectionGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Example
 	Get-XIODataProtectionGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "DataProtectionGroup" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOSsd wwn-0x5000000000000001 | Get-XIODataProtectionGroup
 	Get the "DataProtectionGroup" that this SSD services
+
 	.Example
 	Get-XIOStorageController -Cluster myCluster0 -ComputerName somexmsappl01.dom.com -Name X3-SC2 | Get-XIODataProtectionGroup
 	Get the "DataProtectionGroup" that this StorageController services
+
 	.Outputs
 	XioItemInfo.DataProtectionGroup
 #>
@@ -760,12 +823,15 @@ function Get-XIODataProtectionGroup {
 
 <#	.Description
 	Function to get XtremIO InfiniBand Switch info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOInfinibandSwitch
 	Get the "InfinibandSwitch" items
+
 	.Example
 	Get-XIOCluster myCluster0 | Get-XIOInfinibandSwitch
 	Get the "InfinibandSwitch" items associated with the given cluster; potentially more useful as the XtremIO physical infrastructure grows to support more InfinibandSwitches per unit
+
 	.Outputs
 	XioItemInfo.InfinibandSwitch
 #>
@@ -825,24 +891,35 @@ function Get-XIOInfinibandSwitch {
 
 <#	.Description
 	Function to get XtremIO initiator info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOInitiator
 	Request info from current XMS connection and return an object with the "initiator" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOInitiator mysvr-hba*
 	Get the "initiator" objects whose name are like mysvr-hba*
+
 	.Example
 	Get-XIOInitiator -PortAddress 10:00:00:00:00:00:00:01
 	Get the "initiator" object with given port address
+
 	.Example
 	Get-XIOInitiatorGroup someIG | Get-XIOInitiator
 	Get the "initiator" object in the given initiator group
+
+	.Example
+	Get-XIOTag /Initiator/myInitTag0 | Get-XIOInitiator
+	Get the "initiator" objects to which the given Tag is assigned
+
 	.Example
 	Get-XIOInitiator -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "initiator" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOInitiator -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Initiator
 #>
@@ -852,19 +929,28 @@ function Get-XIOInitiator {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
+
 		## Specific initiator Port Address for which to get initiator info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName")][ValidatePattern("([0-9a-f]{2}:){7}([0-9a-f]{2})")][string[]]$PortAddress,
+
 		## Specific initiator group ID for which to get initiator info; if not specified, return all
 		[parameter(ParameterSetName="ByComputerName",ValueFromPipelineByPropertyName=$true)][string[]]$InitiatorGrpId,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
-		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster
+		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
+
+		## Related object from which to determine the Initiator to get. Can be an XIO object of type Tag
+		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
 	Begin {
@@ -872,17 +958,49 @@ function Get-XIOInitiator {
 		$strLogEntry_ToAdd = "[$($MyInvocation.MyCommand.Name)]"
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator"
-		## initialize new hashtable to hold params for Get-XIOItemInfo call
-		$hshParamsForGetXioItemInfo = @{}
-		## if not getting Initiator by URI of item, add the ItemType key/value to the Params hashtable
-		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
+		## TypeNames of supported RelatedObjects
+		$arrTypeNamesOfSupportedRelObj = Write-Output Tag | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
-		## get the params for Get-XIOItemInfo (exclude some choice params)
-		$PSBoundParameters.Keys | Where-Object {@("PortAddress","InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
-		## call the base function to get the given item
-		$arrItemsToReturn = Get-XIOItemInfo @hshParamsForGetXioItemInfo
+		## make an array of one or more hashtables that have params for a Get-XIOItemInfo call
+		$arrHshsOfParamsForGetXioInfo = if ($PSCmdlet.ParameterSetName -eq "ByRelatedObject") {
+			$RelatedObject | Foreach-Object {
+				if (_Test-IsOneOfGivenType -Object $_ -Type $arrTypeNamesOfSupportedRelObj) {
+					$oThisRelatedObj = $_
+					$hshParamsForGetXioInfo = @{ItemType = $ItemType_str; ComputerName = $_.ComputerName; Cluster = $_.Cluster}
+					## if -Name was specified, use it; else, use the Name property of the property of the RelatedObject that relates to the actual object type to now get
+					$hshParamsForGetXioInfo["Name"] = if ($PSBoundParameters.ContainsKey("Name_arr")) {$Name_arr} else {
+						Switch ($oThisRelatedObj.GetType().FullName) {
+							## if it is a Tag object, and the tagged ObjectType is InitiatorGroup (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "Initiator")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
+							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
+							default {$null}
+						} ## end switch
+					} ## end else
+
+					if ($ReturnFullResponse) {$hshParamsForGetXioInfo["ReturnFullResponse"] = $true}
+					## only return this as a hash of params of Name is not null or empty,  since Name is one of the keys by which to get the targeted object type (this RelatedObject may not have a value for the property with this targeted object the cmdlet is trying to get)
+					if (-not [String]::IsNullOrEmpty($hshParamsForGetXioInfo["Name"])) {$hshParamsForGetXioInfo}
+				} ## end if
+				else {Write-Warning ($hshCfg["MessageStrings"]["NonsupportedRelatedObjectType"] -f $_.GetType().FullName, ($arrTypeNamesOfSupportedRelObj -join ", "))}
+			} ## end foreach-object
+		} ## end if
+		else {
+			## just use PSBoundParameters if by URI, else add the ItemType key/value to the Params to use with Get-XIOItemInfo, if ByComputerName
+			if ($PSCmdlet.ParameterSetName -eq "SpecifyFullUri") {$PSBoundParameters}
+			else {
+				## initialize new hashtable to hold params for Get-XIOItemInfo call
+				$hshParamsForGetXioItemInfo = @{}
+				## get the params for Get-XIOItemInfo (exclude some choice params)
+				$PSBoundParameters.Keys | Where-Object {@("PortAddress","InitiatorGrpId") -notcontains $_} | Foreach-Object {$hshParamsForGetXioItemInfo[$_] = $PSBoundParameters[$_]}
+				@{ItemType = $ItemType_str} + $hshParamsForGetXioItemInfo
+			} ## end else
+		} ## end else
+
+		## call the base function to get the given item for each of the hashtables of params
+		$arrItemsToReturn = $arrHshsOfParamsForGetXioInfo | Foreach-Object {Get-XIOItemInfo @_}
+
 		## if the PortAddress was specified, return just initiator involving that PortAddress
 		if ($PSBoundParameters.ContainsKey("PortAddress")) {$arrItemsToReturn = $arrItemsToReturn | Where-Object {$oThisItem = $_; ($PortAddress | Where-Object {$oThisItem.PortAddress -eq $_}).Count -gt 0}}
 		## if the InitiatorGrpId was specified, return just initiators involving that InitiatorGroup
@@ -894,30 +1012,43 @@ function Get-XIOInitiator {
 
 <#	.Description
 	Function to get XtremIO InitiatorGroup info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOInitiatorGroup
 	Request info from current XMS connection and return an object with the "InitiatorGroup" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOInitiatorGroup myIG0
 	Get the "InitiatorGroup" named myIG0
+
 	.Example
 	Get-XIOInitiator mysvr-hba* | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup" of which the given initiator is a part
+
 	.Example
 	Get-XIOInitiatorGroupFolder /someIGFolder/someDeeperFolder | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup(s)" that are directly in the given InitiatorGroupFolder
+
+	.Example
+	Get-XIOTag /InitiatorGroup/someIGTag | Get-XIOInitiatorGroup
+	Get the "InitiatorGroup(s)" to which the given InitiatorGroup Tag is assigned
+
 	.Example
 	Get-XIOVolume myVol0 | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup(s)" that are mapped to the given volume
+
 	.Example
 	Get-XIOSnapshot mySnap0 | Get-XIOInitiatorGroup
 	Get the "InitiatorGroup(s)" that are mapped to the given snapshot
+
 	.Example
 	Get-XIOInitiatorGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "InitiatorGroup" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOInitiatorGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.InitiatorGroup
 #>
@@ -927,16 +1058,21 @@ function Get-XIOInitiatorGroup {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the InitiatorGroup to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, or Volume
+
+		## Related object from which to determine the InitiatorGroup to get. Can be an XIO object of type Initiator, InitiatorGroupFolder, LunMap, Snapshot, Tag, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -946,7 +1082,7 @@ function Get-XIOInitiatorGroup {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "initiator-group"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Initiator, IgFolder, LunMap, Snapshot, Volume | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Initiator, IgFolder, LunMap, Snapshot, Tag, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -961,6 +1097,8 @@ function Get-XIOInitiatorGroup {
 						Switch ($oThisRelatedObj.GetType().FullName) {
 							"XioItemInfo.LunMap" {$oThisRelatedObj."InitiatorGroup"; break} ## end case
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.LunMapList.InitiatorGroup.Name; break} ## end case
+							## if it is a Tag object, and the tagged ObjectType is InitiatorGroup (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "InitiatorGroup")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has a InitiatorGroup property with a subproperty Name (like Initiator and InitiatorGroupFolder objects)
 							default {$oThisRelatedObj."InitiatorGroup".Name}
 						} ## end switch
@@ -986,24 +1124,31 @@ function Get-XIOInitiatorGroup {
 
 <#	.Description
 	Function to get XtremIO initiator group folder info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOInitiatorGroupFolder
 	Request info from current XMS connection and return an object with the "initiator group folder" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOInitiatorGroupFolder /someVC/someCluster
 	Get the "initiator group folder" named /someVC/someCluster
+
 	.Example
 	Get-XIOInitiatorGroup myIG0 | Get-XIOInitiatorGroupFolder
 	Get the "initiator group folder" that contains the initiator group myIG0
+
 	.Example
 	Get-XIOInitiatorGroupFolder /someVC/someCluster | Get-XIOInitiatorGroup
 	Get the InitiatorGroup objects in the given "initiator group folder"
+
 	.Example
 	Get-XIOInitiatorGroupFolder /someVC | Get-XIOInitiatorGroupFolder
 	Get the "initiator group folder" objects that are direct subfolders of the given "initiator group folder"
+
 	.Example
 	Get-XIOInitiatorGroupFolder -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.IgFolder
 #>
@@ -1071,15 +1216,19 @@ function Get-XIOInitiatorGroupFolder {
 
 <#	.Description
 	Function to get XtremIO LocalDisk info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOLocalDisk
 	Get the "LocalDisk" items
+
 	.Example
 	Get-XIOLocalDisk -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "LocalDisk" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOStorageController X4-SC1 -ComputerName somexmsappl01.dom.com | Get-XIOLocalDisk
 	Get the "LocalDisk" items from the given XMS appliance, and only for the given XIO StorageController
+
 	.Outputs
 	XioItemInfo.LocalDisk
 #>
@@ -1138,36 +1287,47 @@ function Get-XIOLocalDisk {
 
 <#	.Description
 	Function to get XtremIO LUN map info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOLunMap
 	Request info from current XMS connection and return an object with the "LUN map" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOVolume myVolume0 | Get-XIOLunMap
 	Get the LunMap objects that involve volume "myVolume0". Leverages the filtering capability available in version 2.0 and higher of the XtremIO REST API
+
 	.Example
 	Get-XIOSnapshot mySnap0 | Get-XIOLunMap -Property VolumeName,LunId
 	Get the LunMap objects that involve snapshot "mySnap0", and retrieves/returns LunMap values only for the specified properties. Leverages the filtering capability available in version 2.0 and higher of the XtremIO REST API
+
 	.Example
 	Get-XIOInitiatorGroup myIG0,myIG1 | Get-XIOLunMap
 	Get the LunMap objects that involve InitiatorGroups "myIG0", "myIG1". Leverages the filtering capability available in version 2.0 and higher of the XtremIO REST API
+
 	.Example
 	Get-XIOLunMap -Volume myVolume0
 	Get the "LUN map" objects for volume myVolume0
+
 	.Example
 	Get-XIOLunMap -InitiatorGroup someig* -Volume *2[23]
 	Get the "LUN map" objects for initator groups with names like someig* and whose volume names end with 22 or 23
+
 	.Example
 	Get-XIOLunMap -HostLunId 21,22
 	Get the "LUN map" objects defined with LUN IDs 21 or 22
+
 	.Example
 	Get-XIOLunMap -Property VolumeName,LunId
 	Get the "LUN map" objects, but retrieve only their VolumeName and LunId properties, so as to optimize the data retrieval (retrieve just the data desired). Note:  this is only effective when dealing with an XMS of at least v2.0 of the REST API -- the older API does not support this functionality.  The -Property parameter value is ignored if the REST API is not of at least v2.0
+
 	.Example
 	Get-XIOLunMap -HostLunId 101 -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "LUN map" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOLunMap -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.LunMap
 #>
@@ -1254,12 +1414,15 @@ function Get-XIOLunMap {
 
 <#	.Description
 	Function to get XtremIO Slot info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOSlot
 	Get the "Slot" items
+
 	.Example
 	Get-XIOSlot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Slot" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Outputs
 	XioItemInfo.Slot
 #>
@@ -1298,30 +1461,43 @@ function Get-XIOSlot {
 
 <#	.Description
 	Function to get XtremIO snapshot info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOSnapshot
 	Request info from current XMS connection and return an object with the "Snapshot" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOVolumeFolder /myVolumeFolder | Get-XIOSnapshot
 	Get the "Snapshot" objects that are directly in the given volume folder
+
 	.Example
 	Get-XIOInitiatorGroup myIgroup | Get-XIOSnapshot
 	Get the "Snapshot" objects that are mapped to the given initiator group
+
 	.Example
 	Get-XIOSnapshot someSnap0 | Get-XIOSnapshot
 	Get the "Snapshot" object that was made from source volume (a snapshot itself) "someSnap0"
+
 	.Example
 	Get-XIOSnapshotSet mySnapSet0 | Get-XIOSnapshot
 	Get the "Snapshot" objects that are a part of the SnapshotSet "mySnapSet0"
+
 	.Example
 	Get-XIOVolume myVolume0 | Get-XIOSnapshot
 	Get the "Snapshot" object that was made from source volume "myVolume0"
+
+	.Example
+	Get-XIOTag /Volume/myImportantSnaps0 | Get-XIOSnapshot
+	Get the "Snapshot" object(s) to which the given Tag is assigned
+
 	.Example
 	Get-XIOSnapshot -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Snapshot" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOSnapshot -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Snapshot
 #>
@@ -1331,16 +1507,21 @@ function Get-XIOSnapshot {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][parameter(Position=0,ParameterSetName="ByRelatedObject")][string[]]$Name_arr,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Snapshot to get. Can be an XIO object of type InitiatorGroup, Snapshot, SnapshotSet, Volume, or VolumeFolder
+
+		## Related object from which to determine the Snapshot to get. Can be an XIO object of type InitiatorGroup, Snapshot, SnapshotSet, Tag, Volume, or VolumeFolder
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1354,7 +1535,7 @@ function Get-XIOSnapshot {
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output InitiatorGroup, Snapshot, SnapshotSet, Tag, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -1372,6 +1553,8 @@ function Get-XIOSnapshot {
 							## if the related object is a Snapshot or a Volume, get the Snapshot name from some subsequent object's properties
 							{"XioItemInfo.Snapshot","XioItemInfo.Volume" -contains $_} {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
 							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
+							## if it is a Tag object, and the tagged ObjectType is Volume (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "Volume")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## this gets both volume and snapshot names, but, as the Get-XIOItemInfo call gets only Snapshots here, the names of Volumes will not "hit", so just Snapshots will come back
 							"XioItemInfo.VolumeFolder" {$oThisRelatedObj.Volume.Name; break} ## end case
 							"XioItemInfo.InitiatorGroup" {"*"; break}
@@ -1402,21 +1585,31 @@ function Get-XIOSnapshot {
 
 <#	.Description
 	Function to get XtremIO SnapshotSet info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOSnapshotSet
 	Get the "SnapshotSet" items
+
 	.Example
 	Get-XIOSnapshotSet -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "SnapshotSet" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOVolume myVolumeWithASnapshot | Get-XIOSnapshotSet
 	Get the "SnapshotSet" item related to this Volume
+
+	.Example
+	Get-XIOTag /SnapshotSet/mySnapSetTag0 | Get-XIOSnapshotSet
+	Get the "SnapshotSet" item to which the given Tag is assigned
+
 	.Example
 	Get-XIOSnapshot myImportantSnap | Get-XIOSnapshotSet
 	Get the "SnapshotSet" item related to this Snapshot
+
 	.Example
 	Get-XIOSnapshotScheduler myScheduler_OfSnapset | Get-XIOSnapshotSet
 	Get the "SnapshotSet" item related that this SnapshotScheduler targets as its "snapped object". If the SnapshotScheduler targets a Volume or ConsistencyGroup, this returns $null
+
 	.Outputs
 	XioItemInfo.SnapshotSet
 #>
@@ -1426,16 +1619,21 @@ function Get-XIOSnapshotSet {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the SnapshotSet to get. Can be an XIO object of type Snapshot, SnapshotScheduler, or Volume
+
+		## Related object from which to determine the SnapshotSet to get. Can be an XIO object of type Snapshot, SnapshotScheduler, Tag, or Volume
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1445,7 +1643,7 @@ function Get-XIOSnapshotSet {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "snapshot-set"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, Volume | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Snapshot, SnapshotScheduler, Tag, Volume | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -1466,6 +1664,8 @@ function Get-XIOSnapshotSet {
 								else {$null} ## end else
 								break
 							} ## end case
+							## if it is a Tag object, and the tagged ObjectType is SnapSet (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "SnapSet")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has a SnapshotSet property
 							default {$oThisRelatedObj."SnapshotSet".Name}
 						} ## end switch
@@ -1490,24 +1690,35 @@ function Get-XIOSnapshotSet {
 
 <#	.Description
 	Function to get XtremIO SSD info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOSsd
 	Request info from current XMS connection and return an object with the "SSD" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOSsd wwn-0x500000000abcdef0
 	Get the "SSD" named wwn-0x500000000abcdef0
+
 	.Example
 	Get-XIOSsd -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "SSD" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOBrick -Name X3 | Get-XIOSsd
 	Get the "SSD" items for the SSDs in the given Brick
+
 	.Example
 	Get-XIOSlot 3_23 | Get-XIOSsd
 	Get the "SSD" info for the SSD in the given Slot
+
+	.Example
+	Get-XIOTag /SSD/mySsds_NearEOL | Get-XIOSsd
+	Get the "SSD" objects to which the given Tag is assigned
+
 	.Example
 	Get-XIOSsd -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Ssd
 #>
@@ -1517,16 +1728,21 @@ function Get-XIOSsd {
 	param(
 		## XMS address to use; if none, use default connections
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Item name(s) for which to get info (or, all items of given type if no name specified here)
 		[parameter(Position=0,ParameterSetName="ByComputerName")][string[]]$Name_arr,
+
 		## switch:  Return full response object from API call?  (instead of PSCustomObject with choice properties)
 		[switch]$ReturnFullResponse_sw,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
+
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Ssd to get. Can be an XIO object of type Brick or Slot
+
+		## Related object from which to determine the Ssd to get. Can be an XIO object of type Brick, Slot, or Tag
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1536,7 +1752,7 @@ function Get-XIOSsd {
 		## the itemtype to get via Get-XIOItemInfo
 		$ItemType_str = "ssd"
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, Slot | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output Brick, Slot, Tag | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -1552,6 +1768,8 @@ function Get-XIOSsd {
 						Switch ($oThisRelatedObj.GetType().FullName) {
 							## if the related object is a Slot, get the SSD name from some subsequent object's properties
 							"XioItemInfo.Slot" {$oThisRelatedObj.SsdUid; break} ## end case
+							## if it is a Tag object, and the tagged ObjectType is SSD (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "SSD")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							## default is that this related object has an SSD property
 							default {$oThisRelatedObj."SSD".Name}
 						} ## end switch
@@ -1576,30 +1794,39 @@ function Get-XIOSsd {
 
 <#	.Description
 	Function to get XtremIO storage controller info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOStorageController
 	Request info from current XMS connection and return an object with the "storage controller" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOStorageController X3-SC1
 	Get the "StorageController" named X3-SC1
+
 	.Example
 	Get-XIOStorageController -Name X1-SC2 -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the given "StorageController" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOLocalDisk X4-SC2-LocalDisk6 | Get-XIOStorageController
 	Get the "StorageController" in which the given LocalDisk resides
+
 	.Example
 	Get-XIOLocalDisk | Where-Object {$_.LifecycleState -ne "healthy"} | Get-XIOStorageController
 	Get the "StorageControllers" that have one or more LocalDisks that are in a LifeCycleState that is other than "healthy"
+
 	.Example
 	Get-XIOXenv | Sort-Object CPUUsage -Descending | Select-Object -First 1 | Get-XIOStorageController
 	Get the "StorageController" of the XEnv that has the highest CPUUsage
+
 	.Example
 	Get-XIOTarget | Where-Object {($_.PortType -eq "fc") -and ($_.PortState -eq "down")} | Get-XIOStorageController
 	Get the "StorageControllers" of the fibre channel Targets that are down
+
 	.Example
 	Get-XIOStorageController -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.StorageController
 #>
@@ -1658,15 +1885,19 @@ function Get-XIOStorageController {
 
 <#	.Description
 	Function to get XtremIO Storage Controller PSU info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOStorageControllerPsu
 	Get the "StorageControllerPsu" items
+
 	.Example
 	Get-XIOStorageController X1-SC2 | Get-XIOStorageControllerPsu
 	Get the "StorageControllerPsu" items for the given StorageController
+
 	.Example
 	Get-XIOStorageControllerPsu -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "StorageControllerPsu" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Outputs
 	XioItemInfo.StorageControllerPsu
 #>
@@ -1725,9 +1956,11 @@ function Get-XIOStorageControllerPsu {
 
 <#	.Description
 	Function to get XtremIO Tag info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOTag
 	Get the "Tag" items
+
 	.Outputs
 	XioItemInfo.Tag
 #>
@@ -1785,18 +2018,23 @@ function Get-XIOTag {
 
 <#	.Description
 	Function to get XtremIO target info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOTarget
 	Request info from current XMS connection and return an object with the "Target" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOTarget *fc[12]
 	Get the "Target" objects with names ending in "fc1" or "fc2"
+
 	.Example
 	Get-XIOTarget -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Target" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOTarget -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Target
 #>
@@ -1835,21 +2073,27 @@ function Get-XIOTarget {
 
 <#	.Description
 	Function to get XtremIO target group info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOTargetGroup
 	Request info from current XMS connection and return an object with the "TargetGroup" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOTargetGroup Default
 	Get the "TargetGroup" named Default
+
 	.Example
 	Get-XIOTarget X1-SC1-fc1 | Get-XIOTargetGroup
 	Get the "TargetGroup" related to the given Target
+
 	.Example
 	Get-XIOTargetGroup -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "TargetGroup" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOTargetGroup -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.TargetGroup
 #>
@@ -1909,42 +2153,59 @@ function Get-XIOTargetGroup {
 
 <#	.Description
 	Function to get XtremIO Volume info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOVolume
 	Request info from current XMS connection and return an object with the "Volume" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOVolume someTest02
 	Get the "Volume" named someTest02
+
 	.Example
 	Get-XIOVolumeFolder /myVolumeFolder | Get-XIOVolume
 	Get the "Volume" objects that are directly in the given volume folder
+
 	.Example
 	Get-XIOInitiatorGroup myIgroup | Get-XIOVolume
 	Get the "Volume" objects that are mapped to the given initiator group
+
 	.Example
 	Get-XIOVolume -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "Volume" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOConsistencyGroup myCG0 | Get-XIOVolume
 	Get the "Volume" items from the related ConsistencyGroup object
+
 	.Example
 	Get-XIOLunMap -InitiatorGroup myIG0 | Get-XIOVolume
 	Get the "Volume" items from the related InitiatorGroup object
+
 	.Example
 	Get-XIOSnapshot mySnapshot0 | Get-XIOVolume
 	Get the "Volume" object from which the given Snapshot was taken (the snapshot's ancestor volume)
+
 	.Example
 	Get-XIOSnapshotScheduler mySnapshotScheduler0 | Get-XIOVolume
 	Get the "Volume" object that is the subject of the given SnapshotScheduler (the "snapped object" of the scheduler)
+
 	.Example
 	Get-XIOSnapshotSet someSnapshotSet | Get-XIOVolume
 	Get the "Volume" items that comprise the given SnapshotSet
+
+	.Example
+	Get-XIOTag /Volume/myTestVols | Get-XIOVolume
+	Get the "Volume" items to which the given Tag is assigned
+
 	.Example
 	Get-XIOVolume mySourceVolume0 | Get-XIOVolume
 	Get the "Volume" item resulted from having taken a snapshot of the given volume, if any (the "offspring" Volume of this ancestor Volume)
+
 	.Example
 	Get-XIOVolume -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.Volume
 #>
@@ -1963,7 +2224,7 @@ function Get-XIOVolume {
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str,
 		## Cluster name(s) for which to get info (or, get info from all XIO Clusters managed by given XMS(s) if no name specified here)
 		[parameter(ParameterSetName="ByComputerName")][string[]]$Cluster,
-		## Related object from which to determine the Volume to get. Can be an XIO object of type ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, or VolumeFolder
+		## Related object from which to determine the Volume to get. Can be an XIO object of type ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume, or VolumeFolder
 		[parameter(ValueFromPipeline=$true, ParameterSetName="ByRelatedObject")][PSObject[]]$RelatedObject
 	) ## end param
 
@@ -1977,7 +2238,7 @@ function Get-XIOVolume {
 		## if  not getting LunMap by URI of item, add the ItemType key/value to the Params hashtable
 		if ($PSCmdlet.ParameterSetName -ne "SpecifyFullUri") {$hshParamsForGetXioItemInfo["ItemType_str"] = $ItemType_str}
 		## TypeNames of supported RelatedObjects
-		$arrTypeNamesOfSupportedRelObj = Write-Output ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
+		$arrTypeNamesOfSupportedRelObj = Write-Output ConsistencyGroup, InitiatorGroup, LunMap, Snapshot, SnapshotScheduler, SnapshotSet, Tag, Volume, VolumeFolder | Foreach-Object {"XioItemInfo.$_"}
 	} ## end begin
 
 	Process {
@@ -2003,6 +2264,8 @@ function Get-XIOVolume {
 								break
 							} ## end case
 							"XioItemInfo.SnapshotSet" {$oThisRelatedObj.VolList.Name; break} ## end case
+							## if it is a Tag object, and the tagged ObjectType is Volume (otherwise, Tag object is not "used", as the -Name param will be $null, and the subsequent calls to get XIOItemInfos will return nothing)
+							{("XioItemInfo.Tag" -eq $_) -and ($oThisRelatedObj.ObjectType -eq "Volume")} {$oThisRelatedObj.ObjectList.Name; break} ## end case
 							"XioItemInfo.Volume" {$oThisRelatedObj.DestinationSnapshot.Name; break} ## end case
 							## this gets both volume and snapshot, since snapshots are treated as Volumes, too
 							"XioItemInfo.VolumeFolder" {$oThisRelatedObj.Volume.Name; break} ## end case
@@ -2035,21 +2298,27 @@ function Get-XIOVolume {
 
 <#	.Description
 	Function to get XtremIO volume folder info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOVolumeFolder
 	Request info from current XMS connection and return an object with the "volume folder" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOVolumeFolder /myBigVols
 	Get the "volume folder" named /myBigVols
+
 	.Example
 	Get-XIOVolume myBigVol0 | Get-XIOVolumeFolder
 	Get the "volume folder" for the volume
+
 	.Example
 	Get-XIOVolumeFolder /myBigVols | Get-XIOVolumeFolder
 	Get only the "volume folder" objects that are direct subfolders of /myBigVols
+
 	.Example
 	Get-XIOVolumeFolder -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.VolumeFolder
 #>
@@ -2117,18 +2386,23 @@ function Get-XIOVolumeFolder {
 
 <#	.Description
 	Function to get XtremIO XEnv info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOXenv
 	Request info from current XMS connection and return an object with the "XEnv" info for the logical storage entity defined on the array
+
 	.Example
 	Get-XIOXenv X3-SC1-E1,X3-SC1-E2
 	Get the "XEnv" items namedX3-SC1-E1 and X3-SC1-E2
+
 	.Example
 	Get-XIOXenv -Cluster myCluster0,myCluster3 -Name X1-SC2-E1, X1-SC2-E2 -ComputerName somexmsappl01.dom.com
 	Get the given "XEnv" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Example
 	Get-XIOXenv -ReturnFullResponse
 	Return PSCustomObjects that contain the full data from the REST API response (helpful for looking at what all properties are returned/available)
+
 	.Outputs
 	XioItemInfo.XEnv
 #>
@@ -2168,24 +2442,31 @@ function Get-XIOXenv {
 <#	.Description
 	Function to get XtremIO event info using REST API from XtremIO Management Server (XMS).
 	Note about -Start and -End parameters:  via the XIO API, the search is performed starting with the most recent event ang working back through time.  So, to get events from a month ago, one may need to specify and -End value that is (a month ago plus a few days), depending on how many events have occurred. For instance, if -Start is a date of one month ago, and -Limit is 10, this will return the 10 most recent events from _now_ (starting from now, working backwards), not the first 10 events that happened _after_ the -Start value of one month ago.  This is a bit quirky, but one can adjust -Start, -End, -Limit, etc. params to eventually get the events for the desired range.
+
 	.Example
 	Get-XIOEvent
 	Request info from current XMS connection and return event info
+
 	.Example
 	Get-XIOEvent -ComputerName somexmsappl01.dom.com -Limit 100
 	Request info from XMS connection "somexmsappl01" only and return objects with the event info, up to the given number specified by -Limit
+
 	.Example
 	Get-XIOEvent -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
 	Request info from current XMS connection and return event info from one month ago for one day's amount of time (up to the default limit returned)
+
 	.Example
 	Get-XIOEvent -Severity major
 	Request info from current XMS connection and return event info for all events of severity "major"
+
 	.Example
 	Get-XIOEvent -EntityType StorageController
 	Request info from current XMS connection and return event info for all events involving entity of type StorageController
+
 	.Example
 	Get-XIOEvent -EntityType StorageController -SearchText level_3_warning
 	Request info from current XMS connection and return event info for all events involving entity of type StorageController with string "level_3_warning" in the event
+
 	.Outputs
 	XioItemInfo.Event
 #>
@@ -2259,9 +2540,11 @@ function Get-XIOEvent {
 
 <#	.Description
 	Function to get XtremIO Alert info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOAlert
 	Get the "Alert" items
+
 	.Outputs
 	XioItemInfo.Alert
 #>
@@ -2298,9 +2581,11 @@ function Get-XIOAlert {
 
 <#	.Description
 	Function to get XtremIO AlertDefinition info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOAlertDefinition
 	Get the "AlertDefinition" items
+
 	.Outputs
 	XioItemInfo.AlertDefinition
 #>
@@ -2337,12 +2622,15 @@ function Get-XIOAlertDefinition {
 
 <#	.Description
 	Function to get XtremIO DAE Controller info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIODAEController
 	Get the "DAEController" items
+
 	.Example
 	Get-XIODAEController -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "DAEController" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Outputs
 	XioItemInfo.DAEController
 #>
@@ -2381,12 +2669,15 @@ function Get-XIODAEController {
 
 <#	.Description
 	Function to get XtremIO DAE (Disk Array Enclosure) PSU info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIODAEPsu
 	Get the "DAEPsu" items
+
 	.Example
 	Get-XIODAEPsu -Cluster myCluster0,myCluster3 -ComputerName somexmsappl01.dom.com
 	Get the "DAEPsu" items from the given XMS appliance, and only for the given XIO Clusters
+
 	.Outputs
 	XioItemInfo.DAEPsu
 #>
@@ -2425,9 +2716,11 @@ function Get-XIODAEPsu {
 
 <#	.Description
 	Function to get XtremIO Email Notifier info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOEmailNotifier
 	Get the "EmailNotifier" items
+
 	.Outputs
 	XioItemInfo.EmailNotifier
 #>
@@ -2464,9 +2757,11 @@ function Get-XIOEmailNotifier {
 
 <#	.Description
 	Function to get XtremIO LDAP Config info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOLdapConfig
 	Get the "LdapConfig" items
+
 	.Outputs
 	XioItemInfo.LdapConfig
 #>
@@ -2503,24 +2798,31 @@ function Get-XIOLdapConfig {
 
 <#	.Description
 	Function to get XtremIO object performance counters using REST API from XtremIO Management Server (XMS).  Typical use of these counters would be for exporting to <some other destination> for further manipulation/massaging.
+
 	.Example
 	Get-XIOPerformanceCounter
 	Request info from current XMS connection and return PerformanceCounter info
+
 	.Example
 	Get-XIOPerformanceCounter -ComputerName somexmsappl01.dom.com -Limit ([System.Int32]::MaxValue)
 	Request info from XMS connection "somexmsappl01" only and return PerformanceCounter info, up to the given number specified by -Limit
+
 	.Example
 	Get-XIOPerformanceCounter -EntityType DataProtectionGroup -Start (Get-Date).AddMonths(-1) -End (Get-Date).AddMonths(-1).AddDays(1)
 	Request info from current XMS connection and return PerformanceCounter info from one month ago for one day's amount of time (up to the default limit returned)
+
 	.Example
 	Get-XIOPerformanceCounter -EntityType Volume -TimeFrame real_time
 	Request info from current XMS connection and return realtime (most recent sample in the last five seconds) PerformanceCounter info for entities of type Volume
+
 	.Example
 	Get-XIOPerformanceCounter -EntityType Volume -TimeFrame real_time -Cluster myCluster0
 	Request info from current XMS connection and return realtime (most recent sample in the last five seconds) PerformanceCounter info for entities of type Volume, and only for the given XIO Cluster
+
 	.Example
 	Get-XIOPerformanceCounter -EntityType InitiatorGroup -TimeFrame last_hour -EntityName myInitGroup0 | ConvertTo-Json
 	Get the realtime (most recent sample in the last five seconds) PerformanceCounter info for the InitiatorGroup entity myInitGroup0, and then convert it to JSON for later consumption by <some awesome data visualization app>
+
 	.Outputs
 	XioItemInfo.PerformanceCounter
 #>
@@ -2607,9 +2909,11 @@ function Get-XIOPerformanceCounter {
 
 <#	.Description
 	Function to get XtremIO SNMP Notifier info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOSnmpNotifier
 	Get the "SnmpNotifier" items
+
 	.Outputs
 	XioItemInfo.SnmpNotifier
 #>
@@ -2646,9 +2950,11 @@ function Get-XIOSnmpNotifier {
 
 <#	.Description
 	Function to get XtremIO Syslog Notifier info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOSyslogNotifier
 	Get the "SyslogNotifier" items
+
 	.Outputs
 	XioItemInfo.SyslogNotifier
 #>
@@ -2685,9 +2991,11 @@ function Get-XIOSyslogNotifier {
 
 <#	.Description
 	Function to get XtremIO User Account info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOUserAccount
 	Get the "UserAccount" items
+
 	.Outputs
 	XioItemInfo.UserAccount
 #>
@@ -2724,9 +3032,11 @@ function Get-XIOUserAccount {
 
 <#	.Description
 	Function to get XtremIO Snapshot Scheduler info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOSnapshotScheduler
 	Get the "SnapshotScheduler" items
+
 	.Outputs
 	XioItemInfo.SnapshotScheduler
 #>
@@ -2765,9 +3075,11 @@ function Get-XIOSnapshotScheduler {
 
 <#	.Description
 	Function to get XtremIO XMS info using REST API from XtremIO Management Server (XMS)
+
 	.Example
 	Get-XIOXMS
 	Request info from current XMS connection and return an object with the "XMS" info for the XMS
+
 	.Outputs
 	XioItemInfo.XMS
 #>
@@ -2806,18 +3118,23 @@ function Get-XIOXMS {
 #region  performance section #####################################################################################
 <#	.Description
 	Function to get XIO item performance information
+
 	.Example
 	Get-XIOPerformanceInfo -ItemType cluster
 	Request info from all current XMS connections and return an object with the cluster performance info
+
 	.Example
 	Get-XIOPerformanceInfo -ComputerName somexmsappl01.dom.com  -ItemType cluster
 	Request info from specified XMS connection and return an object with the cluster peformance info
+
 	.Example
 	Get-XIOPerformanceInfo -ComputerName somexmsappl01.dom.com  -ItemType initiator-group -Cluster myCluster0
 	Request info from specified XMS connection and return an object with the cluster peformance info, and only for the specified XIO Cluster's objects
+
 	.Example
 	Get-XIOCluster somecluster | Get-XIOPerformanceInfo -FrequencySeconds 5 -DurationSeconds 30
 	Get info for specified item and return cluster peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	PSCustomObject
 #>
@@ -2894,15 +3211,19 @@ function Get-XIOPerformanceInfo {
 
 <#	.Description
 	Function to get Cluster performance information
+
 	.Example
 	Get-XIOClusterPerformance
 	Request info from all current XMS connections and return objects with the cluster performance info
+
 	.Example
 	Get-XIOClusterPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return object with peformance info
+
 	.Example
 	Get-XIOClusterPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.ClusterPerformance
 #>
@@ -2936,18 +3257,23 @@ function Get-XIOClusterPerformance {
 
 <#	.Description
 	Function to get data-protection-group performance information
+
 	.Example
 	Get-XIODataProtectionGroupPerformance
 	Request info from all current XMS connections and return objects with the data-protection-group performance info
+
 	.Example
 	Get-XIODataProtectionGroupPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return object with the data-protection-group peformance info
+
 	.Example
 	Get-XIODataProtectionGroupPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
 	Request info from specified XMS connection and return object with the data-protection-group peformance info for the objects just in the specified cluster
+
 	.Example
 	Get-XIODataProtectionGroupPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get data-protection-group peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.DataProtectionGroupPerformance
 #>
@@ -2983,15 +3309,19 @@ function Get-XIODataProtectionGroupPerformance {
 
 <#	.Description
 	Function to get initiator-group-folder performance information
+
 	.Example
 	Get-XIOInitiatorGroupFolderPerformance
 	Request info from all current XMS connections and return objects with the ig-folder performance info
+
 	.Example
 	Get-XIOInitiatorGroupFolderPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return objects with the ig-folder peformance info
+
 	.Example
 	Get-XIOInitiatorGroupFolderPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get ig-folder peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.IgFolderPerformance
 #>
@@ -3025,18 +3355,23 @@ function Get-XIOInitiatorGroupFolderPerformance {
 
 <#	.Description
 	Function to get initiator-group performance information
+
 	.Example
 	Get-XIOInitiatorGroupPerformance
 	Request info from all current XMS connections and return objects with the initiator-group performance info
+
 	.Example
 	Get-XIOInitiatorGroupPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
 	Request info from specified XMS connection and return objects with the initiator-group performance info for the objects just in the specified cluster
+
 	.Example
 	Get-XIOInitiatorGroupPerformance -ComputerName somexmsappl01.dom.com -Name someig*,otherig*
 	Request info from specified XMS connection and return objects with the initiator-group peformance info for initiator groups with names like someig* and otherig*
+
 	.Example
 	Get-XIOInitiatorGroupPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get initiator-group peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.InitiatorGroupPerformance
 #>
@@ -3072,18 +3407,23 @@ function Get-XIOInitiatorGroupPerformance {
 
 <#	.Description
 	Function to get initiator performance information
+
 	.Example
 	Get-XIOInitiatorPerformance
 	Request info from all current XMS connections and return objects with the initiator performance info
+
 	.Example
 	Get-XIOInitiatorPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return an object with the initiator peformance info
+
 	.Example
 	Get-XIOInitiatorPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
 	Request info from specified XMS connection and return an object with the initiator peformance info for the objects just in the specified cluster
+
 	.Example
 	Get-XIOInitiatorPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get initiator peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.InitiatorPerformance
 #>
@@ -3119,18 +3459,23 @@ function Get-XIOInitiatorPerformance {
 
 <#	.Description
 	Function to get SSD performance information
+
 	.Example
 	Get-XIOSsdPerformance
 	Request info from all current XMS connections and return objects with the SSD performance info
+
 	.Example
 	Get-XIOSsdPerformance -ComputerName somexmsappl01.dom.com
 	Request info from specified XMS connection and return objects with the SSD peformance info
+
 	.Example
 	Get-XIOSsdPerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
 	Request info from specified XMS connection and return objects with the SSD peformance info for the objects just in the specified cluster
+
 	.Example
 	Get-XIOSsdPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get SSD peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.SsdPerformance
 #>
@@ -3166,18 +3511,23 @@ function Get-XIOSsdPerformance {
 
 <#	.Description
 	Function to get target performance information
+
 	.Example
 	Get-XIOTargetPerformance
 	Request info from all current XMS connections and return objects with the target performance info
+
 	.Example
 	Get-XIOTargetPerformance X1-SC2-fc1,X1-SC2-fc2
 	Get the target peformance info for targets X1-SC2-fc1 and X1-SC2-fc2
+
 	.Example
 	Get-XIOTargetPerformance X1-SC2-fc1,X1-SC2-fc2 -ComputerName somexmsappl01.dom.com -Cluster myCluster0
 	Get the target peformance info for targets X1-SC2-fc1 and X1-SC2-fc2 for the objects just in the specified cluster
+
 	.Example
 	Get-XIOTargetPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get target peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.TargetPerformance
 #>
@@ -3213,15 +3563,19 @@ function Get-XIOTargetPerformance {
 
 <#	.Description
 	Function to get volume-folder performance information
+
 	.Example
 	Get-XIOVolumeFolderPerformance
 	Request info from all current XMS connections and return objects with the volume-folder performance info
+
 	.Example
 	Get-XIOVolumeFolderPerformance /someVolFolder/someDeeperFolder
 	Get the volume-folder peformance info for the given volume folder
+
 	.Example
 	Get-XIOVolumeFolderPerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get volume-folder peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.VolumeFolderPerformance
 #>
@@ -3255,18 +3609,23 @@ function Get-XIOVolumeFolderPerformance {
 
 <#	.Description
 	Function to get volume performance information
+
 	.Example
 	Get-XIOVolumePerformance
 	Request info from all current XMS connections and return objects with the volume performance info
+
 	.Example
 	Get-XIOVolumePerformance *somevols*.02[5-8]
 	Get the volume peformance info for volumes with names like *somevols*.025, *somevols*.026, *somevols*.027, *somevols*.028
+
 	.Example
 	Get-XIOVolumePerformance -ComputerName somexmsappl01.dom.com -Cluster myCluster0
 	Request info from all current XMS connections and return objects with the volume performance info for the objects just in the specified cluster
+
 	.Example
 	Get-XIOVolumePerformance -FrequencySeconds 5 -DurationSeconds 30
 	Get volume peformance info every 5 seconds for 30 seconds
+
 	.Outputs
 	XioItemInfo.VolumePerformance
 #>

@@ -4,12 +4,13 @@ todo:
 	- with &full=1 in URI:  needs to do something to handle return-obj creation from "&full=1" object; near the "_New-ObjectFromApiObject" call in Get-XIOItemInfo
 	- without &full=1 in URI:  needs to do additional call to Get-XIOItemInfo of just the URL (for each URL) from the <item-type> property of object returned from filtered call, and does not do the rest of the Get-XIOItemInfo call that was in the works when the original call w/ the URI with filter was passed; needs to consider (and preserve / pass-on) the "prop=..." bits from original URI, if any
 - after Filter support is in place:
-	- add -Filter param to the Get-XIO* cmdlets for which it makes sense
+	- add -Filter param to the Get-XIO* cmdlets for which it makes sense; ex:  Get-XIOInitiator should filter when taking IntiatorGroup from pipeline (filter on Initiators that have given InitiatorGrpId value)
 	- for Get-XIOSnapshot:  add Param option for "ancestor-vol-id", implement via Filter -- available via xmcli
 	- for Get-XIOVolume:  add Param option for "sg-id" (snapshot group ID), implement via Filter -- available via xmcli
 	- potentially once API allows for things like "?folder-id=b38b38123b38123asdfb38b38123" in the query string, can use IDs in URI?  Until then, these IDs would only be used to filter items _after_ they've been retrieved from the XMS appliance
 	- once assuming that min XIO REST API version is 2.0 (after dropping support for XMS older than v4) improve Get-XIOLunMap:
 		- change the -Volume, -HostLunId, and -InitiatorGroup params to use -Filter on Get-XIOItemInfo (do away with -Volume and -InitiatorGroup, since those are handled via -RelatedObject?)
+- investigate bug where Tag objects' DirectObjectList objects may have properties that do not correspond to the actual type of object the given DirectObjects are; like, an IG Tag with a "nested" Tag object:  that nested tag object in the parent Tag's DirectObjectList may have properties like "InitiatorGrpId", instead of something that denotes that the value is actually the Tag ID; these child Tags seem to show up properly in the parent Tag's ChildTagList property, but incorrectly in the DirectObjectList property
 - improve `Set-XIOLdapConfig`:
 	- add ability to append a role mapping (instead of user having to specify full RoleMapping value for every Set operation)
 - investigate improving `Set-XIOSnapshotScheduler` to support renaming of SnapshotScheduler (in XtremIO REST API v2.1 or newer); rename in web UI seems to use "rename" command with "new_name" parameter, like:  {obj_class="Scheduler", obj_id=["", "None", "1"], new_name="some new name", new_caption=None, sys_id=["", "", "2"]}
@@ -26,6 +27,7 @@ todo:
 	-either send ParentFolder property as part of tag_list value (need to test), or do not include -ParentFolder in same paramset as -Cluster?
 -fix bug in Get-XIOSnapshotScheduler when using by URI:  must have "?cluster-name=<blahh>" in the URI, or request returns error:  "message": "cluster_id_is_required"
 	-encountered when connected to multi-cluster XMS and creating new SnapshotScheduler
+-fix bug in `New-XIOTagAssignment` when the entity is a Snapshot:  the "entity" property does not get populated on body of submission, and the call then fails
 -once pipelining supports getting SnapshotScheduler by Volume/Snapshot, add bit to Remove-XIOVolume that checks first if Volume/Snapshot is part of a SnapshotScheduler, throwing an error if so (instead of the current behavior that does not check and that results in an error from the API call, "cannot_remove_volume_that_has_a_scheduler")
 -investigate adding New-XIOLdapConfig (the POST how-to is not specified in the API reference -- present but not documented? -- if not, add cmdlet once (if ever) this method is supported for this object type)
 	-same for adding Remove-XIOLdapConfig (the DELETE how-to is not specified in the API reference)
@@ -36,13 +38,10 @@ todo:
 	-update -Volume to accept vol objects or vol name (just does name right now), and take Volume obj from pipeline
 -update Parent* properties of older objects to be obj like: <parentType>Id, Name, Index as returned by helper function
 -include support for Get-XIOSnapshotScheduler to get by Volume/snapshot/snapset (and, accept from pipeline, too) as related object
+-update Get-XIOTag to have -ObjectType parameter; will filter on ObjectType enumeration (after dropping support for REST API v1)
 -for when removing InitiatorGrpIdList from IgFolder object (deprecated after v0.11), remove the three spots that take it from pipeline via:  ValueFromPipelineByPropertyName=$true)][Alias("InitiatorGrpIdList")]
 -add pipelining abilities for things like (add their tests at the same time!):
-	Get-XIOTag | Get-XIO<any of the six object types -- Volume, ConsistecyGroup, SnapshotSet, InitiatorGroup, Initiator, SnapshotScheduler
 	Get-XIOInitiatorGroup | Get-XIOLunMap (just by IG name until adding support for "by IGrpID" when working on XIOSv4 things)
-	Get-XIO[Volume|Snapshot] | Get-XIOLunMap (just by Volume name until adding support for "by IGrpID" when working on XIOSv4 things)
-		-on Volume object, LunMappingList property is currently array of three items (two arrays and an int), like:  @(<initiator group ID string>, <initiator group name>, <initiator group object index number>), @(<target group ID>, <target group name>, <target group object index number>), <host LUN ID>
-		-need to break this apart, have MappingIdList property or so, and be able to get XIOLunMap via MappingId, or the LunMapList that has LunMap <id,name,index> objects instead of list of arrays of strings
 	## currently behaves unexpectedly when using something like:
 	Get-XIOInitiatorGroupFolder | Get-XIOInitiatorGroupFolderPerformance
 	#  Get-XIOInitiatorGroupFolder -computer *01* | Get-XIOInitiatorGroupFolderPerformance -DurationSeconds 15
@@ -125,11 +124,6 @@ todo:
 -add Update-Snapshot to correspond to "refresh" operation in mgmt GUI
 	-Create a Snapshot and reassign on a Volume, Consistency Group or Snapshot Set (see Table 4, on page 192).
 		Note: Refer to example use cases for taking Snapshots and reassigning on a Volume, Consistency Group or Snapshot Set, on page 14.
--for New-Snapshot, add support for XIOSv3 (APIv1) snapshots; currently only supports new snapshots on XIOSv4 (APIv2)
-	-for XIOS v3.0, support creation:
-		-from one volume
-		-from volumes
-		-from one volumefolder
 -XIOS v4 properties/types to add/update/handle:
 	-on XMS object, provide DateTime property from the ISO8601 date/time string that has timezone abbreviation in it
 	not doing yet:
@@ -144,7 +138,6 @@ todo:
 	-?add piece that, if .Cluster count on given XIOConnection is 1, does not try to use cluster-name input param in URI
 -for Get-XIO*Performance returns, include the GUID or URI or so of the given XIO object, for clarification (return of Get-XIODataProtectionGroupPerformance for multi-cluster does not give distinguishable objects -- can't tell the cluster of each DPG)
 -deprecate VolumeFolder, InitiatorGroupFolder cmdlets, and the use of these object types for RelatedObject param values in cmdlets
--need to exclude -OperatingSystem parameter option in New-XIOInitiator if API of XMS is v1 -- breaks things to send along in a request to API V1 XMS; lower priority
 -for when dropping support for legacy XIOS/API (XIOS 2 & 3, API v1)
 	-remove PerformanceInfo property from IGFolder, VolumeFolder (and remove Get-XIOInitiatorGroupFolderPerformance, Get-XIOVolumeFolderPerformance cmdlets)
 	-remove the Nullable aspect of .Cluster properties in the type def (v2 API objects should always have the .sys-id property on objects for which code tries to make .Cluster value from said property)
@@ -154,14 +147,24 @@ todo:
 -add ability to create ISCSI initiators via New-XIOInitiator
 -add Set-XIOAlert once getting the proper JSON body info from either updated docs or from EMC ("command" is not valid, but is the only property specified in the API reference)
 -update (refactor) to use either hshParamsForGetXioInfo or hshParamsForGetXioItemInfo variable name in the GetXIOItem.ps1
+- for New-XIO*, make -Name param only positional param (none right now?), so that one need not specify -Name for something like `New-XIOVolume myTestVol -SizeGB 5KB`
+-revisit -RelatedObject items from pipeline:  currently using Name property for getting desired objects, but other properties are available (like GUID and whatnot) -- use more unique item like GUID instead of Name for when switching to using API v2 that supports filtering -- can use GUID instead of name
+- eventually add Tag type as accepted type by `-RelatedObject` parameter to rest of Get-XIO* cmdlets (did not add immediately, as these objects are less likely to get tagged in standard practice):  `Get-XIOBrick`, `Get-XIOCluster`, `Get-XIODAE`, `Get-XIODataProtectionGroup`, `Get-XIOInfinibandSwitch`, `Get-XIOSnapshotScheduler`, `Get-XIOStorageController`, `Get-XIOTarget`
 -?gracefully handle Entity-type / Tag-type mismatch in New-XIOTagAssignment?  Right now, user must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
 -?if adding this project to that EMC {code} site, add things to ReadMe related to "EMC {code}" (see requirements/suggestions on EMC {code} site)
 -?add something that handles return of objects such that only one instance of each unique object is returned?  For example:  should "Get-XIOInitiatorGroup | select -First 5 | Get-XIOSnapshot -Name mysnap044.*" only return one object for "mysnap044.lastweeksnap", even if that snapshot is mapped to all of the five InitiatorGroups passed as RelateObjects to Get-XIOSnapshot?  The, "return only unique objects" behavior is how some other modules do it, like PowerCLI, for example
--?add Tag as supported RelatedObject type on Get-XIO* cmdlets?  Tags do not have Cluster properties, so may give unexpected behavior if only getting targeted object by name (won't have associated Cluster by which to pinpoint the targeted object); or, need to use Guid instead and filter?  A: still hit the "need cluster name" issue for when in multi-cluster situation; need to solve this someway
+-after adding Tag as supported RelatedObject type on Get-XIO* cmdlets:  Tags do not have Cluster properties, so may give unexpected behavior if only getting targeted object by name (won't have associated Cluster by which to pinpoint the targeted object); or, need to use Guid instead and filter?  A: still hit the "need cluster name" issue for when in multi-cluster situation; need to solve this someway
 -for future (once supporitng iSCSI in this PSModule), add ability to set following properties via Set-XIOInitiator:  'initiator-authentication-user-name', 'initiator-authentication-password', 'initiator-discovery-user-name', 'initiator-discovery-password', 'cluster-authentication-user-name', 'cluster-authentication-password', 'cluster-discovery-user-name', 'cluster-discovery-password', 'remove-initiator-authentication-credentials', 'remove-initiator-discovery-credentials', 'remove-cluster-authentication-credentials', 'remove-cluster-discovery-credentials'
 -?add ability for Get-XIOItemInfo to detect, for when -URI paramset is used, that "full=1" is in use, and to handle return object creation accordingly
 -?add ability to specify -Tag for when creating new objects that support "tag-list" property via API (like New-XIOInitiatorGroup, for example); or, just stick w/ adding new Tag assignments via dedicated cmdlet?  Answer:  the latter; user can add tag assignment via New-XIOTagAssignment along the New-XIO* object creation pipeline
 -?for Set-XIO* cmdlets other than Set-XIOItemInfo, add ability to specify object by name and cluster?  Currently just supports by-object
+-?add backwards compatibility for XIOSv3 (APIv1):
+	-for New-Snapshot, add backwards support for snapshots; currently only supports new snapshots on XIOSv4 (APIv2)
+		-for XIOS v3.0, support creation:
+			-from one volume
+			-from volumes
+			-from one volumefolder
+	-need to exclude -OperatingSystem parameter option in New-XIOInitiator if API of XMS is v1 -- breaks things to send along in a request to API V1 XMS; lower priority
 -?for PerfomanceCounter objects, need better way to present the .Counters property? (for easier export by user once retrieved)
 -?eventually for Open-XIOMgmtConsole:  only act on existing XMS connections (as the cmdlet will need the XMS software version in order to create the correct URL to the JNLP file); or, will this cmdlet change to open the web management console instead of the Java management console, once the Web UI takes over?
 -?provide ability for module user to set preferences for the module?  Like, a different default value for -OperatingSystem for New-XIOInitiator, for example?
@@ -181,7 +184,15 @@ todo:
 
 
 -known issues / considerations:
+From module release v1.next
+
+- in XtremIO REST API v2.1:
+	- UPDATE on item: some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Update:  vendor confirmed this as a bug, and that said bug should be fixed in upcoming release currently slated for end of Q1 2017
+	- Getting objects from related Tag object may return more than just the tagged objects in a multi-cluster XMS environment with objects of the same name across multiple clusters. This is due to the current compatibility mode of the module which does not rely on XMS REST API v2+ feature of filtering. A future module release will handle this by filtering on unique properties, but the current solution uses object names from the Tag (clearly not the best key to try to use), and Tag objects are XMS-wide (not cluster specific).
+
+
 From module release v1.3.0
+
 - in XtremIO REST API v2.1:
 	- some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Investigating with vendor
 
@@ -214,17 +225,26 @@ From module release v1.1.0
 
 
 should do next:
-- fix typo "multple" in help for `Set-XIOLdapConfig`
 - update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.; add update about opening WebUI
 - update GH Pages examples
-- add -Tag param to lots of Get-XIO* cmdlets (or include Tag type as accepted type by -RelatedObject param), and accept from pipeline
 - update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
-	- ?make aliases for now, but deprecate the longer, non-PowerShell-y param names?
+- update to Filter as much as possible in place of relying on by-name things (in -RelatedObject types of scenarios, for example) -- this is the break from supporting API v1 (XMS v3 and older)
+- fix bug in Set-XIOInitiator:  setting seems to fail for all; also, there is no documented support for setting "operating-system" property via API, but it apparently can be done (as observed in WebUI, and corresponding Audit-level events on XMS) -- so, add comment to that effect, so there is no wild goose chase on trying to find in docs the support info for that property
+	- appears that sending _full_ "initiator-id" property as defined on "FullResponse" objects (which is @(<guid>, <name>, <index>)), call now succeeds on at least API v2.1:
+		"initiator-id" = @($Initiator.Guid, $Initiator.Name, $Initiator.Index)
+	- happening w/ all Set-XIO* cmdlets?
+	- can/should specify this full "id" property for all Set-XIO*, Remove-XIO* cmdlets?
+- add tests for Set-XIO*
 
 
 doing:
 
 done:
+[feat_AcceptTagFromPipeline]
+- add Tag type as accepted type by `-RelatedObject` parameter to main Get-XIO* cmdlets:
+	`Get-XIOBBU`, `Get-XIOConsistencyGroup`, `Get-XIOInitiator`, `Get-XIOInitiatorGroup`, `Get-XIOSnapshot`, `Get-XIOSnapshotSet`, `Get-XIOSsd`, `Get-XIOVolume`
+- fixed typo "multple" in help for `Set-XIOLdapConfig`
+- initially tested Get-XIO* after updates (updated tests to get given objects that have Tag assignements) -- testing on single connection with REST API v2.1
 
 ## things below here are in changelog/readme
 
