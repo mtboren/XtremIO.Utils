@@ -221,10 +221,15 @@ should do next:
 - update GH Pages examples
 - update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 - update to Filter as much as possible in place of relying on by-name things (in -RelatedObject types of scenarios, for example) -- this is the break from supporting API v1 (XMS v3 and older)
+- fix bug in Set-XIOInitiator:  setting seems to fail for all; also, there is no documented support for setting "operating-system" property via API, but it apparently can be done (as observed in WebUI, and corresponding Audit-level events on XMS) -- so, add comment to that effect, so there is no wild goose chase on trying to find in docs the support info for that property
+	- appears that sending _full_ "initiator-id" property as defined on "FullResponse" objects (which is @(<guid>, <name>, <index>)), call now succeeds on at least API v2.1:
+		"initiator-id" = @($Initiator.Guid, $Initiator.Name, $Initiator.Index)
+	- happening w/ all Set-XIO* cmdlets?
+	- can/should specify this full "id" property for all Set-XIO*, Remove-XIO* cmdlets?
+- add tests for Set-XIO*
 
 
 doing:
-[feat_AcceptTagFromPipeline]
 
 done:
 [feat_AcceptTagFromPipeline]
