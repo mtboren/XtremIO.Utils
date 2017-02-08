@@ -363,8 +363,8 @@ function Set-XIOInitiator {
 		$hshSetItemSpec = @{
 			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
 			"cluster-id" = $Initiator.Cluster.Name
-			## Initiator's current name or index number -- seems to not matter if this is passed or not
-			"initiator-id" = $Initiator.Name
+			## Initiator's "full" initiator-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"initiator-id" = @($Initiator.Guid, $Initiator.Name, $Initiator.Index)
 		} ## end hashtable
 
 		if ($PSBoundParameters.ContainsKey("Name"))	{$hshSetItemSpec["initiator-name"] = $Name}
@@ -566,6 +566,8 @@ function Set-XIOSnapshotScheduler {
 		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, or ConsistencyGroup
 		[ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet])})]
 		[PSObject]$RelatedObject,
+		## New name for the given SnapshotScheduler
+		[string]$Name,
 		## The timespan to wait between each run of the scheduled snapshot action (maximum is 72 hours). Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
 		[parameter(ParameterSetName="ByTimespanInterval")][ValidateScript({$_ -le (New-TimeSpan -Hours 72)})][System.TimeSpan]$Interval,
 		## The day of the week on which to take the scheduled snapshot (or, every day).  Expects the name of the day of the week, or "Everyday". Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
@@ -641,6 +643,7 @@ function Set-XIOSnapshotScheduler {
 		if ($PSBoundParameters.ContainsKey("Enable")) {$hshSetItemSpec["state"] = $(if ($Enable) {'enabled'} else {'user_disabled'})}
 		if ($PSBoundParameters.ContainsKey("SnapshotType")) {$hshSetItemSpec["snapshot-type"] = $SnapshotType.ToLower()}
 		if ($PSBoundParameters.ContainsKey("Suffix")) {$hshSetItemSpec["suffix"] = $Suffix}
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["new-name"] = $Name}
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{
@@ -876,8 +879,10 @@ function Set-XIOTarget {
 	param(
 		## Target object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Target]$Target,
+		## New name for the given Target
+		[string]$Name,
 		## MTU value to set for this Target
-		[parameter(Mandatory=$true)][ValidateRange(1500,9KB)]$MTU
+		[ValidateRange(1500,9KB)][int]$MTU
 	) ## end param
 
 	Process {
@@ -885,10 +890,12 @@ function Set-XIOTarget {
 		$hshSetItemSpec = @{
 			## Cluster's name or index number
 			"cluster-id" = $Target.Cluster.Name
-			mtu = $MTU
-			## Target's current name or index number -- does it matter if this is passed or not?
-			"tar-id" = $Target.Name
+			## Target's "full" tar-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"tar-id" = @($Target.Guid, $Target.Name, $Target.Index)
 		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("MTU")) {$hshSetItemSpec["mtu"] = $MTU}
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["new-name"] = $Name}
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{

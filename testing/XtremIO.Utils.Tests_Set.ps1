@@ -9,8 +9,23 @@
 
 ## string to append (including a GUID) to all objects renamed, to avoid any naming conflicts
 $strNameToAppend = "_itemNewName_{0}" -f [System.Guid]::NewGuid().Guid.Replace("-","")
+Write-Verbose -Verbose "Testing of Set-XIO* cmdlets involves creating new XIO objects whose properties to set. After the Set-XIO* testing, these newly created, temporary XIO objects will be removed. But, to ensure that only the temporary objects are being removed, the Remove-XIO* calls all prompt for confirmation. This breaks fully automated testing, but is kept in place for now to keep the consumer's comfort level on high."
+Write-Verbose -Verbose "Suffix used for new objects for this test:  $strNameToAppend"
+## bogus OUI for making sure that the addresses of the intiators created here do not conflict with any real-world addresses
+$strInitiatorAddrPrefix = "EE:EE:EE"
+## random hex value to use for four hex-pairs in the port addresses, to avoid address conflicts if testing multiple times without removing newly created test objects (with particular port addresses)
+$strInitiatorRandomEightHexChar = "{0:x}" -f (Get-Random -Maximum ([Int64]([System.Math]::pow(16,8) - 1)))
+$strInitiatorRandomEightHexChar_ColonJoined = ($strInitiatorRandomEightHexChar -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
+## hashtable to keep the variables that hold the newly created objects, so that these objects can be removed from the XMS later; making it a global variable, so that consumer has it for <anything they desire> after testing
+$global:hshXioObjsToRemove = [ordered]@{}
+$hshCommonParamsForNewObj = @{ComputerName =  $strXmsComputerName}
 
-Write-Warning "no automatic tests yet defined for Set-XIO* cmdlets"
+Write-Verbose -Verbose "Getting current counts of each object type of interest, for comparison to counts after testing"
+## the types of objects that will get created as target objects on which to then test Set-XIO* cmdlets
+$arrTypesToCount = Write-Output ConsistencyGroup Initiator InitiatorGroup InitiatorGroupFolder SnapshotScheduler Tag UserAccount Volume VolumeFolder
+## all of the Set-XIO* cmdlets' target objects:
+# AlertDefinition ConsistencyGroup EmailNotifier Initiator InitiatorGroup InitiatorGroupFolder LdapConfig SnapshotScheduler SnapshotSet SnmpNotifier SyslogNotifier Tag Target UserAccount Volume VolumeFolder
+$arrTypesToCount | Foreach-Object -Begin {$hshTypeCounts_before = @{}} -Process {$hshTypeCounts_before[$_] = Invoke-Command -ScriptBlock {(& "Get-XIO$_" | Measure-Object).Count}}
 
 ## still need to generalize these, and to capture the original state of objects, so as to be able to set them back to original state
 <#
@@ -56,3 +71,22 @@ Get-XIOVolume myVolume0 | Set-XIOVolume -SizeTB 10 -AccessRightLevel Read_Access
 Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /testFolder) -Caption testFolder_renamed
 Get-XIOVolumeFolder /testFolder | Set-XIOVolumeFolder -Caption testFolder_renamed
 #>
+
+
+Write-Verbose -Verbose "Getting final counts of each object type of interest, for comparison to counts from before testing"
+$arrTypesToCount | Foreach-Object -Begin {$hshTypeCounts_after = @{}} -Process {$hshTypeCounts_after[$_] = Invoke-Command -ScriptBlock {(& "Get-XIO$_" | Measure-Object).Count}}
+$arrObjTypeCountInfo = $arrTypesToCount | Foreach-Object {New-Object -Type PSObject -Property ([ordered]@{Type = $_; CountBefore = $hshTypeCounts_before.$_; CountAfter = $hshTypeCounts_after.$_; CountIsSame = ($hshTypeCounts_before.$_ -eq $hshTypeCounts_after.$_)})}
+
+Describe -Tags "Verification" -Name "VerificationAfterTesting" {
+	It "Checks that there are the same number of objects of the subject types after the testing as there were before testing began" {
+		$arrObjTypeCountInfo | Foreach-Object {
+			$thisObjTypeInfo = $_
+			$thisObjTypeInfo.CountIsSame | Should Be $true
+		}
+	}
+}
+
+Write-Verbose -Verbose "Counts of each subject type before and after testing:"
+$arrObjTypeCountInfo
+
+Write-Verbose -Verbose "Global variable named `$hshXioObjsToRemove contains info about all of the objects created during this testing"
