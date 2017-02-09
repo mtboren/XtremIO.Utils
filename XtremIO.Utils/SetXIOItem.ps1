@@ -541,6 +541,9 @@ function Set-XIOLdapConfig {
 	Set-XIOSnapshotScheduler -SnapshotScheduler (Get-XIOSnapshotScheduler mySnapshotScheduler0) -Suffix someSuffix0 -SnapshotRetentionCount 20
 	Set the given properties of this SnapshotScheduler:  change its Suffix value and the number of snapshots to retain
 	.Example
+	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Name mySnapshotScheduler0_newName
+	Rename the given SnapshotScheduler
+	.Example
 	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
 	Get the given SnapshotScheduler and set its snapshot retention duration to three years, and the snapshot types to "Regular" (read/write)
 	.Example
@@ -567,7 +570,7 @@ function Set-XIOSnapshotScheduler {
 		[ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet])})]
 		[PSObject]$RelatedObject,
 		## New name for the given SnapshotScheduler
-		[string]$Name,
+		[parameter(Mandatory=$true,ParameterSetName="SetNewName")][string]$Name,
 		## The timespan to wait between each run of the scheduled snapshot action (maximum is 72 hours). Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
 		[parameter(ParameterSetName="ByTimespanInterval")][ValidateScript({$_ -le (New-TimeSpan -Hours 72)})][System.TimeSpan]$Interval,
 		## The day of the week on which to take the scheduled snapshot (or, every day).  Expects the name of the day of the week, or "Everyday". Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
@@ -584,6 +587,10 @@ function Set-XIOSnapshotScheduler {
 		## Switch:  Snapshot Scheduler enabled-state. To enable the SnapshotScheduler, use -Enable.  To disable, use -Enable:$false. When enabling/disabling, one can apparently not make other changes, as the API uses a different method in the backend on the XMS ("resume_scheduler" and "suspend_scheduler" instead of "modify_scheduler").  See Notes section below for further information
 		[parameter(ParameterSetName="EnableDisable")][Switch]$Enable,
 		## Type of snapshot to create:  "Regular" (readable/writable) or "ReadOnly"
+		[parameter(ParameterSetName="ByTimespanInterval")]
+		[parameter(ParameterSetName="ByExplicitSchedule")]
+		[parameter(ParameterSetName="SpecifySnapNum")]
+		[parameter(ParameterSetName="SpecifySnapAge")]
 		[ValidateSet("Regular","ReadOnly")][string]$SnapshotType = "Regular",
 		## String to injected into the resulting snapshot's name. For example, a value of "mySuffix" will result in a snapshot named something like "<baseVolumeName>.mySuffix.<someTimestamp>"
 		[string]$Suffix
