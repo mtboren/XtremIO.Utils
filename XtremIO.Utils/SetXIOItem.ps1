@@ -594,8 +594,8 @@ function Set-XIOSnapshotScheduler {
 		$hshSetItemSpec = @{
 			## excluding Cluster's name or index number -- SnapshotScheduler objects do not have the property, as the API does not provide the "sys-id" property from which to get the info
 			# "cluster-id" = $SnapshotScheduler.Cluster.Name
-			## SnapshotScheduler's current name or index number; using index (which is rare), but due to the fact that SnapshotSchedulers are made via API with an empty name (no means by which to set name via API), index is actually preferrable in this rare case
-			"scheduler-id" = $SnapshotScheduler.Index
+			## SnapshotScheduler's "full" scheduler-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"scheduler-id" = @($SnapshotScheduler.Guid, $SnapshotScheduler.Name, $SnapshotScheduler.Index)
 		} ## end hashtable
 
 		## set the scheduler type and schedule (time) string, based on the ParameterSetName
@@ -1008,8 +1008,8 @@ function Set-XIOVolume {
 		$hshSetItemSpec = @{
 			## Cluster's name or index number
 			"cluster-id" = $Volume.Cluster.Name
-			## Volume's current name or index number -- does it matter if this is passed or not?
-			"vol-id" = $Volume.Name
+			## Volume's "full" vol-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"vol-id" = @($Volume.Guid, $Volume.Name, $Volume.Index)
 		} ## end hashtable
 
 		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["vol-name"] = $Name}
