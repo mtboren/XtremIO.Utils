@@ -368,6 +368,7 @@ function Set-XIOInitiator {
 		} ## end hashtable
 
 		if ($PSBoundParameters.ContainsKey("Name"))	{$hshSetItemSpec["initiator-name"] = $Name}
+		## note:  this is not documented in the API reference right now, but the parameter can be observed in the XMS Events (Audit-level) when operating on an existing Initiator object
 		if ($PSBoundParameters.ContainsKey("OperatingSystem"))	{$hshSetItemSpec["operating-system"] = $OperatingSystem.ToString().ToLower()}
 		if ($PSBoundParameters.ContainsKey("PortAddress"))	{$hshSetItemSpec["port-address"] = $PortAddress}
 
