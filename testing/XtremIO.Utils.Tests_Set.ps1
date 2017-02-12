@@ -9,6 +9,8 @@
 
 ## string to append (including a GUID) to all objects renamed, to avoid any naming conflicts
 $strNameToAppend = "_{0}" -f [System.Guid]::NewGuid().Guid.Replace("-","")
+## string to prefix to existing names during object rename tests
+$strNamePrefixForRename = "ren_"
 Write-Verbose -Verbose "Testing of Set-XIO* cmdlets involves creating new XIO objects whose properties to set. After the Set-XIO* testing, these newly created, temporary XIO objects will be removed. But, to ensure that only the temporary objects are being removed, the Remove-XIO* calls all prompt for confirmation. This breaks fully automated testing, but is kept in place for now to keep the consumer's comfort level on high."
 Write-Verbose -Verbose "No tests currently written for Set-XIO* cmdlets against some built-in, sytem-wide objects:  AlertDefinition, EmailNotifier, LdapConfig, SnmpNotifier, SyslogNotifier, Target"
 Write-Verbose -Verbose "Suffix used for new objects for this test:  $strNameToAppend"
@@ -19,12 +21,15 @@ $strInitiatorRandomEightHexChar = "{0:x8}" -f (Get-Random -Maximum ([Int64]([Sys
 $strInitiatorRandomEightHexChar_ColonJoined = ($strInitiatorRandomEightHexChar -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
 ## hashtable to keep the variables that hold the newly created objects, so that these objects can be removed from the XMS later; making it a global variable, so that consumer has it for <anything they desire> after testing
 $global:hshXioObjsToRemove = [ordered]@{}
-$hshCommonParamsForNewObj = @{ComputerName =  $strXmsComputerName}
+## common parameters to use for New-XIO* cmdlet calls
+$hshCommonParamsForNewObj = @{ComputerName = $strXmsComputerName}
 ## add -Cluster param if the XtremIO API version is at least v2.0
 if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 	$hshCommonParamsForNewObj["Cluster"] = $strClusterNameToUse
 } ## end if
 else {Write-Verbose -Verbose "XtremIO API is older than v2.0 -- not using -Cluster parameter for commands"}
+## common parameters to use for Set-XIO* cmdlet calls
+$hshCommonParamsForSetObj = @{Confirm = $false}
 
 Write-Verbose -Verbose "Getting current counts of each object type of interest, for comparison to counts after testing"
 ## the types of objects that will get created as target objects on which to then test Set-XIO* cmdlets
@@ -33,57 +38,7 @@ $arrTypesToCount = Write-Output ConsistencyGroup Initiator InitiatorGroup Initia
 # AlertDefinition ConsistencyGroup EmailNotifier Initiator InitiatorGroup InitiatorGroupFolder LdapConfig SnapshotScheduler SnapshotSet SnmpNotifier SyslogNotifier Tag Target UserAccount Volume VolumeFolder
 $arrTypesToCount | Foreach-Object -Begin {$hshTypeCounts_before = @{}} -Process {$hshTypeCounts_before[$_] = Invoke-Command -ScriptBlock {(& "Get-XIO$_" | Measure-Object).Count}}
 
-<#
-## on single, built-in, system-wide objects (do not do automated tests for these?)
-Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Enable
-Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Severity Major -ClearanceMode Ack_Required -SendToCallHome:$false
-Get-XIOEmailNotifier | Set-XIOEmailNotifier -Sender myxms.dom.com -Recipient me@dom.com,someoneelse@dom.com
-Get-XIOEmailNotifier | Set-XIOEmailNotifier -CompanyName MyCompany -MailRelayServer mysmtp.dom.com
-Get-XIOEmailNotifier | Set-XIOEmailNotifier -ProxyServer myproxy.dom.com -ProxyServerPort 10101 -ProxyCredential (Get-Credential dom\myProxyUser) -Enable:$false
-Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -RoleMapping "read_only:cn=grp0,dc=dom,dc=com","configuration:cn=user0,dc=dom,dc=com"
-Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -BindDN "cn=mybinder,dc=dom,dc=com" -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password") -SearchBaseDN "OU=tiptop,dc=dom,dc=com" -SearchFilter "sAMAccountName={username}" -LdapServerURL ldaps://prim.dom.com,ldaps://sec.dom.com -UserToDnRule "dom\{username}" -CacheExpire 8 -Timeout 30 -RoleMapping "admin:cn=grp0,dc=dom,dc=com","admin:cn=grp2,dc=dom,dc=com"
-Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -Enable:$false
-Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -PrivacyKey (Read-Host -AsSecureString "priv key") -SnmpVersion v3 -AuthenticationKey (Read-Host -AsSecureString "auth key") -PrivacyProtocol DES -AuthenticationProtocol MD5 -UserName admin2 -Recipient testdest0.dom.com,testdest1.dom.com
-Set-XIOSyslogNotifier -SyslogNotifier (Get-XIOSyslogNotifier) -Enable:$false
-Get-XIOSyslogNotifier | Set-XIOSyslogNotifier -Enable -Target syslog0.dom.com,syslog1.dom.com:515
-Set-XIOTarget -Target (Get-XIOTarget X1-SC2-iscsi1) -MTU 9000
-Get-XIOTarget -Name X1-SC2-iscsi1 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOTarget -MTU 1500
-## end built-in, system-wide objects
-
-## tests for deprecated objects (do not run these?)
-Set-XIOInitiatorGroupFolder -InitiatorGroupFolder (Get-XIOInitiatorGroupFolder /myIgFolder) -Caption myIgFolder_renamed
-Get-XIOInitiatorGroupFolder /myIgFolder | Set-XIOInitiatorGroupFolder -Caption myIgFolder_renamed
-Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /testFolder) -Caption testFolder_renamed
-Get-XIOVolumeFolder /testFolder | Set-XIOVolumeFolder -Caption testFolder_renamed
-## end tests for deprecated objects
-
-
-Set-XIOInitiator -Initiator (Get-XIOInitiator myInitiator0) -Name newInitiatorName0 -OperatingSystem ESX
-Get-XIOInitiator -Name myInitiator0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOInitiator -Name newInitiatorName0 -PortAddress 10:00:00:00:00:00:00:54
-Set-XIOInitiatorGroup -InitiatorGroup (Get-XIOInitiatorGroup myInitiatorGroup0) -Name newInitiatorGroupName0
-Get-XIOInitiatorGroup -Name myInitiatorGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOInitiatorGroup -Name newInitiatorGroupName0
-Set-XIOSnapshotScheduler -SnapshotScheduler (Get-XIOSnapshotScheduler mySnapshotScheduler0) -Suffix someSuffix0 -SnapshotRetentionCount 20
-Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Name mySnapshotScheduler0_newName
-Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
-Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Interval (New-TimeSpan -Hours 54 -Minutes 21)
-Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -ExplicitDay Everyday -ExplicitTimeOfDay (Get-Date 2am) -RelatedObject (Get-XIOConsistencyGroup -Name myConsistencyGrp0)
-Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOSnapshotScheduler -Enable:$false
-Set-XIOTag -Tag (Get-XIOTag /InitiatorGroup/myTag) -Caption myTag_renamed
-Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed -Color 00FF00
-Get-XIOUserAccount -Name someUser0 | Set-XIOUserAccount -UserName someUser0_renamed -SecureStringPassword (Read-Host -AsSecureString)
-Set-XIOUserAccount -UserAccount (Get-XIOUserAccount someUser0) -InactivityTimeout 0 -Role read_only
-Set-XIOVolume -Volume (Get-XIOVolume myVolume) -Name myVolume_renamed
-Get-XIOSnapshot myVolume.snapshot0 | Set-XIOVolume -Name myVolume.snapshot0_old
-Get-XIOVolume myVolume0 | Set-XIOVolume -SizeTB 10 -AccessRightLevel Read_Access -SmallIOAlertEnabled:$false -VaaiTPAlertEnabled
-
-## Tests for cmdlets that rename-only
-Set-XIOConsistencyGroup -ConsistencyGroup (Get-XIOConsistencyGroup myConsistencyGroup0) -Name newConsistencyGroupName0
-Get-XIOConsistencyGroup -Name myConsistencyGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOConsistencyGroup -Name newConsistencyGroupName0
-Set-XIOSnapshotSet -SnapshotSet (Get-XIOSnapshotSet mySnapshotSet0) -Name newSnapsetName0
-Get-XIOSnapshotSet -Name mySnapshotSet0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOSnapshotSet -Name newSnapsetName0
-#>
-
-## make the test objects
+##### make the test objects
 Write-Verbose -Verbose "Starting creation of temporary objects for this testing"
 ## New InitiatorGroups
 ## create new, empty InitiatorGroup
@@ -108,7 +63,7 @@ $hshXioObjsToRemove["Initiator"] += @($oNewInitiator0)
 ## create a new Initiator using colon-delimited port address notation, placing it in an existing InitiatorGroup
 ## grab this IG from the hashtable that is in the parent scope, as the scopes between tests are unique; expects that at least one InitiatorGroup has been made in the course of this testing
 $oTestIG0 = $hshXioObjsToRemove["InitiatorGroup"] | Select-Object -First 1
-$oNewInitiator1 = New-XIOInitiator -Name "mysvr0-hba3$strNameToAppend" -InitiatorGroup $oTestIG0.name -PortAddress ${strInitiatorAddrPrefix}:${strInitiatorRandomEightHexChar_ColonJoined}:54 @hshCommonParamsForNewObj
+$oNewInitiator1 = New-XIOInitiator -Name "mysvr0-hba3$strNameToAppend" -InitiatorGroup $oTestIG0.name -PortAddress "${strInitiatorAddrPrefix}:${strInitiatorRandomEightHexChar_ColonJoined}:54" @hshCommonParamsForNewObj
 $hshXioObjsToRemove["Initiator"] += @($oNewInitiator1)
 
 
@@ -129,7 +84,7 @@ $hshXioObjsToRemove["Initiator"] += @($oNewInitiator1)
 $hshXioObjsToRemove["Volume"] += 0..2 | Foreach-Object {New-XIOVolume -Name "testvol${_}$strNameToAppend" -SizeGB 10 -EnableSmallIOAlert -EnableUnalignedIOAlert -EnableVAAITPAlert @hshCommonParamsForNewObj}
 
 
-## run these tests if the XtremIO API version is at least v2.0
+## crate these objects if the XtremIO API version is at least v2.0
 if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 	## New ConsistencyGroup
 	## create a new ConsistencyGroup that contains the volumes specified
@@ -181,10 +136,140 @@ else {Write-Verbose -Verbose "XtremIO API is older than v2.0 -- not running test
 
 
 
-####### do the Set-XIO* tests here
+####### do the Set-XIO* tests
+<#
+## on single, built-in, system-wide objects (do not do automated tests for these?)
+Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Enable
+Get-XIOAlertDefinition alert_def_module_inactive | Set-XIOAlertDefinition -Severity Major -ClearanceMode Ack_Required -SendToCallHome:$false
+Get-XIOEmailNotifier | Set-XIOEmailNotifier -Sender myxms.dom.com -Recipient me@dom.com,someoneelse@dom.com
+Get-XIOEmailNotifier | Set-XIOEmailNotifier -CompanyName MyCompany -MailRelayServer mysmtp.dom.com
+Get-XIOEmailNotifier | Set-XIOEmailNotifier -ProxyServer myproxy.dom.com -ProxyServerPort 10101 -ProxyCredential (Get-Credential dom\myProxyUser) -Enable:$false
+Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -RoleMapping "read_only:cn=grp0,dc=dom,dc=com","configuration:cn=user0,dc=dom,dc=com"
+Get-XIOLdapConfig | Where-Object {$_.SearchBaseDN -eq "dc=dom,dc=com"} | Set-XIOLdapConfig -BindDN "cn=mybinder,dc=dom,dc=com" -BindSecureStringPassword (Read-Host -AsSecureString -Prompt "Enter some password") -SearchBaseDN "OU=tiptop,dc=dom,dc=com" -SearchFilter "sAMAccountName={username}" -LdapServerURL ldaps://prim.dom.com,ldaps://sec.dom.com -UserToDnRule "dom\{username}" -CacheExpire 8 -Timeout 30 -RoleMapping "admin:cn=grp0,dc=dom,dc=com","admin:cn=grp2,dc=dom,dc=com"
+Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -Enable:$false
+Get-XIOSnmpNotifier | Set-XIOSnmpNotifier -PrivacyKey (Read-Host -AsSecureString "priv key") -SnmpVersion v3 -AuthenticationKey (Read-Host -AsSecureString "auth key") -PrivacyProtocol DES -AuthenticationProtocol MD5 -UserName admin2 -Recipient testdest0.dom.com,testdest1.dom.com
+Set-XIOSyslogNotifier -SyslogNotifier (Get-XIOSyslogNotifier) -Enable:$false
+Get-XIOSyslogNotifier | Set-XIOSyslogNotifier -Enable -Target syslog0.dom.com,syslog1.dom.com:515
+Set-XIOTarget -Target (Get-XIOTarget X1-SC2-iscsi1) -MTU 9000
+Get-XIOTarget -Name X1-SC2-iscsi1 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOTarget -MTU 1500
+## end built-in, system-wide objects
+
+## tests for deprecated objects (do not run these?)
+Set-XIOInitiatorGroupFolder -InitiatorGroupFolder (Get-XIOInitiatorGroupFolder /myIgFolder) -Caption myIgFolder_renamed
+Get-XIOInitiatorGroupFolder /myIgFolder | Set-XIOInitiatorGroupFolder -Caption myIgFolder_renamed
+Set-XIOVolumeFolder -VolumeFolder (Get-XIOVolumeFolder /testFolder) -Caption testFolder_renamed
+Get-XIOVolumeFolder /testFolder | Set-XIOVolumeFolder -Caption testFolder_renamed
+## end tests for deprecated objects
+#>
 
 
+Describe -Tags "Set" -Name "Set-XIOInitiator" {
+	It "Renames an Initiator, changes the PortAddress, taking object from pipeline" {
+		## grab an Initiator from the hashtable that is in the parent scope, as the scopes between tests are unique
+		$oTestInitiator0 = $hshXioObjsToRemove["Initiator"] | Select-Object -First 1
+		$strNewNameForObject = "$strNamePrefixForRename$($oTestInitiator0.Name)"
+		$strNewHBAPortAddress = "${strInitiatorAddrPrefix}:${strInitiatorRandomEightHexChar_ColonJoined}:84"
+		$oUpdatedInitiator = $oTestInitiator0 | Set-XIOInitiator -Name $strNewNameForObject -PortAddress $strNewHBAPortAddress @hshCommonParamsForSetObj
 
+		$oUpdatedInitiator.Name | Should Be $strNewNameForObject
+		$oUpdatedInitiator.PortAddress | Should Be $strNewHBAPortAddress
+	}
+}
+
+Describe -Tags "Set" -Name "Set-XIOInitiatorGroup" {
+	It "Renames an InitiatorGroup" {
+		## grab an InitiatorGroup from the hashtable that is in the parent scope, as the scopes between tests are unique
+		$oTestInitiatorGroup0 = $hshXioObjsToRemove["InitiatorGroup"] | Select-Object -First 1
+		$strNewNameForObject = "$strNamePrefixForRename$($oTestInitiatorGroup0.Name)"
+		$oUpdatedInitiatorGroup = Set-XIOInitiatorGroup -InitiatorGroup $oTestInitiatorGroup0 -Name $strNewNameForObject @hshCommonParamsForSetObj
+
+		$oUpdatedInitiatorGroup.Name | Should Be $strNewNameForObject
+	}
+
+	It "Renames an InitiatorGroup, taking object from pipeline" {
+		## grab an InitiatorGroup from the hashtable that is in the parent scope, as the scopes between tests are unique
+		$oTestInitiatorGroup1 = $hshXioObjsToRemove["InitiatorGroup"] | Select-Object -First 1 -Skip 1
+		$strNewNameForObject = "$strNamePrefixForRename$($oTestInitiatorGroup1.Name)"
+		$oUpdatedInitiatorGroup = $oTestInitiatorGroup1 | Set-XIOInitiatorGroup -Name $strNewNameForObject @hshCommonParamsForSetObj
+
+		$oUpdatedInitiatorGroup.Name | Should Be $strNewNameForObject
+	}
+}
+
+Describe -Tags "Set" -Name "Set-XIOVolume" {
+	It "Renames a Volume" {
+		## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique
+		$oTestVolume0 = $hshXioObjsToRemove["Volume"] | Select-Object -First 1
+		$strNewNameForObject = "$strNamePrefixForRename$($oTestVolume0.Name)"
+		$oUpdatedVolume = Set-XIOVolume -Volume $oTestVolume0 -Name $strNewNameForObject @hshCommonParamsForSetObj
+
+		$oUpdatedVolume.Name | Should Be $strNewNameForObject
+	}
+
+	It "Renames a Volume, increases its size, and disables one kind of alert, taking object from pipeline" {
+		## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique
+		$oTestVolume1 = $hshXioObjsToRemove["Volume"] | Select-Object -First 1 -Skip 1
+		$strNewNameForObject = "$strNamePrefixForRename$($oTestVolume1.Name)"
+		$intNewSizeForObject = $oTestVolume1.VolSizeGB + 1
+		## should the test enable VaaiTPAlertsCfg, or disable? (basically, toggle from current value on Volume)
+		$bNewVaaiTPAlertsCfg_EnabledState = $oTestVolume1.VaaiTPAlertsCfg -eq "disabled"
+		$oUpdatedVolume = $oTestVolume1 | Set-XIOVolume -Name $strNewNameForObject -SizeGB $intNewSizeForObject -VaaiTPAlertEnabled:$bNewVaaiTPAlertsCfg_EnabledState @hshCommonParamsForSetObj
+
+		$oUpdatedVolume.Name | Should Be $strNewNameForObject
+		$oUpdatedVolume.VolSizeGB | Should Be $intNewSizeForObject
+		$bVaaiTPAlertsCfgAreNowEnabled = $oUpdatedVolume.VaaiTPAlertsCfg -eq "enabled"
+		$bVaaiTPAlertsCfgAreNowEnabled | Should Be $bNewVaaiTPAlertsCfg_EnabledState
+	}
+}
+
+
+## run these tests if the XtremIO API version is at least v2.0
+if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
+	Describe -Tags "Set" -Name "Set-XIOInitiator" {
+		It "Renames an Initiator, changes the OperatingSystem, taking object from pipeline" {
+			## grab an Initiator from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestInitiator0 = $hshXioObjsToRemove["Initiator"] | Select-Object -First 1 -Skip 1
+			$strNewNameForObject = "$strNamePrefixForRename$($oTestInitiator0.Name)"
+			$strNewInitiatorOS = if ($oTestInitiator0.OperatingSystem -eq "ESX") {"Other"} else {"ESX"}
+			$oUpdatedInitiator = $oTestInitiator0 | Set-XIOInitiator -Name $strNewNameForObject -OperatingSystem $strNewInitiatorOS @hshCommonParamsForSetObj
+
+			$oUpdatedInitiator.Name | Should Be $strNewNameForObject
+			$oUpdatedInitiator.OperatingSystem | Should Be $strNewInitiatorOS
+		}
+	}
+
+	Describe -Tags "Set" -Name "Set-XIOVolume" {
+		It "Renames a Snapshot, changes the AccessRightLevel, taking object from pipeline" {
+			## grab a Snapshot from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestSnapshot0 = $hshXioObjsToRemove["Snapshot"] | Select-Object -First 1 -Skip 1
+			$strNewNameForObject = "$strNamePrefixForRename$($oTestSnapshot0.Name)"
+			$strNewAccessLevelForObject = if ($oTestSnapshot0.AccessType -eq "write_access") {"Read_Access"} else {"write_access"}
+			$oUpdatedVolume = $oTestSnapshot0 | Set-XIOVolume -Name $strNewNameForObject -AccessRightLevel $strNewAccessLevelForObject @hshCommonParamsForSetObj
+
+			$oUpdatedVolume.Name | Should Be $strNewNameForObject
+			$oUpdatedVolume.AccessType | Should Be $strNewAccessLevelForObject
+		}
+	}
+
+	<#
+		Set-XIOSnapshotScheduler -SnapshotScheduler (Get-XIOSnapshotScheduler mySnapshotScheduler0) -Suffix someSuffix0 -SnapshotRetentionCount 20
+		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Name mySnapshotScheduler0_newName
+		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
+		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Interval (New-TimeSpan -Hours 54 -Minutes 21)
+		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -ExplicitDay Everyday -ExplicitTimeOfDay (Get-Date 2am) -RelatedObject (Get-XIOConsistencyGroup -Name myConsistencyGrp0)
+		Set-XIOTag -Tag (Get-XIOTag /InitiatorGroup/myTag) -Caption myTag_renamed
+		Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed -Color 00FF00
+		Get-XIOUserAccount -Name someUser0 | Set-XIOUserAccount -UserName someUser0_renamed -SecureStringPassword (Read-Host -AsSecureString)
+		Set-XIOUserAccount -UserAccount (Get-XIOUserAccount someUser0) -InactivityTimeout 0 -Role read_only
+
+		## Tests for cmdlets that rename-only
+		Set-XIOConsistencyGroup -ConsistencyGroup (Get-XIOConsistencyGroup myConsistencyGroup0) -Name newConsistencyGroupName0
+		Get-XIOConsistencyGroup -Name myConsistencyGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOConsistencyGroup -Name newConsistencyGroupName0
+		Set-XIOSnapshotSet -SnapshotSet (Get-XIOSnapshotSet mySnapshotSet0) -Name newSnapsetName0
+		Get-XIOSnapshotSet -Name mySnapshotSet0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOSnapshotSet -Name newSnapsetName0
+	#>
+} ## end if
+else {Write-Verbose -Verbose "XtremIO API is older than v2.0 -- not running tests for creating these object types:  ConsistencyGroup, Snapshot (since this module does not yet support them on pre-v2.0 APIs), SnapshotScheduler, Tag, and UserAccount"}
 
 Write-Verbose -Verbose "Starting removal of temporary objects created for this testing"
 ## For the removal of all objects that were created while testing the New-XIO* cmdlets above:
