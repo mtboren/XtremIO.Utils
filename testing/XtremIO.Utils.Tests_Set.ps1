@@ -110,7 +110,7 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 	$intSnapshotRetentionCount = 20
 	## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique; expects that at least one Volume has been made in the course of this testing
 	$oTestVolume0 = $hshXioObjsToRemove["Volume"] | Select-Object -First 1
-	$oNewSnapshotScheduler = New-XIOSnapshotScheduler -Enabled:$false -RelatedObject $oTestVolume0 -Interval (New-Timespan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount $intSnapshotRetentionCount @hshCommonParamsForNewObj
+	$oNewSnapshotScheduler = New-XIOSnapshotScheduler -Enabled:$false -RelatedObject $oTestVolume0 -Interval (New-TimeSpan -Days 2 -Hours 6 -Minutes 9) -SnapshotRetentionCount $intSnapshotRetentionCount @hshCommonParamsForNewObj
 	$hshXioObjsToRemove["SnapshotScheduler"] += @($oNewSnapshotScheduler)
 
 
@@ -239,22 +239,58 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 	}
 
 	Describe -Tags "Set" -Name "Set-XIOVolume" {
-		It "Renames a Snapshot, changes the AccessRightLevel, taking object from pipeline" {
-			## grab a Snapshot from the hashtable that is in the parent scope, as the scopes between tests are unique
-			$oTestSnapshot0 = $hshXioObjsToRemove["Snapshot"] | Select-Object -First 1 -Skip 1
-			$strNewNameForObject = "$strNamePrefixForRename$($oTestSnapshot0.Name)"
-			$strNewAccessLevelForObject = if ($oTestSnapshot0.AccessType -eq "write_access") {"Read_Access"} else {"write_access"}
-			$oUpdatedVolume = $oTestSnapshot0 | Set-XIOVolume -Name $strNewNameForObject -AccessRightLevel $strNewAccessLevelForObject @hshCommonParamsForSetObj
+		It "Renames a Volume, changes the AccessRightLevel, taking object from pipeline" {
+			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestVolume0 = $hshXioObjsToRemove["Volume"] | Select-Object -Last 1
+			$strNewNameForObject = "$strNamePrefixForRename$($oTestVolume0.Name)"
+			$strNewAccessLevelForObject = if ($oTestVolume0.AccessType -eq "write_access") {"Read_Access"} else {"Write_Access"}
+			$oUpdatedVolume = $oTestVolume0 | Set-XIOVolume -Name $strNewNameForObject -AccessRightLevel $strNewAccessLevelForObject @hshCommonParamsForSetObj
 
 			$oUpdatedVolume.Name | Should Be $strNewNameForObject
 			$oUpdatedVolume.AccessType | Should Be $strNewAccessLevelForObject
 		}
 	}
 
+	Describe -Tags "Set" -Name "Set-XIOSnapshotScheduler" {
+		It "Sets the Suffix and RetentionCount on a SnapshotScheduler" {
+			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestSnapshotScheduler0 = $hshXioObjsToRemove["SnapshotScheduler"] | Select-Object -First 1
+			$strNewSnapshotSchedulerSuffix = "newSnapSchedSuff_$($oTestSnapshotScheduler0.Suffix)"
+			$intNewNumSnapToKeep = if ($oTestSnapshotScheduler0.NumSnapToKeep -eq 20) {21} else {20}
+			$oUpdatedSnapshotScheduler = Set-XIOSnapshotScheduler -SnapshotScheduler $oTestSnapshotScheduler0 -Suffix $strNewSnapshotSchedulerSuffix -SnapshotRetentionCount $intNewNumSnapToKeep @hshCommonParamsForSetObj
+
+			$oUpdatedSnapshotScheduler.Suffix | Should Be $strNewSnapshotSchedulerSuffix
+			$oUpdatedSnapshotScheduler.NumSnapToKeep | Should Be $intNewNumSnapToKeep
+		}
+
+		## params for "It" call; Skip the test if REST API version is less than v2.1
+		$hshParamsForIt = @{Skip = ($oXioConnectionToUse.RestApiVersion -lt [System.Version]"2.1")}
+		if ($hshParamsForIt["Skip"]) {Write-Verbose -Verbose "REST API version is less than v2.1; skipping testing of setting SnapshotScheduler name (for which support began in REST API v2.1)"}
+		It "Sets a new name for a SnapshotScheduler, taking object from pipeline" {
+			## grab a SnapshotScheduler from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestSnapshotScheduler0 = $hshXioObjsToRemove["SnapshotScheduler"] | Select-Object -First 1
+			$strNewSnapshotSchedulerName = "${strNamePrefixForRename}testSnapSched$strNameToAppend"
+			$oUpdatedSnapshotScheduler = $oTestSnapshotScheduler0 | Set-XIOSnapshotScheduler -Name $strNewSnapshotSchedulerName @hshCommonParamsForSetObj
+
+			$oUpdatedSnapshotScheduler.Name | Should Be $strNewSnapshotSchedulerName
+		}
+
+		# Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
+		It "Sets the SnapshotType and SnapshotRetentionDuration on a SnapshotScheduler, taking object from pipeline" {
+			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestSnapshotScheduler0 = $hshXioObjsToRemove["SnapshotScheduler"] | Select-Object -First 1
+			$tspNewSnapRetentionTimespan = if ($oTestSnapshotScheduler0.Retain -eq (New-TimeSpan -Days 3)) {New-TimeSpan -Days 4} else {New-TimeSpan -Days 3}
+			$strNewTypeOfSnapshot = if ($oTestSnapshotScheduler0.SnapType -eq "regular") {"ReadOnly"} else {"Regular"}
+			$oUpdatedSnapshotScheduler = $oTestSnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration $tspNewSnapRetentionTimespan -SnapshotType $strNewTypeOfSnapshot @hshCommonParamsForSetObj
+
+			$oUpdatedSnapshotScheduler.Retain | Should Be $tspNewSnapRetentionTimespan
+			$oUpdatedSnapshotScheduler.SnapType | Should Be $strNewTypeOfSnapshot
+		}
+	}
+
+
+
 	<#
-		Set-XIOSnapshotScheduler -SnapshotScheduler (Get-XIOSnapshotScheduler mySnapshotScheduler0) -Suffix someSuffix0 -SnapshotRetentionCount 20
-		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Name mySnapshotScheduler0_newName
-		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
 		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Interval (New-TimeSpan -Hours 54 -Minutes 21)
 		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -ExplicitDay Everyday -ExplicitTimeOfDay (Get-Date 2am) -RelatedObject (Get-XIOConsistencyGroup -Name myConsistencyGrp0)
 		Set-XIOTag -Tag (Get-XIOTag /InitiatorGroup/myTag) -Caption myTag_renamed
@@ -306,7 +342,7 @@ $arrOverallTypeToRemove_InOrder | Foreach-Object {
 			$arrTestObjToRemove | Foreach-Object {
 				$oThisObjToRemove = $_
 				## there is a verification later to report whether all things were removed, which will report any errant removes
-				Try {Invoke-Command -ScriptBlock {& "Remove-XIO$strCmdletNounPortion" $oThisObjToRemove}}
+				Try {Invoke-Command -ScriptBlock {& "Remove-XIO$strCmdletNounPortion" (Get-XIOItemInfo -URI $oThisObjToRemove.URI)}}
 				Catch {Write-Warning "Did not remove following object.  Already removed, or remove failed? Obj name: $($oThisObjToRemove.Name)"}
 			} ## end foreach-object
 		} ## end if

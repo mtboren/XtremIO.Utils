@@ -980,6 +980,8 @@ function Set-XIOUserAccount {
 	.Example
 	Get-XIOVolume myVolume0 | Set-XIOVolume -SizeTB 10 -AccessRightLevel Read_Access -SmallIOAlertEnabled:$false -VaaiTPAlertEnabled
 	Set the size and access level for the volume, disable small IO alerts, and enable VAAI thin provisioning alerts
+	.Notes
+	Setting of AccessType on Snapshot objects not seemingly supported. While the XtremIO API reference documentation mentions this item as a valid parameter in one spot, the documentation omits it in another, making it unclear if there is official support for setting this property on a Snapshot object
 	.Outputs
 	XioItemInfo.Volume or XioItemInfo.Snapshot (depending on the source object) object for the modified object if successful
 #>
@@ -1003,7 +1005,7 @@ function Set-XIOVolume {
 		[Switch]$UnalignedIOAlertEnabled,
 		## Switch:  Enable or disable VAAI thin-provisioning alerts. To disable, use: -VaaiTPAlertEnabled:$false
 		[Switch]$VaaiTPAlertEnabled,
-		## Set the access level of the volume or snapshot.  Volumes/Snapshots can have one of the following access right levels:
+		## Set the access level of the volume.  Volumes can have one of the following access right levels:
 		#	- No_Access:  All SCSI commands for accessing data on the Volume (read commands and write commands) fail, and all SCSI discovery commands (i.e. inquiries on Volume characteristics and not accessing the data on the Volume) succeed.
 		#	- Read_Access:  All SCSI write commands fail and all SCSI read commands and discovery commands succeed.
 		#	- Write_Access:  All commands succeed and the host can write to the Volume.
