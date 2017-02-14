@@ -350,11 +350,34 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 		}
 	}
 
+	Describe -Tags "Set" -Name "Set-XIOUserAccount" {
+		It "Sets the InactivityTimeoutMin and Role for a UserAccount" {
+			## grab a UserAccount from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oUserAccount0 = $hshXioObjsToRemove["UserAccount"] | Select-Object -First 1
+			$intNewInactivityTimeout = if ($oUserAccount0 -eq 0) {1} else {0}
+			$strNewRole = if ($oUserAccount0.Role -eq "read_only") {"configuration"} else {"read_only"}
+			$oUpdatedUserAccount = Set-XIOUserAccount -UserAccount $oUserAccount0 -InactivityTimeout $intNewInactivityTimeout -Role $strNewRole @hshCommonParamsForSetObj
+			$bUserAccountTimeoutIsProperlyUpdated = $oUpdatedUserAccount.InactivityTimeoutMin -eq $intNewInactivityTimeout
+			$bUserAccountRoleIsProperlyUpdated = $oUpdatedUserAccount.Role -eq $strNewRole
+
+			$bUserAccountTimeoutIsProperlyUpdated | Should Be $true
+			$bUserAccountRoleIsProperlyUpdated | Should Be $true
+		}
+
+		# Get-XIOUserAccount -Name someUser0 | Set-XIOUserAccount -UserName someUser0_renamed -SecureStringPassword (Read-Host -AsSecureString)
+		It "Sets a new name and password for a UserAccount, taking object from pipeline" {
+			## grab a UserAccount from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oUserAccount0 = Get-XIOItemInfo -URI ($hshXioObjsToRemove["UserAccount"] | Select-Object -First 1).Uri
+			$strNewUserAccountName = "${strNamePrefixForRename}$($oUserAccount0.Name)"
+			$sstrNewPasswd = ConvertTo-SecureString -AsPlainText -String ([System.Guid]::NewGuid().Guid) -Force
+			$oUpdatedUserAccount = $oUserAccount0 | Set-XIOUserAccount -UserName $strNewUserAccountName -SecureStringPassword $sstrNewPasswd @hshCommonParamsForSetObj
+			$bUserAccountNameIsProperlyUpdated = $oUpdatedUserAccount.Name -eq $strNewUserAccountName
+
+			$bUserAccountNameIsProperlyUpdated | Should Be $true
+		}
+	}
 
 	<#
-		Get-XIOUserAccount -Name someUser0 | Set-XIOUserAccount -UserName someUser0_renamed -SecureStringPassword (Read-Host -AsSecureString)
-		Set-XIOUserAccount -UserAccount (Get-XIOUserAccount someUser0) -InactivityTimeout 0 -Role read_only
-
 		## Tests for cmdlets that rename-only
 		Set-XIOConsistencyGroup -ConsistencyGroup (Get-XIOConsistencyGroup myConsistencyGroup0) -Name newConsistencyGroupName0
 		Get-XIOConsistencyGroup -Name myConsistencyGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOConsistencyGroup -Name newConsistencyGroupName0
