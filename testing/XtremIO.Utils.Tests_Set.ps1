@@ -118,8 +118,10 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 	## create a new tag to be used for Volume entities
 	## This example highlights the behavior that, if no explicit "path" specified to the tag, the new tag is put at the root of its parent tag, based on the entity type
 	$strEntityType = "Volume"
-	$oNewTag = New-XIOTag -Name v$strNameToAppend -EntityType $strEntityType -ComputerName $strXmsComputerName
-	$hshXioObjsToRemove["Tag"] += @($oNewTag)
+	$oNewTag0 = New-XIOTag -Name "v$strNameToAppend" -EntityType $strEntityType -ComputerName $strXmsComputerName
+	$strEntityType = "InitiatorGroup"
+	$oNewTag1 = New-XIOTag -Name "ig$strNameToAppend" -EntityType $strEntityType -ComputerName $strXmsComputerName
+	$hshXioObjsToRemove["Tag"] += @($oNewTag0, $oNewTag1)
 
 
 	## New UserAccount
@@ -253,7 +255,7 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 
 	Describe -Tags "Set" -Name "Set-XIOSnapshotScheduler" {
 		It "Sets the Suffix and RetentionCount on a SnapshotScheduler" {
-			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique
+			## grab a SnapshotScheduler from the hashtable that is in the parent scope, as the scopes between tests are unique
 			$oTestSnapshotScheduler0 = $hshXioObjsToRemove["SnapshotScheduler"] | Select-Object -First 1
 			$strNewSnapshotSchedulerSuffix = "newSnapSchedSuff_$($oTestSnapshotScheduler0.Suffix)"
 			$intNewNumSnapToKeep = if ($oTestSnapshotScheduler0.NumSnapToKeep -eq 20) {21} else {20}
@@ -275,9 +277,8 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 			$oUpdatedSnapshotScheduler.Name | Should Be $strNewSnapshotSchedulerName
 		}
 
-		# Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
 		It "Sets the SnapshotType and SnapshotRetentionDuration on a SnapshotScheduler, taking object from pipeline" {
-			## grab a Volume from the hashtable that is in the parent scope, as the scopes between tests are unique
+			## grab a SnapshotScheduler from the hashtable that is in the parent scope, as the scopes between tests are unique
 			$oTestSnapshotScheduler0 = $hshXioObjsToRemove["SnapshotScheduler"] | Select-Object -First 1
 			$tspNewSnapRetentionTimespan = if ($oTestSnapshotScheduler0.Retain -eq (New-TimeSpan -Days 3)) {New-TimeSpan -Days 4} else {New-TimeSpan -Days 3}
 			$strNewTypeOfSnapshot = if ($oTestSnapshotScheduler0.SnapType -eq "regular") {"ReadOnly"} else {"Regular"}
@@ -286,15 +287,71 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 			$oUpdatedSnapshotScheduler.Retain | Should Be $tspNewSnapRetentionTimespan
 			$oUpdatedSnapshotScheduler.SnapType | Should Be $strNewTypeOfSnapshot
 		}
+
+		It "Sets the SnapshotScheduler to type Interval (vs. Explicit), specifying the new interval for snapshots, taking object from pipeline" {
+			## grab a SnapshotScheduler from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestSnapshotScheduler0 = $hshXioObjsToRemove["SnapshotScheduler"] | Select-Object -First 1
+			$tspNewSnapInterval = (New-TimeSpan -Hours (Get-Random -Minimum 1 -Maximum 71) -Minutes (Get-Random -Minimum 0 -Maximum 59))
+			$strExpectedScheduleString = "Every {0} hours {1} mins" -f [System.Math]::Floor($tspNewSnapInterval.TotalHours), $tspNewSnapInterval.Minutes
+			$strExpectedSchedulerType = "Interval"
+			$oUpdatedSnapshotScheduler = $oTestSnapshotScheduler0 | Set-XIOSnapshotScheduler -Interval $tspNewSnapInterval @hshCommonParamsForSetObj
+			$bSchedulerScheduleIsProperlyUpdated = $oUpdatedSnapshotScheduler.Schedule -eq $strExpectedScheduleString
+			$bSchedulerIsOfProperType = $oUpdatedSnapshotScheduler.Type -eq $strExpectedSchedulerType
+
+			$bSchedulerScheduleIsProperlyUpdated | Should Be $true
+			$bSchedulerIsOfProperType | Should Be $true
+		}
+
+		It "Sets the SnapshotScheduler to type Explicit (vs. Interval), specifying the new schedule for snapshots, changing the snapped object, taking object from pipeline" {
+			## grab a SnapshotScheduler from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTestSnapshotScheduler0 = $hshXioObjsToRemove["SnapshotScheduler"] | Select-Object -First 1
+			## get an object that is of a different type than is already the SnappedObject type for this SnapshotScheduler, to specify as the new SnappedObject
+			$oNewSnappedObject = $hshXioObjsToRemove[$(if ($oTestSnapshotScheduler0.SnappedObject.Type -eq "ConsistencyGroup") {"Volume"} else {"ConsistencyGroup"})] | Select-Object -Last 1
+			$dteNewTimeOfDay = (Get-Date -Hour (Get-Random -Minimum 0 -Maximum 23) -Minute (Get-Random -Minimum 0 -Maximum 59))
+			$strExplicitDay = "Everyday"
+			$strExpectedScheduleString = "Every day at {0}" -f $dteNewTimeOfDay.ToString("HH:mm")
+			$strExpectedSchedulerType = "Explicit"
+			$oUpdatedSnapshotScheduler = $oTestSnapshotScheduler0 | Set-XIOSnapshotScheduler -ExplicitDay $strExplicitDay -ExplicitTimeOfDay $dteNewTimeOfDay -RelatedObject $oNewSnappedObject @hshCommonParamsForSetObj
+			$bSchedulerScheduleIsProperlyUpdated = $oUpdatedSnapshotScheduler.Schedule -eq $strExpectedScheduleString
+			$bSchedulerIsOfProperType = $oUpdatedSnapshotScheduler.Type -eq $strExpectedSchedulerType
+			$bSnappedObjectIsProperlyUpdated = ($oUpdatedSnapshotScheduler.SnappedObject.Type -eq $oNewSnappedObject.GetType().Name) -and ($oUpdatedSnapshotScheduler.SnappedObject.Name -eq $oNewSnappedObject.Name)
+
+			$bSchedulerScheduleIsProperlyUpdated | Should Be $true
+			$bSchedulerIsOfProperType | Should Be $true
+			$bSnappedObjectIsProperlyUpdated | Should Be $true
+		}
+	}
+
+	Describe -Tags "Set" -Name "Set-XIOTag" {
+		It "Sets the new name for a Tag" {
+			## grab a Tag from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTag0 = $hshXioObjsToRemove["Tag"] | Select-Object -First 1
+			$strNewTagName = "${strNamePrefixForRename}$($oTag0.Caption)"
+			$oUpdatedTag = Set-XIOTag -Tag $oTag0 -Caption $strNewTagName @hshCommonParamsForSetObj
+			$bTagNameIsProperlyUpdated = $oUpdatedTag.Caption -eq $strNewTagName
+
+			$bTagNameIsProperlyUpdated | Should Be $true
+		}
+
+		# Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed -Color 00FF00
+		It "Sets the new name and color for a Tag, taking object from pipeline" {
+			## grab a Tag from the hashtable that is in the parent scope, as the scopes between tests are unique
+			$oTag0 = $hshXioObjsToRemove["Tag"] | Select-Object -First 1 -Skip 1
+			$strNewTagName = "${strNamePrefixForRename}$($oTag0.Caption)"
+			$intColorDecFromHexToAvoid = if ([String]::IsNullOrEmpty($oTag0.ColorHex)) {0} else {[System.Convert]::ToInt32($oTag0.ColorHex.Trim("#"), 16)}
+			## get a number that is (16^6 - 1) max value (0xFFFFFF) and is not the current color of the Tag; trying a few times, just to be sure that we get a value different than the current ColorHex on the Tag
+			$strNewHexColor = "{0:x6}" -f (0..7 | Foreach-Object {Get-Random -Maximum ([Int]([System.Math]::Pow(16,6) - 1))} | Where-Object {$_ -ne $intColorDecFromHexToAvoid} | Select-Object -First 1)
+			$oUpdatedTag = $oTag0 | Set-XIOTag -Caption $strNewTagName -Color $strNewHexColor @hshCommonParamsForSetObj
+			$bTagNameIsProperlyUpdated = $oUpdatedTag.Caption -eq $strNewTagName
+			$bTagColorIsProperlyUpdated = $oUpdatedTag.ColorHex -eq "#$strNewHexColor"
+
+			$bTagNameIsProperlyUpdated | Should Be $true
+			$bTagColorIsProperlyUpdated | Should Be $true
+		}
 	}
 
 
-
 	<#
-		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Interval (New-TimeSpan -Hours 54 -Minutes 21)
-		Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -ExplicitDay Everyday -ExplicitTimeOfDay (Get-Date 2am) -RelatedObject (Get-XIOConsistencyGroup -Name myConsistencyGrp0)
-		Set-XIOTag -Tag (Get-XIOTag /InitiatorGroup/myTag) -Caption myTag_renamed
-		Get-XIOTag -Name /InitiatorGroup/myTag | Set-XIOTag -Caption myTag_renamed -Color 00FF00
 		Get-XIOUserAccount -Name someUser0 | Set-XIOUserAccount -UserName someUser0_renamed -SecureStringPassword (Read-Host -AsSecureString)
 		Set-XIOUserAccount -UserAccount (Get-XIOUserAccount someUser0) -InactivityTimeout 0 -Role read_only
 
