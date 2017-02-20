@@ -151,6 +151,7 @@ todo:
 -revisit -RelatedObject items from pipeline:  currently using Name property for getting desired objects, but other properties are available (like GUID and whatnot) -- use more unique item like GUID instead of Name for when switching to using API v2 that supports filtering -- can use GUID instead of name
 - eventually add Tag type as accepted type by `-RelatedObject` parameter to rest of Get-XIO* cmdlets (did not add immediately, as these objects are less likely to get tagged in standard practice):  `Get-XIOBrick`, `Get-XIOCluster`, `Get-XIODAE`, `Get-XIODataProtectionGroup`, `Get-XIOInfinibandSwitch`, `Get-XIOSnapshotScheduler`, `Get-XIOStorageController`, `Get-XIOTarget`
 -?gracefully handle Entity-type / Tag-type mismatch in New-XIOTagAssignment?  Right now, user must assign proper Tag type to proper Entity type (cmdlet does not currently prevent user from trying to assign an Initiator tag to a Volume entity, for example)
+- add paramsets to `Set-XIOTarget`, so that at least one of MTU, Name is mandatory (Two param set names?)
 -?if adding this project to that EMC {code} site, add things to ReadMe related to "EMC {code}" (see requirements/suggestions on EMC {code} site)
 -?add something that handles return of objects such that only one instance of each unique object is returned?  For example:  should "Get-XIOInitiatorGroup | select -First 5 | Get-XIOSnapshot -Name mysnap044.*" only return one object for "mysnap044.lastweeksnap", even if that snapshot is mapped to all of the five InitiatorGroups passed as RelateObjects to Get-XIOSnapshot?  The, "return only unique objects" behavior is how some other modules do it, like PowerCLI, for example
 -after adding Tag as supported RelatedObject type on Get-XIO* cmdlets:  Tags do not have Cluster properties, so may give unexpected behavior if only getting targeted object by name (won't have associated Cluster by which to pinpoint the targeted object); or, need to use Guid instead and filter?  A: still hit the "need cluster name" issue for when in multi-cluster situation; need to solve this someway
@@ -234,27 +235,25 @@ should do next:
 
 
 doing:
-[featAndBf_SetItems]
-- add paramsets to `Set-XIOTarget`, so that at least one of MTU, Name is mandatory (Two param set names?)
-- add tests for Set-XIO*
 
 done:
 [featAndBf_SetItems]
 - fixed bug in `Set-XIOInitiator`:  setting failed for all; also, there is no documented support for setting "operating-system" property via API, but it apparently can be done (as observed in WebUI, and corresponding Audit-level events on XMS) -- so, add comment to that effect, so there is no wild goose chase on trying to find in docs the support info for that property
 	- appears that sending _full_ "initiator-id" property as defined on "FullResponse" objects (which is @(<guid>, <name>, <index>)), call now succeeds on at least API v2.1:
-	- can/should specify this full "id" property for Set-XIO*, Remove-XIO* cmdlets
-	- updated Remove-XIO*, which were working w/ name-only for the ID portion, but including GUID and index in request body should now be better
-	- updated Set-XIO*:
+	- can/should specify this full "id" property for `Set-XIO*`, `Remove-XIO*` cmdlets
+	- updated `Remove-XIO*`, which were working w/ name-only for the ID portion, but including GUID and index in request body should now be better
+	- updated `Set-XIO*`:
 		fixed: `Set-XIOInitiator`, `Set-XIOSnapshotScheduler` (worked, but try also w/ legit "scheduler-id" array of values instead of just index), `Set-XIOTarget`, `Set-XIOVolume`
 		were already working as expected:
 			`Set-XIOAlertDefinition`, `Set-XIOConsistencyGroup`, `Set-XIOEmailNotifier`, `Set-XIOInitiatorGroup`, `Set-XIOInitiatorGroupFolder`, `Set-XIOLdapConfig`, `Set-XIOSnapshotSet`, `Set-XIOSnmpNotifier`, `Set-XIOSyslogNotifier`, `Set-XIOTag`, `Set-XIOUserAccount`, `Set-XIOVolumeFolder`
 - added `-Name` parameter to `Set-XIOSnapshotScheduler`, `Set-XIOTarget`, for specifying new name respectively for `SnapshotScheduler`, `Target` (not documented in API reference, but supported operation)
+- added Pester tests for `Set-XIO*` cmdlets
 
 [feat_AcceptTagFromPipeline]
 - add Tag type as accepted type by `-RelatedObject` parameter to main Get-XIO* cmdlets:
 	`Get-XIOBBU`, `Get-XIOConsistencyGroup`, `Get-XIOInitiator`, `Get-XIOInitiatorGroup`, `Get-XIOSnapshot`, `Get-XIOSnapshotSet`, `Get-XIOSsd`, `Get-XIOVolume`
 - fixed typo "multple" in help for `Set-XIOLdapConfig`
-- initially tested Get-XIO* after updates (updated tests to get given objects that have Tag assignements) -- testing on single connection with REST API v2.1
+- initially tested `Get-XIO*` cmdlets after updates (updated tests to get given objects that have Tag assignements) -- testing on single connection with REST API v2.1
 
 ## things below here are in changelog/readme
 

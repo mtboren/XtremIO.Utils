@@ -377,13 +377,21 @@ if ($oXioConnectionToUse.RestApiVersion -ge [System.Version]"2.0") {
 		}
 	}
 
-	<#
-		## Tests for cmdlets that rename-only
-		Set-XIOConsistencyGroup -ConsistencyGroup (Get-XIOConsistencyGroup myConsistencyGroup0) -Name newConsistencyGroupName0
-		Get-XIOConsistencyGroup -Name myConsistencyGroup0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOConsistencyGroup -Name newConsistencyGroupName0
-		Set-XIOSnapshotSet -SnapshotSet (Get-XIOSnapshotSet mySnapshotSet0) -Name newSnapsetName0
-		Get-XIOSnapshotSet -Name mySnapshotSet0 -Cluster myCluster0 -ComputerName somexms.dom.com | Set-XIOSnapshotSet -Name newSnapsetName0
-	#>
+	## Tests for cmdlets that rename-only
+	"ConsistencyGroup", "SnapshotSet" | Foreach-Object {
+		$strThisObjectTypeToTest = $_
+		Describe -Tags "Set" -Name "Set-XIO$strThisObjectTypeToTest" {
+			It "Sets a new name for a $strThisObjectTypeToTest, taking object from pipeline" {
+				## grab a targeted object from the hashtable that is in the parent scope, as the scopes between tests are unique
+				$oObjToTestUpon0 = Get-XIOItemInfo -URI ($hshXioObjsToRemove[$strThisObjectTypeToTest] | Select-Object -First 1).Uri
+				$strNewNameForObj = "${strNamePrefixForRename}$($oObjToTestUpon0.Name)"
+				$oUpdatedItem = $oObjToTestUpon0 | & "Set-XIO$strThisObjectTypeToTest" -Name $strNewNameForObj @hshCommonParamsForSetObj
+				$bItemIsPropertyUpdated = $oUpdatedItem.Name -eq $strNewNameForObj
+
+				$bItemIsPropertyUpdated | Should Be $true
+			}
+		}
+	} ## end foreach-object
 } ## end if
 else {Write-Verbose -Verbose "XtremIO API is older than v2.0 -- not running tests for creating these object types:  ConsistencyGroup, Snapshot (since this module does not yet support them on pre-v2.0 APIs), SnapshotScheduler, Tag, and UserAccount"}
 
