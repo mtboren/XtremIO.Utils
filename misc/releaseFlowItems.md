@@ -1,0 +1,12 @@
+#### release flow
+- test in PSv4, PSv5, on XIOS 4.0-multicluster, test with multiple XIO connections, test across REST API versions, if not already tested
+- merge branches into dev
+- rev module version
+- update changelog/readme, including release date, and verify that Known Issues are current
+- commit to dev
+- merge to master
+- move "Latest" tag to new master commit
+- make .zip of just PSModule files
+- make Latest release on GitHub
+- add version-specific tag
+- make version-specific release on GitHub
