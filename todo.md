@@ -233,7 +233,7 @@ todo:
 
 
 
-
+### Actual Doing-Action info:
 #### Should do next:
 - update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.; add update about opening WebUI
 - update GH Pages examples
@@ -250,8 +250,8 @@ todo:
 	- can/should specify this full "id" property for `Set-XIO*`, `Remove-XIO*` cmdlets
 	- updated `Remove-XIO*`, which were working w/ name-only for the ID portion, but including GUID and index in request body should now be better
 	- updated `Set-XIO*`:
-		fixed: `Set-XIOInitiator`, `Set-XIOSnapshotScheduler` (worked, but try also w/ legit "scheduler-id" array of values instead of just index), `Set-XIOTarget`, `Set-XIOVolume`
-		were already working as expected:
+		- fixed: `Set-XIOInitiator`, `Set-XIOSnapshotScheduler` (worked, but try also w/ legit "scheduler-id" array of values instead of just index), `Set-XIOTarget`, `Set-XIOVolume`
+		- were already working as expected:
 			`Set-XIOAlertDefinition`, `Set-XIOConsistencyGroup`, `Set-XIOEmailNotifier`, `Set-XIOInitiatorGroup`, `Set-XIOInitiatorGroupFolder`, `Set-XIOLdapConfig`, `Set-XIOSnapshotSet`, `Set-XIOSnmpNotifier`, `Set-XIOSyslogNotifier`, `Set-XIOTag`, `Set-XIOUserAccount`, `Set-XIOVolumeFolder`
 - added `-Name` parameter to `Set-XIOSnapshotScheduler`, `Set-XIOTarget`, for specifying new name respectively for `SnapshotScheduler`, `Target` (not documented in API reference, but supported operation)
 - added Pester tests for `Set-XIO*` cmdlets
@@ -262,8 +262,8 @@ todo:
 - fixed typo "multple" in help for `Set-XIOLdapConfig`
 - initially tested `Get-XIO*` cmdlets after updates (updated tests to get given objects that have Tag assignements) -- testing on single connection with REST API v2.1
 
-#### Things already added to changelog/readme
+#### Things already added to changelog/readme:
 
 
 #### Done for previous versions:
-moved to done.txt
+_moved to done.txt_
