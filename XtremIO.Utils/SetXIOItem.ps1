@@ -363,11 +363,12 @@ function Set-XIOInitiator {
 		$hshSetItemSpec = @{
 			## Cluster's name or index number -- not a valid property per the error the API returns (this module should always have the "?cluster-name=<blahh>" in the URI from the source object, anyway)
 			"cluster-id" = $Initiator.Cluster.Name
-			## Initiator's current name or index number -- seems to not matter if this is passed or not
-			"initiator-id" = $Initiator.Name
+			## Initiator's "full" initiator-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"initiator-id" = @($Initiator.Guid, $Initiator.Name, $Initiator.Index)
 		} ## end hashtable
 
 		if ($PSBoundParameters.ContainsKey("Name"))	{$hshSetItemSpec["initiator-name"] = $Name}
+		## note:  this is not documented in the API reference right now, but the parameter can be observed in the XMS Events (Audit-level) when operating on an existing Initiator object
 		if ($PSBoundParameters.ContainsKey("OperatingSystem"))	{$hshSetItemSpec["operating-system"] = $OperatingSystem.ToString().ToLower()}
 		if ($PSBoundParameters.ContainsKey("PortAddress"))	{$hshSetItemSpec["port-address"] = $PortAddress}
 
@@ -541,6 +542,9 @@ function Set-XIOLdapConfig {
 	Set-XIOSnapshotScheduler -SnapshotScheduler (Get-XIOSnapshotScheduler mySnapshotScheduler0) -Suffix someSuffix0 -SnapshotRetentionCount 20
 	Set the given properties of this SnapshotScheduler:  change its Suffix value and the number of snapshots to retain
 	.Example
+	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -Name mySnapshotScheduler0_newName
+	Rename the given SnapshotScheduler
+	.Example
 	Get-XIOSnapshotScheduler -Name mySnapshotScheduler0 | Set-XIOSnapshotScheduler -SnapshotRetentionDuration (New-TimeSpan -Days (365*3)) -SnapshotType Regular
 	Get the given SnapshotScheduler and set its snapshot retention duration to three years, and the snapshot types to "Regular" (read/write)
 	.Example
@@ -566,6 +570,8 @@ function Set-XIOSnapshotScheduler {
 		## Source object of which to create snapshots with this snapshot scheduler. Can be an XIO object of type Volume, SnapshotSet, or ConsistencyGroup
 		[ValidateScript({($_ -is [XioItemInfo.Volume]) -or ($_ -is [XioItemInfo.ConsistencyGroup]) -or ($_ -is [XioItemInfo.SnapshotSet])})]
 		[PSObject]$RelatedObject,
+		## New name for the given SnapshotScheduler
+		[parameter(Mandatory=$true,ParameterSetName="SetNewName")][string]$Name,
 		## The timespan to wait between each run of the scheduled snapshot action (maximum is 72 hours). Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
 		[parameter(ParameterSetName="ByTimespanInterval")][ValidateScript({$_ -le (New-TimeSpan -Hours 72)})][System.TimeSpan]$Interval,
 		## The day of the week on which to take the scheduled snapshot (or, every day).  Expects the name of the day of the week, or "Everyday". Specify either the -Interval parameter or both of -ExplicitDay and -ExplicitTimeOfDay
@@ -582,6 +588,10 @@ function Set-XIOSnapshotScheduler {
 		## Switch:  Snapshot Scheduler enabled-state. To enable the SnapshotScheduler, use -Enable.  To disable, use -Enable:$false. When enabling/disabling, one can apparently not make other changes, as the API uses a different method in the backend on the XMS ("resume_scheduler" and "suspend_scheduler" instead of "modify_scheduler").  See Notes section below for further information
 		[parameter(ParameterSetName="EnableDisable")][Switch]$Enable,
 		## Type of snapshot to create:  "Regular" (readable/writable) or "ReadOnly"
+		[parameter(ParameterSetName="ByTimespanInterval")]
+		[parameter(ParameterSetName="ByExplicitSchedule")]
+		[parameter(ParameterSetName="SpecifySnapNum")]
+		[parameter(ParameterSetName="SpecifySnapAge")]
 		[ValidateSet("Regular","ReadOnly")][string]$SnapshotType = "Regular",
 		## String to injected into the resulting snapshot's name. For example, a value of "mySuffix" will result in a snapshot named something like "<baseVolumeName>.mySuffix.<someTimestamp>"
 		[string]$Suffix
@@ -592,8 +602,8 @@ function Set-XIOSnapshotScheduler {
 		$hshSetItemSpec = @{
 			## excluding Cluster's name or index number -- SnapshotScheduler objects do not have the property, as the API does not provide the "sys-id" property from which to get the info
 			# "cluster-id" = $SnapshotScheduler.Cluster.Name
-			## SnapshotScheduler's current name or index number; using index (which is rare), but due to the fact that SnapshotSchedulers are made via API with an empty name (no means by which to set name via API), index is actually preferrable in this rare case
-			"scheduler-id" = $SnapshotScheduler.Index
+			## SnapshotScheduler's "full" scheduler-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"scheduler-id" = @($SnapshotScheduler.Guid, $SnapshotScheduler.Name, $SnapshotScheduler.Index)
 		} ## end hashtable
 
 		## set the scheduler type and schedule (time) string, based on the ParameterSetName
@@ -641,6 +651,7 @@ function Set-XIOSnapshotScheduler {
 		if ($PSBoundParameters.ContainsKey("Enable")) {$hshSetItemSpec["state"] = $(if ($Enable) {'enabled'} else {'user_disabled'})}
 		if ($PSBoundParameters.ContainsKey("SnapshotType")) {$hshSetItemSpec["snapshot-type"] = $SnapshotType.ToLower()}
 		if ($PSBoundParameters.ContainsKey("Suffix")) {$hshSetItemSpec["suffix"] = $Suffix}
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["new-name"] = $Name}
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{
@@ -876,8 +887,10 @@ function Set-XIOTarget {
 	param(
 		## Target object to modify
 		[parameter(Mandatory=$true,ValueFromPipeline=$true)][XioItemInfo.Target]$Target,
+		## New name for the given Target
+		[string]$Name,
 		## MTU value to set for this Target
-		[parameter(Mandatory=$true)][ValidateRange(1500,9KB)]$MTU
+		[ValidateRange(1500,9KB)][int]$MTU
 	) ## end param
 
 	Process {
@@ -885,10 +898,12 @@ function Set-XIOTarget {
 		$hshSetItemSpec = @{
 			## Cluster's name or index number
 			"cluster-id" = $Target.Cluster.Name
-			mtu = $MTU
-			## Target's current name or index number -- does it matter if this is passed or not?
-			"tar-id" = $Target.Name
+			## Target's "full" tar-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"tar-id" = @($Target.Guid, $Target.Name, $Target.Index)
 		} ## end hashtable
+
+		if ($PSBoundParameters.ContainsKey("MTU")) {$hshSetItemSpec["mtu"] = $MTU}
+		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["new-name"] = $Name}
 
 		## the params to use in calling the helper function to actually modify the object
 		$hshParamsForSetItem = @{
@@ -965,6 +980,8 @@ function Set-XIOUserAccount {
 	.Example
 	Get-XIOVolume myVolume0 | Set-XIOVolume -SizeTB 10 -AccessRightLevel Read_Access -SmallIOAlertEnabled:$false -VaaiTPAlertEnabled
 	Set the size and access level for the volume, disable small IO alerts, and enable VAAI thin provisioning alerts
+	.Notes
+	Setting of AccessType on Snapshot objects not seemingly supported. While the XtremIO API reference documentation mentions this item as a valid parameter in one spot, the documentation omits it in another, making it unclear if there is official support for setting this property on a Snapshot object
 	.Outputs
 	XioItemInfo.Volume or XioItemInfo.Snapshot (depending on the source object) object for the modified object if successful
 #>
@@ -988,7 +1005,7 @@ function Set-XIOVolume {
 		[Switch]$UnalignedIOAlertEnabled,
 		## Switch:  Enable or disable VAAI thin-provisioning alerts. To disable, use: -VaaiTPAlertEnabled:$false
 		[Switch]$VaaiTPAlertEnabled,
-		## Set the access level of the volume or snapshot.  Volumes/Snapshots can have one of the following access right levels:
+		## Set the access level of the volume.  Volumes can have one of the following access right levels:
 		#	- No_Access:  All SCSI commands for accessing data on the Volume (read commands and write commands) fail, and all SCSI discovery commands (i.e. inquiries on Volume characteristics and not accessing the data on the Volume) succeed.
 		#	- Read_Access:  All SCSI write commands fail and all SCSI read commands and discovery commands succeed.
 		#	- Write_Access:  All commands succeed and the host can write to the Volume.
@@ -1001,8 +1018,8 @@ function Set-XIOVolume {
 		$hshSetItemSpec = @{
 			## Cluster's name or index number
 			"cluster-id" = $Volume.Cluster.Name
-			## Volume's current name or index number -- does it matter if this is passed or not?
-			"vol-id" = $Volume.Name
+			## Volume's "full" vol-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"vol-id" = @($Volume.Guid, $Volume.Name, $Volume.Index)
 		} ## end hashtable
 
 		if ($PSBoundParameters.ContainsKey("Name")) {$hshSetItemSpec["vol-name"] = $Name}
