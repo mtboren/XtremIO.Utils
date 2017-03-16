@@ -1,4 +1,6 @@
-todo:
+### ToDo for XtremIO.Utils PowerShell module
+
+ToDo:
 - add support for new objects that came to be in REST API v2.1:
 	- Discover Initiators:  `GET /api/json/v2/types/discover-initiators`
 	- Initiators Connectivity:  `GET /api/json/v2/types/initiators-connectivity`
@@ -266,4 +268,4 @@ todo:
 
 
 #### Done for previous versions:
-_moved to done.txt_
+_moved to [done.txt](done.txt)_
