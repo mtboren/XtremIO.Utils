@@ -194,7 +194,7 @@ ToDo:
 
 
 ### Known Issues / Considerations
-#### From module release v1.next
+#### From module release v1.4.0
 
 - Setting of `AccessType` on `Snapshot` objects not seemingly supported. While the API reference documentation mentions this item as a valid parameter in one spot, the documentation omits it in another, making it unclear if there is official support for setting this property on a `Snapshot` object. Updated `Set-XIOVolume` help (`Set-XIOVolume` is used for the other set-operations for `Snapshot` objects)
 - in XtremIO REST API v2.1:
@@ -246,23 +246,6 @@ ToDo:
 #### Doing:
 
 #### Done:
-[featAndBf_SetItems]
-- fixed bug in `Set-XIOInitiator`:  setting failed for all; also, there is no documented support for setting "operating-system" property via API, but it apparently can be done (as observed in WebUI, and corresponding Audit-level events on XMS) -- so, add comment to that effect, so there is no wild goose chase on trying to find in docs the support info for that property
-	- appears that sending _full_ "initiator-id" property as defined on "FullResponse" objects (which is @(<guid>, <name>, <index>)), call now succeeds on at least API v2.1:
-	- can/should specify this full "id" property for `Set-XIO*`, `Remove-XIO*` cmdlets
-	- updated `Remove-XIO*`, which were working w/ name-only for the ID portion, but including GUID and index in request body should now be better
-	- updated `Set-XIO*`:
-		- fixed: `Set-XIOInitiator`, `Set-XIOSnapshotScheduler` (worked, but try also w/ legit "scheduler-id" array of values instead of just index), `Set-XIOTarget`, `Set-XIOVolume`
-		- were already working as expected:
-			`Set-XIOAlertDefinition`, `Set-XIOConsistencyGroup`, `Set-XIOEmailNotifier`, `Set-XIOInitiatorGroup`, `Set-XIOInitiatorGroupFolder`, `Set-XIOLdapConfig`, `Set-XIOSnapshotSet`, `Set-XIOSnmpNotifier`, `Set-XIOSyslogNotifier`, `Set-XIOTag`, `Set-XIOUserAccount`, `Set-XIOVolumeFolder`
-- added `-Name` parameter to `Set-XIOSnapshotScheduler`, `Set-XIOTarget`, for specifying new name respectively for `SnapshotScheduler`, `Target` (not documented in API reference, but supported operation)
-- added Pester tests for `Set-XIO*` cmdlets
-
-[feat_AcceptTagFromPipeline]
-- add Tag type as accepted type by `-RelatedObject` parameter to main Get-XIO* cmdlets:
-	`Get-XIOBBU`, `Get-XIOConsistencyGroup`, `Get-XIOInitiator`, `Get-XIOInitiatorGroup`, `Get-XIOSnapshot`, `Get-XIOSnapshotSet`, `Get-XIOSsd`, `Get-XIOVolume`
-- fixed typo "multple" in help for `Set-XIOLdapConfig`
-- initially tested `Get-XIO*` cmdlets after updates (updated tests to get given objects that have Tag assignements) -- testing on single connection with REST API v2.1
 
 #### Things already added to changelog/readme:
 
