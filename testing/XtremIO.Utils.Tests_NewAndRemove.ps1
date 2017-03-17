@@ -13,7 +13,7 @@ Write-Verbose -Verbose "Suffix used for new objects for this test:  $strNameToAp
 ## bogus OUI for making sure that the addresses of the intiators created here do not conflict with any real-world addresses
 $strInitiatorAddrPrefix = "EE:EE:EE"
 ## random hex value to use for four hex-pairs in the port addresses, to avoid address conflicts if testing multiple times without removing newly created test objects (with particular port addresses)
-$strInitiatorRandomEightHexChar = "{0:x}" -f (Get-Random -Maximum ([Int64]([System.Math]::pow(16,8) - 1)))
+$strInitiatorRandomEightHexChar = "{0:x8}" -f (Get-Random -Maximum ([Int64]([System.Math]::pow(16,8) - 1)))
 $strInitiatorRandomEightHexChar_ColonJoined = ($strInitiatorRandomEightHexChar -split "(\w{2})" | Where-Object {$_ -ne ""}) -join ":"
 ## hashtable to keep the variables that hold the newly created objects, so that these objects can be removed from the XMS later; making it a global variable, so that consumer has it for <anything they desire> after testing
 $global:hshXioObjsToRemove = [ordered]@{}

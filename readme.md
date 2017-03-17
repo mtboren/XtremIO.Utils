@@ -1,4 +1,4 @@
-## XtremIO.Utils PowerShell module ReadMe##
+## XtremIO.Utils PowerShell module ReadMe
 
 Contents:
 
@@ -7,31 +7,27 @@ Contents:
 - [Other Details](#otherDetails)
 
 <a id="gettingStarted"></a>
-### Getting Started ###
+### Getting Started
 
 
-##### Importing the module #####
+##### Importing the module
 
 To import the module, use the `Import-Module` cmdlet, and use the top level folder of the module for the path.  No need to point explicitly at any .psd1 file, just use the parent folder of the module's files, like:
 
 - `Import-Module \\path\to\XtremIO.Utils`
 
-##### Getting commands in the module #####
+##### Getting commands in the module
 
 - `Get-Command -Module XtremIO.Utils`
 
-##### Dealing with non-legitimate / self-signed certificates #####
+##### Dealing with non-legitimate / self-signed certificates
 The cmdlets for connecting to an XMS machine and for opening the admin GUI (`Connect-XIOServer`, `Open-XIOMgmtConsole`) each have a `-TrustAllCert` switch parameter.  You can use this switch to ignore certificate errors when connecting or opening a management console, but you should only do so if you know the destination machine and trust that machine.
 
 
-##### Connecting to an XMS device #####
+##### Connecting to an XMS device
 - `Connect-XIOServer -ComputerName somexmsappl01.dom.com -Credential (Get-Credential dom\someUser)`
 
-##### Opening the Java-based administration GUI (yuck) #####
-
-- `Open-XIOMgmtConsole -ComputerName somexmsappl01.dom.com`
-
-##### Credential handling #####
+##### Credential handling
 
 The module provides `Connect-` and `Disconnect-` cmdlets for handling connections to XMS servers, so that one may connect to an XMS server, and then take further action without needing to supply credentials again for each subsequent call.  These cmdlets also update the PowerShell window titlebar with information about the currently-connected XIO servers.  See the help for `Connect-XIOServer` and `Disconnect-XIOServer` for more information using these cmdlets.
 
@@ -41,18 +37,25 @@ The module can also store an encrypted credential for use with `Connect-XIOServe
 - One can remove this credential file at will via `Remove-XIOStoredCred`
 - And, the encrypted credential is encrypted using the Windows Data Protection API, which allows only the user the encrypted the item to decrypt the item (and, can only do so from the same computer on which the item was encrypted)
 
-##### Example run through of putting it together #####
+##### Example run through of using the module
 See this module's GitHub Pages page for exciting examples of using the cmdlets from this module, available at <https://mtboren.github.io/XtremIO.Utils/>.
+
+##### For those rare occasions when you feel like you need a GUI:
+Opening the Web-based administration GUI (yuck, but better than the Java-based UI):
+- `Open-XIOXMSWebUI -ComputerName somexmsappl01.dom.com`
+
+Opening the Java-based administration GUI (yuck)
+- `Open-XIOMgmtConsole -ComputerName somexmsappl01.dom.com`
 
 
 <a id="changelog"></a>
-### Changelog for the module ###
+### Changelog for the module
 In [changelog.md](changelog.md), there is an informative section for each version of the module, with listing of new features, improvements, bug fixes, and more.  Be sure to read it for all of the exciting news.
 
 
 <a id="otherDetails"></a>
-### Some details on the module, cmdlet behavior, etc. ###
-Remove-XIO* cmdlets:
+### Some details on the module, cmdlet behavior, etc.
+`Remove-XIO*` cmdlets:
 
 - `Remove-XIOConsistencyGroup`:  Removing a `ConsistencyGroup` does not affect the `Volume` objects that were in it -- they are _not_ deleted
 - `Remove-XIOInitiatorGroup`:
@@ -61,7 +64,7 @@ Remove-XIO* cmdlets:
 - `Remove-XIOSnapshotScheduler`:  the API does not yet support removing the associated `SnapshotSet` objects, it seems, so removing the `SnapshotScheduler` does not affect the `SnapshotSet` objects that have been created as a result of the `SnapshotScheduler` having run
 - `Remove-XIOSnapshotSet`:  this deletes the `Snapshot` objects that were in the `SnapshotSet`, too
 - `Remove-XIOVolume`:
-	- Can be used to remove both `Volume` and `Snapshot` objects	
+	- Can be used to remove both `Volume` and `Snapshot` objects
 	- If the `Volume`/`Snapshot` is part of `LunMap`:  the attempt to remove the `Volume`/`Snapshot` will fail; more detail:  this action fails in the admin GUI, but the API allows it (it removes the `LunMap`, too); this cmdlet is written to emulate the behavior established by the GUI (the cmdlet does not delete the target `Volume`/`Snapshot` object if it is part of a `LunMap` -- user must first remove given `LunMap`)
 	- If the `Volume`/`Snapshot` is the subject of a `SnapshotScheduler`:  the attempt to remove the `Volume`/`Snapshot` will fail -- user must first remove given `SnapshotScheduler`
 	- If the `Snapshot` is part of a `SnapshotSet`:  removing the `Snapshot` leaves the `SnapshotSet` alone _unless_ this was the last `Snapshot` in the `SnapshotSet`

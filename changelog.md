@@ -1,9 +1,10 @@
-## XtremIO.Utils PowerShell module Changelog ##
+## XtremIO.Utils PowerShell module Changelog
 
 Contents:
 
-- [v1.3.0](#v1.3.0), 14 Dec 2016
+- [v1.4.0](#v1.4.0), 16 Mar 2017
 - [Known Issues](#currentKnownIssues)
+- [v1.3.0](#v1.3.0), 14 Dec 2016
 - [v1.2.0](#v1.2.0), 17 Nov 2016
 - [v1.1.0](#v1.1.0), 30 Jun 2016
 - [v1.0.0](#v1.0.0), 05 May 2016
@@ -13,25 +14,35 @@ Contents:
 
 ------
 
-<a id="v1.3.0"></a>
-### v1.3.0
-14 Dec 2016
+<a id="v1.4.0"></a>
+### v1.4.0
+16 Mar 2017
 
-This release brought the first implementation of filtering support for the module, along with a fix and an improvement here and there.  This filtering support provides the basis for great speed improvements in future updates, as some queries will benifit in a big way from leveraging such filtering.  The list for this release:
+This release brings some nice new functionality, providing for increased ease-of-use and more natural use. It also increased the testing-coverage, and fixed a few bugs.  The details:
 
-- \[new] added initial Filtering support, which is supported the XtremIO REST API v2.0 and up
-	- first added to `Get-XIOItemInfo` cmdlet as a parameter (`-Filter`)
-	- can facilitate surgical selection of objects to return, providing for vastly improved retrieval of objects (like is characteristic of server-side filtering)
-	- utilized in improved `Get-XIOLunMap` cmdlet (mentioned below)
-	- see `Get-XIOItemInfo` for brief help and examples, and see the "Filter" section towards the start of the XtremIO "RESTful API Guide" for complete syntax
-- \[fixed] fixed bug in `Remove-XIOUserAccount` that was caused by change of input parameter name in XtremIO REST API v2.1 and inaccurate API docs; this fix maintained compatibility with XtremIO REST API v2.0
-- \[improvement] improved `Get-XIOLunMap`:
-	- added `-RelatedItem` parameter, which supports `InitiatorGroup`, `Volume`, and `Snapshot` items (and, from pipeline, too); this uses new Filtering capabilities, which bring great speed improvements
-	- added `-Name` param, for the off chance that someone wants to get LunMap by `1_3_1` kind of name
+- \[new] added `Tag` type as accepted type by `-RelatedObject` parameter to main `Get-XIO*` cmdlets, providing much needed capability of getting given objects by `Tag`. Cmdlets updated:
+	`Get-XIOBBU`, `Get-XIOConsistencyGroup`, `Get-XIOInitiator`, `Get-XIOInitiatorGroup`, `Get-XIOSnapshot`, `Get-XIOSnapshotSet`, `Get-XIOSsd`, `Get-XIOVolume`
+- \[new] added `-Name` parameter to `Set-XIOSnapshotScheduler`, `Set-XIOTarget`, for specifying new name respectively for `SnapshotScheduler`, `Target` (not documented in API reference, but supported operation)
+- \[new] added Pester tests for `Set-XIO*` cmdlets
+- \[fixed] fixed bug in `Set-XIOInitiator` where setting failed for all initiators
+	- appears that sending _full_ "initiator-id" property as defined on "FullResponse" objects (which is @(<guid>, <name>, <index>)), call now succeeds on at least API v2.1:
+	- updated `Remove-XIO*`, which were working w/ name-only for the ID portion, but including GUID and index in request body should now be better
+	- updated `Set-XIO*`:
+		- fixed: `Set-XIOInitiator`, `Set-XIOSnapshotScheduler` (worked, but try also w/ legit "scheduler-id" array of values instead of just index), `Set-XIOTarget`, `Set-XIOVolume`
+- \[fixed] fixed typo "multple" in help for `Set-XIOLdapConfig`
 
 
 <a id="currentKnownIssues"></a>
-**Known Issues as of v1.3.0:**
+**Known Issues as of v1.4.0:**
+
+From module release v1.4.0
+
+- Setting of `AccessType` on `Snapshot` objects not seemingly supported. While the API reference documentation mentions this item as a valid parameter in one spot, the documentation omits it in another, making it unclear if there is official support for setting this property on a `Snapshot` object. Updated `Set-XIOVolume` help (`Set-XIOVolume` is used for the other set-operations for `Snapshot` objects)
+- in XtremIO REST API v2.1:
+	- UPDATE on item: some filters (via the `-Filter` parameter to `Get-XIOItemInfo`) give unexpected results when comparison operator is "eq" and value is an integer:  filtering for same object by different attribute (generally, whose value is a string instead of an integer) seems to be unaffected. Update:  vendor confirmed this as a bug, and that said bug should be fixed in upcoming release currently slated for end of Q1 2017
+	- Getting objects from related Tag object could return more than just the tagged objects in a multi-cluster XMS environment with objects of the same name across multiple clusters. This is due to the current compatibility mode of the module which does not rely on XMS REST API v2+ feature of filtering. A future module release will handle this by filtering on unique properties, but the current solution uses object names from the Tag (clearly not the best key to try to use), and Tag objects are XMS-wide (not cluster specific).
+	- removing SnapshotSet objects seems to consistently fail, as though the name of one of the API request body parameters changed -- the documented property name of `snapshot-set-id`, as well as the observed (by Audit events) property name of `snapset-id` both fail in removal requests
+
 
 From module release v1.3.0
 
@@ -60,6 +71,23 @@ From module release v1.1.0
 	- Workaround:  do not specify `-ParentFolder` parameter, which creates volume without volume tag
 
 ------
+
+<a id="v1.3.0"></a>
+### v1.3.0
+14 Dec 2016
+
+This release brought the first implementation of filtering support for the module, along with a fix and an improvement here and there.  This filtering support provides the basis for great speed improvements in future updates, as some queries will benifit in a big way from leveraging such filtering.  The list for this release:
+
+- \[new] added initial Filtering support, which is supported the XtremIO REST API v2.0 and up
+	- first added to `Get-XIOItemInfo` cmdlet as a parameter (`-Filter`)
+	- can facilitate surgical selection of objects to return, providing for vastly improved retrieval of objects (like is characteristic of server-side filtering)
+	- utilized in improved `Get-XIOLunMap` cmdlet (mentioned below)
+	- see `Get-XIOItemInfo` for brief help and examples, and see the "Filter" section towards the start of the XtremIO "RESTful API Guide" for complete syntax
+- \[fixed] fixed bug in `Remove-XIOUserAccount` that was caused by change of input parameter name in XtremIO REST API v2.1 and inaccurate API docs; this fix maintained compatibility with XtremIO REST API v2.0
+- \[improvement] improved `Get-XIOLunMap`:
+	- added `-RelatedItem` parameter, which supports `InitiatorGroup`, `Volume`, and `Snapshot` items (and, from pipeline, too); this uses new Filtering capabilities, which bring great speed improvements
+	- added `-Name` param, for the off chance that someone wants to get LunMap by `1_3_1` kind of name
+
 
 <a id="v1.2.0"></a>
 ### v1.2.0

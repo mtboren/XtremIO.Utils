@@ -73,7 +73,7 @@ function Remove-XIOItemInfo {
 				$strShouldProcessOutput = "Remove XIO '{0}' object {1} with the following {2} propert{3}:`n{4}`n" -f $strObjectTypeBeingRemoved_display, $strShouldProcessOutput_firstPiece, $intNumPropertyToSet, $(if ($intNumPropertyToSet -eq 1) {"y"} else {"ies"}), $strPropertiesOfObjToRemove
 				if ($PsCmdlet.ShouldProcess($oThisXioConnection.ComputerName, $strShouldProcessOutput)) {
 					## make params hashtable for new WebRequest
-					$hshParamsToSetXIOItem = @{
+					$hshParamsToRemoveXIOItem = @{
 						Uri = $oExistingXioItem.Uri
 						## JSON contents for body, for the params for creating the new XIO object
 						Body = $SpecForRemoveItem
@@ -85,10 +85,10 @@ function Remove-XIOItemInfo {
 					## try request
 					try {
 						## when Method is Put or when there is a body to the request, seems to ignore cert errors by default, so no need to change cert-handling behavior here based on -TrustAllCert value
-						$oWebReturn = Invoke-WebRequest @hshParamsToSetXIOItem
+						$oWebReturn = Invoke-WebRequest @hshParamsToRemoveXIOItem
 					} ## end try
 					catch {
-						_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToSetXIOItem['Uri'] -ErrorRecord $_
+						_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsToRemoveXIOItem['Uri'] -ErrorRecord $_
 					} ## end catch
 					## if good, write-verbose the status and, if status is of expected value, Get-XIOInfo on given HREF
 					if (($oWebReturn.StatusCode -eq $hshCfg["StdResponse"]["Delete"]["StatusCode"] ) -and ($oWebReturn.StatusDescription -eq $hshCfg["StdResponse"]["Delete"]["StatusDescription"])) {
@@ -122,8 +122,8 @@ function Remove-XIOConsistencyGroup {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			"cluster-id" = $ConsistencyGroup.Cluster.Name
-			## ConsistencyGroup's cg-id (name or index, but, using name, of course, because by-index is no fun)
-			"cg-id" = $ConsistencyGroup.Name
+			## ConsistencyGroup's "full" cg-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"cg-id" = @($ConsistencyGroup.Guid, $ConsistencyGroup.Name, $ConsistencyGroup.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -193,8 +193,8 @@ function Remove-XIOInitiator {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			"cluster-id" = $Initiator.Cluster.Name
-			## Initiator's initiator-id (name or index, but, using name, of course, because by-index is no fun)
-			"initiator-id" = $Initiator.Name
+			## Initiator's "full" initiator-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"initiator-id" = @($Initiator.Guid, $Initiator.Name, $Initiator.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -228,8 +228,8 @@ function Remove-XIOInitiatorGroup {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			"cluster-id" = $InitiatorGroup.Cluster.Name
-			## InitiatorGroup's ig-id (name or index, but, using name, of course, because by-index is no fun)
-			"ig-id" = $InitiatorGroup.Name
+			## InitiatorGroup's "full" ig-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"ig-id" = @($InitiatorGroup.Guid, $InitiatorGroup.Name, $InitiatorGroup.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -273,8 +273,8 @@ function Remove-XIOLunMap {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			"cluster-id" = $LunMap.Cluster.Name
-			## LunMap's luns-map-id (index in this case)
-			"luns-map-id" = $LunMap.Index
+			## LunMap's "full" luns-map-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"luns-map-id" = @($LunMap.Guid, $LunMap.Name, $LunMap.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -311,8 +311,8 @@ function Remove-XIOSnapshotScheduler {
 			# "cluster-id" = <something>
 			## Events show this param, but API does not accept it (ignores it, it seems)
 			# "remove-snapshot-sets" = ($true -eq $DeleteRelatedSnapshotSet)
-			## SnapshotScheduler's scheduler-id (name or index, but, using name, of course, because by-index is no fun)
-			"scheduler-id" = $SnapshotScheduler.Name
+			## SnapshotScheduler's "full" scheduler-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"scheduler-id" = @($SnapshotScheduler.Guid, $SnapshotScheduler.Name, $SnapshotScheduler.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -346,8 +346,8 @@ function Remove-XIOSnapshotSet {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			"cluster-id" = $SnapshotSet.Cluster.Name
-			## SnapshotSet's snapshot-set-id (name or index, but, using name, of course, because by-index is no fun)
-			"snapshot-set-id" = $SnapshotSet.Name
+			## SnapshotSet's "full" snapshot-set-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"snapshot-set-id" = @($SnapshotSet.Guid, $SnapshotSet.Name, $SnapshotSet.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -385,8 +385,8 @@ function Remove-XIOTag {
 	Process {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
-			## Tag's tag-id (name or index, but, using name, of course, because by-index is no fun)
-			"tag-id" = $Tag.Name
+			## Tag's "full" tag-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"tag-id" = @($Tag.Guid, $Tag.Name, $Tag.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -484,8 +484,8 @@ function Remove-XIOUserAccount {
 	Process {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
-			## UserAccount's user-id (name or index, but, using name, of course, because by-index is no fun)
-			"usr-id" = $UserAccount.Name
+			## UserAccount's "full" tag-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"usr-id" = @($UserAccount.Guid, $UserAccount.Name, $UserAccount.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
@@ -534,8 +534,8 @@ function Remove-XIOVolume {
 		## the API-specific pieces for specifying the XIO object to remove
 		$hshRemoveItemSpec = @{
 			"cluster-id" = $Volume.Cluster.Name
-			## Volume's vol-id (name or index, but, using name, of course, because by-index is no fun)
-			"vol-id" = $Volume.Name
+			## Volume's "full" vol-id value, an array of @(guid, name, index), like what is returned from API for said property
+			"vol-id" = @($Volume.Guid, $Volume.Name, $Volume.Index)
 		} ## end hashtable
 
 		## the params to use in calling the helper function to actually modify the object
