@@ -239,13 +239,20 @@ ToDo:
 #### Should do next:
 - update ReadMe w/ some of the info on the module's GeneralInfo page at vN -- the PSGet stuff, the getting started stuff, etc.; add update about opening WebUI
 - update GH Pages examples
-- update parameter names to be consistent across cmdlets (remove "_str" and "_arr" types of trailing parameter bits)
 - update to Filter as much as possible in place of relying on by-name things (in -RelatedObject types of scenarios, for example) -- this is the break from supporting API v1 (XMS v3 and older)
 
 
 #### Doing:
+[feat_Standardize]
+- update PS formatting for comment-based help, parameters (style guide suggests spaces between keyword sections in help, and between parameters in param())
+	- in: RemoveXIOItem.ps1, SetXIOItem.ps1, XtremIO.Utils.init.ps1, XtremIO.Utils.psd1, XtremIO_UtilsMod.psm1
+	done:
+		- otherSnippets.ps1, configItems.ps1, GetXIOItem.ps1, NewXIOItem.ps1, OtherXIOMgmt.ps1, XIO_SupportingFunctions.ps1
 
 #### Done:
+[feat_Standardize]
+- breaking change:  updated parameter names to be consistent across cmdlets (remove trailing parameter bits:  "_arr", "_int", "_str", "_sw")
+	- from: otherSnippets.ps1, GetXIOItem.ps1, NewXIOItem.ps1, OtherXIOMgmt.ps1, XIO_SupportingFunctions.ps1
 
 #### Things already added to changelog/readme:
 
