@@ -12,7 +12,7 @@ $hshModManifestParams = @{
 	Copyright = "None"
 	FormatsToProcess = "XioInfo.format.ps1xml"
 	ModuleToProcess = "XtremIO_UtilsMod.psm1"
-	ModuleVersion = "1.4.0"
+	ModuleVersion = "1.4.1"
 	## scripts (.ps1) that are listed in the NestedModules key are run in the module's session state, not in the caller's session state. To run a script in the caller's session state, list the script file name in the value of the ScriptsToProcess key in the manifest
 	NestedModules = "XIO_SupportingFunctions.ps1"
 	PowerShellVersion = "4.0"

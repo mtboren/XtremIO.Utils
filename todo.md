@@ -242,8 +242,8 @@ ToDo:
 - update to Filter as much as possible in place of relying on by-name things (in -RelatedObject types of scenarios, for example) -- this is the break from supporting API v1 (XMS v3 and older)
 
 
+for vNext:
 #### Doing:
-[feat_Standardize]
 
 #### Done:
 [feat_Standardize]
