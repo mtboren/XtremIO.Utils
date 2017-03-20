@@ -1,11 +1,14 @@
 <#	.Description
 	Script to launch the XtremIO Java management console.  Assumes that *.jnlp files are associated w/ the proper Java WebStart app.  For XMS versions of 4.0 and newer, expects that user has already connected to said XMS via Connect-XIOServer (for XIOS v4 and newer, the Open-XIOMgmtConsole cmdlet relies on XMS information from that XioConnection object for determining the correct URL for the JNLP file)
+
 	.Example
 	Open-XIOMgmtConsole -Computer somexmsappl01.dom.com
 	Downloads the .jnlp file for launching the Java console for this XMS appliance, then tries to launch the console by calling the program associated with .jnlp files (should be Java WebStart or the likes)
+
 	.Example
 	Open-XIOMgmtConsole -TrustAllCert -Computer somenewerxmsappl10.dom.com
 	Downloads the .jnlp file for launching the Java console for this XMS appliance, trusting the certificate for this interaction, then tries to launch the console by calling the program associated with .jnlp files (should be Java WebStart or the likes)
+
 	.Example
 	Open-XIOMgmtConsole -Computer somexmsappl02.dom.com -DownloadOnly
 	Downloads the .jnlp file for launching the Java console for this XMS appliance
@@ -15,9 +18,11 @@ function Open-XIOMgmtConsole {
 	param(
 		## Name(s) of XMS appliances for which to launch the Java management console
 		[parameter(Mandatory=$true)][string[]]$ComputerName,
-		## switch: Trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
+
+		## Switch: Trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
 		[switch]$TrustAllCert,
-		## switch:  Download the JNLP files only?  default is to open the files with the associate program
+
+		## Switch:  Download the JNLP files only?  default is to open the files with the associate program
 		[switch]$DownloadOnly
 	) ## end param
 
@@ -67,9 +72,11 @@ function Open-XIOMgmtConsole {
 
 <#	.Description
 	Opens the WebUI web management page in the default web browser on the invoking system.  Assumes that the WebUI has been enabled on the given XMS appliance.
+
 	.Example
 	Open-XIOXMSWebUI -Computer somexmsappl01.dom.com
 	Opens the WebUI for XMS somexmsappl01.dom.com in a web browser
+
 	.Example
 	Open-XIOXMSWebUI -Computer myxms* -Verbose
 	Opens the WebUI for all of the XMS appliances to which this PowerShell session has a connection (as made via Connect-XIOServer) whose name is like "myxms*".  Writes out the URLs that the cmdlet is opening, too.
@@ -112,8 +119,10 @@ function Open-XIOXMSWebUI {
 
 <#	.Description
 	Function to get the stored, encrypted credentials from file (if one exists)
+
 	.Example
 	Get-XIOStoredCred
+
 	.Outputs
 	System.Management.Automation.PSCredential or none
 #>
@@ -136,8 +145,10 @@ function Get-XIOStoredCred {
 
 <#	.Description
 	Function to create a new stored, encrypted credentials file
+
 	.Example
 	New-XIOStoredCred -Credential $credMyStuff
+
 	.Outputs
 	None or System.Management.Automation.PSCredential
 #>
@@ -146,20 +157,23 @@ function New-XIOStoredCred {
 	param(
 		## The credential to encrypt; if none, will prompt
 		[System.Management.Automation.PSCredential]$Credential = (Get-Credential -Message "Enter credentials to use for XtremIO access"),
-		## switch: Pass the credentials through, returning back to caller?
-		[switch]$PassThru_sw
+
+		## Switch: Pass the credentials through, returning back to caller?
+		[switch]$PassThru
 	) ## end param
 	hExport-PSCredential -Credential $Credential -Path $hshCfg["EncrCredFilespec"]
-	if ($true -eq $PassThru_sw) {$Credential}
+	if ($true -eq $PassThru) {$Credential}
 } ## end function
 
 
 
 <#	.Description
 	Function to remove the stored, encrypted credentials file (if one exists)
+
 	.Example
 	Remove-XIOStoredCred -WhatIf
 	Perform WhatIf run of removing the credentials (without actually removing them)
+
 	.Outputs
 	None
 #>
@@ -179,9 +193,11 @@ function Remove-XIOStoredCred {
 
 <#	.Description
 	Function to make a "connection" to an XtremIO XMS machine, such that subsequent interactions with that XMS machine will not require additional credentials be supplied.  Updates PowerShell title bar to show connection information
+
 	.Example
 	Connect-XIOServer somexms02.dom.com
 	Connect to the given XMS server.  Will prompt for credential to use
+
 	.Example
 	Connect-XIOServer -Credential $credMe -ComputerName somexms01.dom.com -Port 443 -TrustAllCert
 	Connect to the given XMS server using the given credential.  "TrustAllCert" parameter is useful when the XMS appliance has a self-signed cert that will not be found valid, but that is trusted to be legit
@@ -192,13 +208,17 @@ function Connect-XIOServer {
 	param(
 		## Credential for connecting to XMS appliance; if a credential has been encrypted and saved, this will automatically use that credential
 		[System.Management.Automation.PSCredential]$Credential = $(_Find-CredentialToUse),
+
 		## XMS appliance address to which to connect
 		[parameter(Mandatory=$true,Position=0)][string[]]$ComputerName,
+
 		## Port to use for API call (if none, will try to autodetect proper port; may be slightly slower due to port probe activity)
 		[int]$Port,
-		## switch: Trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
+
+		## Switch: Trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
 		[switch]$TrustAllCert
 	) ## end param
+
 	begin {
 		## if the global connection info variable does not yet exist, initialize it
 		if ($null -eq $Global:DefaultXmsServers) {$Global:DefaultXmsServers = @()}
@@ -207,6 +227,7 @@ function Connect-XIOServer {
 		if ($TrustAllCert) {$hshArgsForGetXIOInfo["TrustAllCert"] = $true}
 		if ($PSBoundParameters.ContainsKey("Port")) {$hshArgsForGetXIOInfo["Port"] = $Port; $hshArgsForNewXioApiURI["Port"] = $Port}
 	} ## end begin
+
 	process {
 		$ComputerName | Foreach-Object {
 			$strThisXmsName = $_
@@ -241,7 +262,7 @@ function Connect-XIOServer {
 						## else, this must be older XIOS/XMS version, which uses the XMS REST API version 1.0
 						else {$hshPropertiesForNewXmsConnectionObj["RestApiVersion"] = [System.Version]"1.0"}
 						## get the names of the XIO Cluster(s) managed by this XMS, to include in the XIO connection object
-						$hshPropertiesForNewXmsConnectionObj["Cluster"] = (Get-XIOInfo -RestCommand_str /types/clusters -Credential $Credential -ComputerName $strThisXmsName -Port $intPortToUse).clusters.name | Sort-Object
+						$hshPropertiesForNewXmsConnectionObj["Cluster"] = (Get-XIOInfo -RestCommand /types/clusters -Credential $Credential -ComputerName $strThisXmsName -Port $intPortToUse).clusters.name | Sort-Object
 						$oTmpThisXmsConnection = New-Object -Type XioItemInfo.XioConnection -Property $hshPropertiesForNewXmsConnectionObj
 						## add connection object to global connection variable
 						$Global:DefaultXmsServers += $oTmpThisXmsConnection
@@ -262,9 +283,11 @@ function Connect-XIOServer {
 
 <#	.Description
 	Function to remove a "connection" that exists to an XtremIO XMS machine
+
 	.Example
 	Disconnect-XIOServer somexms02.*
 	Disconnect from the given XMS server
+
 	.Example
 	Disconnect-XIOServer
 	Disconnect from all connected XMS servers
@@ -275,6 +298,7 @@ function Disconnect-XIOServer {
 		## XMS appliance address from which to disconnect
 		[parameter(Position=0)][string[]]$ComputerName = "*"
 	)
+
 	process {
 		$ComputerName | Foreach-Object {
 			$strThisXmsName = $_

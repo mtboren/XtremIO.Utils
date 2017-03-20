@@ -1,27 +1,34 @@
 <#	.Description
 	Wrapper for using REST API with XtremIO / XMS appliance; Mar 2014, Matt Boren
 	Intended to be used by other code for getting the raw info, with the other code having the task of returning pretty/useful objects
+
 	.Example
-	Get-XIOInfo -Credential $credMyCreds -RestCommand_str /types/clusters/?name=myxioclustername01).Content | select Name,@{n="SSDSpaceTB"; e={[Math]::Round($_."ud-ssd-space" / 1GB, 2)}},@{n="SSDSpaceInUseTB"; e={[Math]::Round($_."ud-ssd-space-in-use" / 1GB, 2)}},@{n="DedupeRatio"; e={[Math]::Round(1/$_."dedup-ratio", 1)}}, @{n="ThinProvSavings"; e={[Math]::Round((1-$_."thin-provisioning-ratio") * 100, 0)}}
+	Get-XIOInfo -Credential $credMyCreds -RestCommand /types/clusters/?name=myxioclustername01).Content | select Name,@{n="SSDSpaceTB"; e={[Math]::Round($_."ud-ssd-space" / 1GB, 2)}},@{n="SSDSpaceInUseTB"; e={[Math]::Round($_."ud-ssd-space-in-use" / 1GB, 2)}},@{n="DedupeRatio"; e={[Math]::Round(1/$_."dedup-ratio", 1)}}, @{n="ThinProvSavings"; e={[Math]::Round((1-$_."thin-provisioning-ratio") * 100, 0)}}
 #>
 function Get-XIOInfo {
 	[CmdletBinding()]
 	param(
 		## credential for connecting to XMS appliance
 		[System.Management.Automation.PSCredential]$Credential = $(Get-Credential),
-		## authentication type; default is "basic"; to be expanded upon in the future?
-		[ValidateSet("basic")][string]$AuthType_str = "basic",
+
+		## Authentication type. Default is "basic". To be expanded upon in the future?
+		[ValidateSet("basic")][string]$AuthType = "basic",
+
 		## XMS appliance address (FQDN) to which to connect
-		[parameter(Mandatory=$true,Position=0,ParameterSetName="SpecifyUriComponents")][string]$ComputerName_str,
+		[parameter(Mandatory=$true,Position=0,ParameterSetName="SpecifyUriComponents")][string]$ComputerName,
+
 		## Port on which REST API is available
-		[parameter(ParameterSetName="SpecifyUriComponents")][int]$Port_int,
+		[parameter(ParameterSetName="SpecifyUriComponents")][int]$Port,
+
 		## REST command to issue; like, "/types/clusters" or "/types/initiators", for example
-		[parameter(ParameterSetName="SpecifyUriComponents")][ValidateScript({$_.StartsWith("/")})][string]$RestCommand_str = "/types",
-		## full URI to use for the REST call, instead of specifying components from which to construct the URI
+		[parameter(ParameterSetName="SpecifyUriComponents")][ValidateScript({$_.StartsWith("/")})][string]$RestCommand = "/types",
+
+		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri",ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true,Mandatory=$true)]
-		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][alias("href")][string]$URI_str,
-		## switch: trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
-		[switch]$TrustAllCert_sw
+		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][alias("href")][string]$URI,
+
+		## Switch: trust all certs?  Not necessarily secure, but can be used if the XMS appliance is known/trusted, and has, say, a self-signed cert
+		[switch]$TrustAllCert
 	) ## end param
 
 	Begin {
@@ -34,22 +41,22 @@ function Get-XIOInfo {
 		$hshParamsForRequest = @{
 			Uri =
 				if ($PSCmdlet.ParameterSetName -eq "SpecifyUriComponents") {
-					$hshParamsForNewXioApiURI = @{ComputerName_str = $ComputerName_str; RestCommand_str = $RestCommand_str}
-					if ($PSBoundParameters.ContainsKey("Port_int")) {$hshParamsForNewXioApiURI["Port_int"] = $Port_int}
+					$hshParamsForNewXioApiURI = @{ComputerName = $ComputerName; RestCommand = $RestCommand}
+					if ($PSBoundParameters.ContainsKey("Port")) {$hshParamsForNewXioApiURI["Port"] = $Port}
 					New-XioApiURI @hshParamsForNewXioApiURI
 				} ## end if
-				else {$URI_str}
+				else {$URI}
 			Method = "Get"
 		} ## end hsh
 
 		## add header if using Basic auth
-		if ($AuthType_str -eq "basic") {
+		if ($AuthType -eq "basic") {
 			$hshHeaders = @{Authorization = (Get-BasicAuthStringFromCredential -Credential $Credential)}
 			$hshParamsForRequest['Headers'] = $hshHeaders
 		} ## end if
 
 		## if specified to do so, set session's CertificatePolicy to trust all certs (for now; will revert to original CertificatePolicy)
-		if ($true -eq $TrustAllCert_sw) {Write-Verbose "$strLogEntry_ToAdd setting ServerCertificateValidationCallback method temporarily so as to 'trust' certs (should only be used if certs are known-good / trustworthy)"; $oOrigServerCertValidationCallback = Disable-CertValidation}
+		if ($true -eq $TrustAllCert) {Write-Verbose "$strLogEntry_ToAdd setting ServerCertificateValidationCallback method temporarily so as to 'trust' certs (should only be used if certs are known-good / trustworthy)"; $oOrigServerCertValidationCallback = Disable-CertValidation}
 		try {
 			#Invoke-RestMethod @hshParamsForRequest -ErrorAction:stop
 			## issues with Invoke-RestMethod:  even after disabling cert validation, issue sending properly formed request; at the same time, using the WebClient object succeeds; furthermore, after a successful call to DownloadString() with the WebClient object, the Invoke-RestMethod succeeds.  What the world?  Something to investigate further
@@ -61,7 +68,7 @@ function Get-XIOInfo {
 			_Invoke-WebExceptionErrorCatchHandling -URI $hshParamsForRequest['Uri'] -ErrorRecord $_
 		} ## end catch
 		## if CertValidationCallback was altered, set back to original value
-		if ($true -eq $TrustAllCert_sw) {
+		if ($true -eq $TrustAllCert) {
 			[System.Net.ServicePointManager]::ServerCertificateValidationCallback = $oOrigServerCertValidationCallback
 			Write-Verbose "$strLogEntry_ToAdd set ServerCertificateValidationCallback back to original value of '$oOrigServerCertValidationCallback'"
 		} ## end if
@@ -69,23 +76,29 @@ function Get-XIOInfo {
 } ## end function
 
 
+<#	.Description
+	Function to create the URI to be used for web calls to XtremIO API, based on computer name, and, if no port specified, the default port that is responding
+
+	.Outputs
+	String URI to use for the API call, built according to which version of XMS is deduced by determining
+#>
 function New-XioApiURI {
-	<#	.Description
-		Function to create the URI to be used for web calls to XtremIO API, based on computer name, and, if no port specified, the default port that is responding
-		.Outputs
-		String URI to use for the API call, built according to which version of XMS is deduced by determining
-	#>
 	param (
-		## the name of the target machine to be used in URI (and, machine which to check if it is listening on given port)
-		[parameter(Mandatory=$true)][string]$ComputerName_str,
-		## port to use (if none specified, try defaults)
-		[int]$Port_int,
+		## Name of the target machine to be used in URI (and, machine which to check if it is listening on given port)
+		[parameter(Mandatory=$true)][string]$ComputerName,
+
+		## Port to use (if none specified, try defaults)
+		[int]$Port,
+
 		## REST command to use for URI
-		[parameter(Mandatory=$true)][string]$RestCommand_str,
+		[parameter(Mandatory=$true)][string]$RestCommand,
+
 		## Switch:  return array output of URI,Port, instead of just URI?
 		[switch]$ReturnURIAndPortInfo,
+
 		## Switch:  test comms to the given port?  Likely only used at Connect- time (after which, somewhat safe assumption that the given port is legit)
 		[switch]$TestPort,
+
 		## XtremIO REST API version to use -- which will determine a part of the URI
 		[System.Version]$RestApiVersion
 	) ##end param
@@ -97,26 +110,27 @@ function New-XioApiURI {
 
 	$intPortToUse = $(
 		## if a port was specified, try to use it
-		$intPortToTry = if ($PSBoundParameters.ContainsKey("Port_int")) {$Port_int} else {$hshCfg["DefaultApiPort"]["intSSL"]}
+		$intPortToTry = if ($PSBoundParameters.ContainsKey("Port")) {$Port} else {$hshCfg["DefaultApiPort"]["intSSL"]}
 		if ($TestPort -eq $true) {
-			if (dTest-Port -Name $ComputerName_str -Port $intPortToTry -Verbose) {$intPortToTry}
-			else {Throw "machine '$ComputerName_str' not responding on port '$intPortToTry'. Valid port that is listening? Not continuing"}
+			if (dTest-Port -Name $ComputerName -Port $intPortToTry -Verbose) {$intPortToTry}
+			else {Throw "machine '$ComputerName' not responding on port '$intPortToTry'. Valid port that is listening? Not continuing"}
 		} ## end if
 		else {$intPortToTry}
 	) ## end subexpression
-	$strURIToUse = if ($intPortToUse -eq 443) {"https://${ComputerName_str}/api/json$strRestApiSpecificUriPiece$RestCommand_str"}
-		else {"http://${ComputerName_str}:$intPortToUse$RestCommand_str"}
+	$strURIToUse = if ($intPortToUse -eq 443) {"https://${ComputerName}/api/json$strRestApiSpecificUriPiece$RestCommand"}
+		else {"http://${ComputerName}:$intPortToUse$RestCommand"}
 	Write-Verbose "$strLogEntry_ToAdd URI to use: '$strURIToUse'"
 	if ($false -eq $ReturnURIAndPortInfo) {return $strURIToUse} else {return @($strURIToUse,$intPortToUse)}
 } ## end function
 
 
+<#	.Description
+	Function to get a Basic authorization string value from a PSCredential.  Useful for creating the value for an Authorization header item for a web request, for example.  Based on code from Don Jones at http://powershell.org/wp/forums/topic/http-basic-auth-request/
+
+	.Outputs
+	String
+#>
 function Get-BasicAuthStringFromCredential {
-	<#	.Description
-		Function to get a Basic authorization string value from a PSCredential.  Useful for creating the value for an Authorization header item for a web request, for example.  Based on code from Don Jones at http://powershell.org/wp/forums/topic/http-basic-auth-request/
-		.Outputs
-		String
-	#>
 	param(
 		[parameter(Mandatory=$true)][System.Management.Automation.PSCredential]$Credential
 	) ## end param
@@ -125,16 +139,20 @@ function Get-BasicAuthStringFromCredential {
 } ## end function
 
 
+<#	.Description
+	Function to check if given port is responding on given machine.  Based on post by Aleksandar at http://powershell.com/cs/forums/p/2993/4034.aspx#4034
+#>
 function dTest-Port {
 	[CmdletBinding()]
-	<#	.Description
-		Function to check if given port is responding on given machine.  Based on post by Aleksandar at http://powershell.com/cs/forums/p/2993/4034.aspx#4034
-	#>
 	param(
-		[string]$nameOrAddr_str,
-		[int]$port_int,
-		## milliseconds to wait for connection
-		[int]$WaitMilliseconds_int = 2000
+		## Name/address of destination machine to test
+		[string]$nameOrAddr,
+
+		## Port to test
+		[int]$port,
+
+		## Milliseconds to wait for connection
+		[int]$WaitMilliseconds = 2000
 	) ## end param
 
 	## string to add to messages written by this function; function name in square brackets
@@ -143,61 +161,28 @@ function dTest-Port {
 	## ref:  http://msdn.microsoft.com/en-us/library/system.net.sockets.tcpclient.aspx
 	$oTcpClient = New-Object Net.Sockets.TcpClient
 	## old way, synchronous
-	#$oTcpClient.Connect($nameOrAddr_str, $port_int)
+	#$oTcpClient.Connect($nameOrAddr, $port)
 	## ref:  http://msdn.microsoft.com/en-us/library/xw3y33he.aspx
-	$oIAsyncResult = $oTcpClient.BeginConnect($nameOrAddr_str, $port_int, $null, $null)
+	$oIAsyncResult = $oTcpClient.BeginConnect($nameOrAddr, $port, $null, $null)
 	## ref:  http://msdn.microsoft.com/en-us/library/kzy257t0.aspx
-	$bConnectSucceeded = $oIAsyncResult.AsyncWaitHandle.WaitOne($WaitMilliseconds_int, $false)
+	$bConnectSucceeded = $oIAsyncResult.AsyncWaitHandle.WaitOne($WaitMilliseconds, $false)
 	$oTcpClient.Close(); $oTcpClient = $null
-	if (-not $bConnectSucceeded) {Write-Verbose "$strLogEntry_ToAdd No connection on port '$port_int' before timeout of '$WaitMilliseconds_int' ms"}
+	if (-not $bConnectSucceeded) {Write-Verbose "$strLogEntry_ToAdd No connection on port '$port' before timeout of '$WaitMilliseconds' ms"}
 	return $bConnectSucceeded
 } ## end fn
 
 
+<#	.Description
+	function to set CertificatePolicy in current session to a custom, "TrustAllCerts" kind of policy; intended to be used as workaround for web calls to endpoints with self-signed certs
+
+	.Outputs
+	CertificatePolicy that was originally set before changing to TrustAllCert type of policy (if changed, and for later use in setting the policy back), or $null if CertificatePolicy was not changed
+#>
 function Disable-CertValidation {
-	<#	.Description
-		function to set CertificatePolicy in current session to a custom, "TrustAllCerts" kind of policy; intended to be used as workaround for web calls to endpoints with self-signed certs
-		.Outputs
-		CertificatePolicy that was originally set before changing to TrustAllCert type of policy (if changed, and for later use in setting the policy back), or $null if CertificatePolicy was not changed
-	#>
 	$oOrigServerCertificateValidationCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
 	[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 	return $oOrigServerCertificateValidationCallback
 }
-
-
-### replaced w/ Disable-CertValidation
-##function Set-TrustAllCertPolicy {
-##	<#	.Description
-##		function to set CertificatePolicy in current session to a custom, "TrustAllCerts" kind of policy; intended to be used as workaround for web calls to endpoints with self-signed certs
-##		.Outputs
-##		CertificatePolicy that was originally set before changing to TrustAllCert type of policy (if changed, and for later use in setting the policy back), or $null if CertificatePolicy was not changed
-##	#>
-##	## the name of the custom CertificatePolicy
-##	$strCustCertPolicyName = "XioUtils_TrustAllCertsPolicy"
-##	## if this type is not already present in the current PowerShell session, add it
-##	if (-not ($strCustCertPolicyName -as [type])) {
-##		Add-Type -TypeDefinition @"
-##			using System.Net; using System.Security.Cryptography.X509Certificates;
-##			public class $strCustCertPolicyName : ICertificatePolicy {
-##				public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) { return true; }
-##			}
-##"@
-##		Write-Verbose "adding CertificatePolicy '$strCustCertPolicyName' type to current PowerShell session"
-##	} ## end if
-##	## if not already a TrustAllCerts policy, set it
-##	if ([System.Net.ServicePointManager]::CertificatePolicy -isnot [type]$strCustCertPolicyName) {
-##		## get the original (current) CertificatePolicy for this session
-##		$oCertPolicy_orig = [System.Net.ServicePointManager]::CertificatePolicy
-##		## set the CertificatePolicy to the TrustAllCerts policy
-##		[System.Net.ServicePointManager]::CertificatePolicy = New-Object -TypeName $strCustCertPolicyName
-##		Write-Verbose "set CertificatePolicy for this session: '$([System.Net.ServicePointManager]::CertificatePolicy)'"
-##		## return the orig cert policy, for when someone wants to revert to said policy
-##		return $oCertPolicy_orig
-##	} ## end if
-##	## else, just write some verbosity, and return $null
-##	else {Write-Verbose "CertificatePolicy was already '$strCustCertPolicyName'; not setting it again"; return $null}
-##} ## end fn
 
 
 <#	.Description
@@ -205,11 +190,13 @@ function Disable-CertValidation {
 #>
 function _Invoke-WebExceptionErrorCatchHandling {
 	param (
-		## the URI that was being used when exception was encountered
+		## The URI that was being used when exception was encountered
 		[parameter(Mandatory=$true)][string]$URI,
-		## the error record that was caught
+
+		## The error record that was caught
 		[parameter(Mandatory=$true)][System.Management.Automation.ErrorRecord]$ErrorRecord
 	) ## end param
+
 	process {
 		Write-Verbose -Verbose "Uh-oh -- something went awry trying to get data from that URI ('$URI')"
 		if ($null -ne $ErrorRecord.Exception.InnerException.Response) {
@@ -255,6 +242,7 @@ function hExport-PSCredential {
 	Write-Verbose -Verbose "Credentials encrypted (via Windows Data Protection API) and saved to: '$Path'"
 } ## end function
 
+
 function hImport-PSCredential {
 	param ([parameter(Mandatory=$true)][ValidateScript({Test-Path $_})][string]$Path)
 	# Import credential file
@@ -283,15 +271,17 @@ function _Find-CredentialToUse {
 } ## end function
 
 
+<# .Description
+	Helper function to test if object is either of type String or $Type
+
+	.Outputs
+	Boolean -- $true if objects are all either String or the given $Type; $false otherwise
+#>
 function _Test-TypeOrString {
-	<# .Description
-		Helper function to test if object is either of type String or $Type
-		.Outputs
-		Boolean -- $true if objects are all either String or the given $Type; $false otherwise
-	#>
 	param (
 		## Object to test
 		[parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][PSObject[]]$ObjectToTest,
+
 		## Type of object for which to check
 		[parameter(Mandatory=$true)][Type]$Type
 	) ## end param
@@ -304,15 +294,17 @@ function _Test-TypeOrString {
 } ## end function
 
 
+<# .Description
+	Helper function to test if object is one of the given Types specified
+
+	.Outputs
+	Boolean -- $true if object type is one of the specified Type; $false otherwise
+#>
 function _Test-IsOneOfGivenType {
-	<# .Description
-		Helper function to test if object is one of the given Types specified
-		.Outputs
-		Boolean -- $true if object type is one of the specified Type; $false otherwise
-	#>
 	param (
 		## Object whose Type to test
 		[parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][PSObject]$ObjectToTest,
+
 		## Type of object for which to check
 		[parameter(Mandatory=$true)][Type[]]$Type
 	) ## end param
@@ -350,8 +342,8 @@ function Update-TitleBarForXioConnection {
 #>
 function Get-XioConnectionsToUse {
 	param(
-		## Computer names to check for in default XMS servers list (if any; if $null, will use all)
-		[string[]]$ComputerName_arr
+		## Computer name(s) to check for in default XMS servers list (if any; if $null, will use all)
+		[string[]]$ComputerName
 	)
 
 	## string to add to messages written by this function; function name in square brackets
@@ -360,7 +352,7 @@ function Get-XioConnectionsToUse {
 	## if connected to any XIO servers
 	if (($Global:DefaultXmsServers | Measure-Object).Count -gt 0) {
 		## array of XIO connection names to potentially use
-		$arrConnectionNamesToUse = $ComputerName_arr
+		$arrConnectionNamesToUse = $ComputerName
 
 		## get the XIO connections to use, per the params passed and by matching up with XIO names in current connections
 		$arrXioConnectionsToUse =
@@ -387,46 +379,50 @@ function Get-XioConnectionsToUse {
 
 <#	.Description
 	Helper function to get the XIO item type (which is plural) by parsing the URI; string manipulation, so not super best, but...
+
 	.Outputs
 	String (that is the plural form of the given word)
 #>
 function Get-ItemTypeFromURI {
 	param(
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
-		[parameter(Mandatory=$true)][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI_str
+		[parameter(Mandatory=$true)][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
 	) ## end param
-	$strItemType_plural = ([RegEx]("^(/api/json)?(/v\d{1,2})?/types/(?<itemType>[^/]+)/")).Match(([System.Uri]($URI_str)).AbsolutePath).Groups.Item("itemType").Value
+	$strItemType_plural = ([RegEx]("^(/api/json)?(/v\d{1,2})?/types/(?<itemType>[^/]+)/")).Match(([System.Uri]($URI)).AbsolutePath).Groups.Item("itemType").Value
 	## get the plural item type from the URI (the part of the URI after "/types/")
 	return $strItemType_plural
 } ## end function
 
 
+<#	.Description
+	Function to convert between regular strings and URL encoded strings (encode/decode)
+
+	.Example
+	Convert-UrlEncoding "mehh 1","some other, shiz"
+	OriginalString     ConvertedString      Action
+	--------------     ---------------      ------
+	mehh 1             mehh+1               encoded
+	some other, shiz   some+other%2c+shiz   encoded
+	UrlEncode the given strings
+
+	.Outputs
+	PSCustomObject with the original string, the converted string, and the encoding type used if converting to encoded string
+#>
 function Convert-UrlEncoding {
-	<#	.Description
-		Function to convert between regular strings and URL encoded strings (encode/decode)
-		.Example
-		Convert-UrlEncoding "mehh 1","some other, shiz"
-		OriginalString     ConvertedString      Action
-		--------------     ---------------      ------
-		mehh 1             mehh+1               encoded
-		some other, shiz   some+other%2c+shiz   encoded
-		UrlEncode the given strings
-		.Outputs
-		PSCustomObject with the original string, the converted string, and the encoding type used if converting to encoded string
-	#>
 	[CmdletBinding(DefaultParameterSetName="Default")]
 	param (
-		## string(s) to either encode or decode
-		[parameter(Mandatory=$true,Position=0)][string[]]$StringToConvert_arr,
-		## switch:  decode the string passed in (assume that the string is URL encoded); default action is to encode
-		[switch]$Decode_sw = $false
+		## String(s) to either encode or decode
+		[parameter(Mandatory=$true,Position=0)][string[]]$StringToConvert,
+
+		## Switch:  decode the string passed in (assume that the string is URL encoded); default action is to encode
+		[switch]$Decode = $false
 	) ## end param
 
 	process {
 		if (-not ("System.Web.HttpUtility" -as [type])) {Add-Type -AssemblyName System.Web}
-		$StringToConvert_arr | Foreach-Object {
+		$StringToConvert | Foreach-Object {
 			$strThisStringToConvert = $_
-			$strActionTaken,$strThisConvertedString = if ($Decode_sw -eq $true) {"decoded"; [System.Web.HttpUtility]::UrlDecode($strThisStringToConvert)}
+			$strActionTaken,$strThisConvertedString = if ($Decode -eq $true) {"decoded"; [System.Web.HttpUtility]::UrlDecode($strThisStringToConvert)}
 				else {"encoded"; [System.Web.HttpUtility]::UrlEncode($strThisStringToConvert)}
 			New-Object -Type PSObject -Property @{
 				OriginalString = $strThisStringToConvert
@@ -438,25 +434,27 @@ function Convert-UrlEncoding {
 } ## end function
 
 
-function dWrite-ObjectToTableString {
 <#	.Description
-	brief function to write an object (like, say, a hashtable) out to a log-friendly string, trimming the whitespace off of the end of each line
+	Brief function to write an object (like, say, a hashtable) out to a log-friendly string, trimming the whitespace off of the end of each line
 #>
+function dWrite-ObjectToTableString {
 	param ([parameter(Mandatory=$true)][PSObject]$ObjectToStringify)
 	$strToReturn = ( ($ObjectToStringify | Format-Table -AutoSize | Out-String -Stream | Foreach-Object {$_.Trim()} | Where-Object {-not [System.String]::IsNullOrEmpty($_)}) ).Trim() -join "`n"
 	return "`n${strToReturn}`n"
 } ## end function
 
 
-function _Test-XIOObjectIsInThisXIOSVersion {
 <#	.Description
-	function to determine if this API Item type is present in the given XIOS version, based on a config table of values -> XIOSVersion
+	Function to determine if this API Item type is present in the given XIOS version, based on a config table of values -> XIOSVersion
+
 	.Outputs
 	Boolean
 #>
+function _Test-XIOObjectIsInThisXIOSVersion {
 	param(
 		## API item type (like volumes, xms, ssds, etc.)
 		[parameter(Mandatory=$true)][string]$ApiItemType,
+
 		## XIOS version to check
 		[AllowNull()][System.Version]$XiosVersion
 	) ## end param
@@ -471,15 +469,17 @@ function _Test-XIOObjectIsInThisXIOSVersion {
 } ## end function
 
 
-function _New-ScheduleDisplayString {
 <#	.Description
 	Helper function to take a schedule type and schedule "triplet" and return a display string
+
 	.Outputs
 	String
 #>
+function _New-ScheduleDisplayString {
 	param (
 		## Type of scheduler:  explicit or interval
 		[parameter(Mandatory=$true)][ValidateSet("explicit","interval")][string]$ScheduleType,
+
 		## Schedule string.  Like "hrs:mins:secs" for interval scheduler, or "intDayOfWeek_1-basedIndex:h:min" for explicit scheduler
 		[string]$ScheduleTriplet
 	)
@@ -504,20 +504,20 @@ function _New-ScheduleDisplayString {
 } ## end fn
 
 
-function _Get-NumSecondSinceUnixEpoch {
 <#	.Description
 	Helper function to get the number of whole seconds it has been since the UNIX Epoch until the "now" local datetime
 #>
+function _Get-NumSecondSinceUnixEpoch {
 	process {
 		[int64](New-TimeSpan -Start (Get-Date "01 Jan 1970 00:00:00").ToLocalTime()).TotalSeconds
 	} ## end process
 } ## end fn
 
 
-function _Get-LocalDatetimeFromUTCUnixEpoch {
 <#	.Description
 	Helper function to get the current, local datetime from a UNIX Epoch time
 #>
+function _Get-LocalDatetimeFromUTCUnixEpoch {
 	param(
 		## UNIX Epoch time (number of seconds since 00:00:00 on 01 Jan 1970)
 		[Double]$UnixEpochTime
@@ -529,13 +529,14 @@ function _Get-LocalDatetimeFromUTCUnixEpoch {
 } ## end fn
 
 
-function _New-ObjListFromProperty {
 <#	.Description
 	Helper function to create objects from typical XIO "list" object arrays, which have members that are like:  <someLongId>, <theObjectDisplayName>, <theObjectIndex>
 #>
+function _New-ObjListFromProperty {
 	param(
 		## The prefix to add to the Id property name
 		[parameter(Mandatory)][string]$IdPropertyPrefix,
+
 		## The array of objects from which to get Id, Name, and Index
 		[PSObject[]]$ObjectArray
 	) ## end param
@@ -552,13 +553,14 @@ function _New-ObjListFromProperty {
 } ## end fn
 
 
-function _New-ObjListFromProperty_byObjName {
 <#	.Description
 	Helper function to eventually call function to create objects from typical XIO "list" object arrays, based on the object type name (like Storagecontroller or Switch (IBSwitch))
 #>
+function _New-ObjListFromProperty_byObjName {
 	param(
 		## The name of the object type, like Storagecontroller or Switch
 		[string]$Name,
+
 		## The array of objects from which to get Id, Name, and Index
 		[PSObject[]]$ObjectArray
 	) ## end param
@@ -591,10 +593,10 @@ function _New-ObjListFromProperty_byObjName {
 } ## end fn
 
 
-function _Get-BooleanFromVariousValue {
 <#	.Description
 	Helper function to try to get a boolean value from what could be various input value types, like a String "false" or Int32 "0" or Boolean "False". Useful for trying to consistently return a Boolean when the input might be "true" or "false" in some various representation
 #>
+function _Get-BooleanFromVariousValue {
 	param(
 		## The value from which to try to get a boolean value
 		[PSObject]$Value
@@ -614,10 +616,10 @@ function _Get-BooleanFromVariousValue {
 } ## end fn
 
 
-function _Remove-ClusterNameQStringFromURI {
 <#	.Description
 	Helper function to try to remove the "&cluster-name=myclus01&" tidbit from a URI string
 #>
+function _Remove-ClusterNameQStringFromURI {
 	param(
 		[parameter(Mandatory=$true)][ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI
 	)
@@ -638,10 +640,10 @@ function _Remove-ClusterNameQStringFromURI {
 }
 
 
-function _New-XioClusterObjFromSysId {
 <#	.Description
 	Helper function to create a new XioItemInfo.Cluster object from the .sys-id property of an object (even if $null)
 #>
+function _New-XioClusterObjFromSysId {
 	param(
 		## The SysId value from which to try to get the details for a new, barebones cluster info object; the ".sys-id" property of API return objects has the list form of @(clusterGuid, clusterName, clusterIndex)
 		[AllowNull()][PSObject]$SysId
@@ -652,6 +654,7 @@ function _New-XioClusterObjFromSysId {
 	} ## end process
 } ## end fn
 
+
 <#	.Description
 	Helper function to take "raw" API object and create new XIO Item Info object for return to consumer
 #>
@@ -659,12 +662,16 @@ function _New-ObjectFromApiObject {
 	param (
 		## Object returned from API call and that has all of the juicy properties from which to make an object to return to the user
 		[parameter(Mandatory=$true)][PSObject]$ApiObject,
+
 		## Item type as defined by the REST API (plural)
 		[parameter(Mandatory=$true)][String]$ItemType,
+
 		## The XMS Computer Name from which this object came, for populating that property on the return object
 		[parameter(Mandatory=$true)][String]$ComputerName,
+
 		## The URI for this item
 		[parameter(Mandatory=$true)][String]$ItemUri,
+
 		## Switch:  is this object from the API call that returns a "full" object view, instead of from other subsequent calls to the API (such as calls to v1 API)?
 		[Switch]$UsingFullApiObjectView
 	)
@@ -692,7 +699,7 @@ function _New-ObjectFromApiObject {
 				## set URI property that uniquely identifies this object
 				$oObjToReturn.Uri = $ItemUri
 				## if this is a PerformanceCounter item, add the EntityType property
-				if ("performance" -eq $ItemType_str) {$oObjToReturn.EntityType = $strPerformanceCounterEntityType}
+				if ("performance" -eq $ItemType) {$oObjToReturn.EntityType = $strPerformanceCounterEntityType}
 				## return the object
 				return $oObjToReturn
 			} ## end foreach-object
@@ -704,15 +711,18 @@ function _New-ObjectFromApiObject {
 <#	.Description
 	function to make an ordered dictionary of properties to return, based on the item type being retrieved; Apr 2014, Matt Boren
 	to still add here:  "iscsi-portals", "iscsi-routes"
+
 	.Outputs
 	PSCustomObject with info about given XtremIO input item type
 #>
 function _New-Object_fromItemTypeAndContent {
 	param (
-		## the XIOS API item type; "initiator-groups", for example
+		## The XIOS API item type; "initiator-groups", for example
 		[parameter(Mandatory=$true)][string]$argItemType,
-		## the raw content returned by the API GET call, from which to get data
+
+		## The raw content returned by the API GET call, from which to get data
 		[parameter(Mandatory=$true)][PSCustomObject]$oContent,
+
 		## TypeName of new object to create; "XioItemInfo.InitiatorGroup", for example
 		[parameter(Mandatory=$true)][string]$PSTypeNameForNewObj
 	)

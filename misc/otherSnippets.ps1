@@ -7,8 +7,8 @@ $strV241XmsName = "somexms02.dom.com"
 $strV223XmsName = "somexms3.dom.com"
 $credSomeAdmin_noDom = Get-Credential someXioAdmin
 
-$arrTypesFor30 = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI_str https://$strV30XmsName/api/json/types -ReturnFullResponse_sw).children
-$arrTypesFor241 = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI_str https://$strV241XmsName/api/json/types -ReturnFullResponse_sw).children
+$arrTypesFor30 = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI https://$strV30XmsName/api/json/types -ReturnFullResponse).children
+$arrTypesFor241 = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI https://$strV241XmsName/api/json/types -ReturnFullResponse).children
 $arrTypesInBothVersions = $arrTypesFor30 | %{$_.name} | ?{($arrTypesFor241 | %{$_.Name}) -contains $_}
 $hshObjPropertyDifferencesInfo = @{}
 foreach ($strItemtype in ($arrTypesInBothVersions | %{$_.TrimEnd("s")})) {
@@ -28,8 +28,8 @@ foreach ($strItemtype in ($arrTypesInBothVersions | %{$_.TrimEnd("s")})) {
 
 
 ## between 3.0 and 2.2.3
-$arrTypesFor30 = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI_str https://$strV30XmsName/api/json/types -ReturnFullResponse_sw).children
-$arrTypesFor223 = (Get-XIOItemInfo -URI_str https://$strV223XmsName/api/json/types -ReturnFullResponse_sw).children
+$arrTypesFor30 = (Get-XIOItemInfo -Credential $credSomeAdmin_noDom -URI https://$strV30XmsName/api/json/types -ReturnFullResponse).children
+$arrTypesFor223 = (Get-XIOItemInfo -URI https://$strV223XmsName/api/json/types -ReturnFullResponse).children
 $arrTypesInBothVersions = $arrTypesFor30 | %{$_.name} | ?{($arrTypesFor223 | %{$_.Name}) -contains $_}
 $hshObjPropertyDifferencesInfo = @{}
 foreach ($strItemtype in ($arrTypesInBothVersions | %{$_.TrimEnd("s")})) {
@@ -61,8 +61,8 @@ foreach ($strItemtype in @("cluster", "initiator-group", "initiator", "lun-map",
 #>
 
 ## get all properties and values, sorted by property name
-(Get-XIOItemInfo -ItemType storage-controller -ReturnFullResponse_sw).content | %{Select -InputObject $_ -Property (gm -in $_ -MemberType NoteProperty | %{$_.name} | sort)}
-(Get-XIOItemInfo -Uri https://somexms01.dom.com/api/json/types/data-protection-groups/1 -ReturnFullResponse_sw).content | %{Select -InputObject $_ -Property (gm -in $_ -MemberType NoteProperty | %{$_.name} | sort)}
+(Get-XIOItemInfo -ItemType storage-controller -ReturnFullResponse).content | %{Select -InputObject $_ -Property (gm -in $_ -MemberType NoteProperty | %{$_.name} | sort)}
+(Get-XIOItemInfo -Uri https://somexms01.dom.com/api/json/types/data-protection-groups/1 -ReturnFullResponse).content | %{Select -InputObject $_ -Property (gm -in $_ -MemberType NoteProperty | %{$_.name} | sort)}
 
 # -clusters obj
 # 	-add "brick-list" property (available in 2.2.3 and 2.4, at least)
