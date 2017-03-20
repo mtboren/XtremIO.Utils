@@ -1,5 +1,6 @@
 <#	.Description
 	Function to remove XtremIO item using REST API with XtremIO XMS appliance.  Generally used as supporting function to the rest of the Remove-XIO* cmdlets, but can be used directly, too, if needed
+
 	.Outputs
 	No output
 #>
@@ -8,19 +9,25 @@ function Remove-XIOItemInfo {
 	param(
 		## XMS appliance address to which to connect
 		[parameter(ParameterSetName="ByComputerName")][string[]]$ComputerName,
+
 		## Name(s) of cluster in which resides the object to remove
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")][string[]]$Cluster,
+
 		## Type of item to remove
 		[parameter(Mandatory=$true,ParameterSetName="ByComputerName")]
 		[ValidateSet("ig-folder", "initiator-group", "initiator", "syslog-notifier", "tag", "user-account", "volume", "volume-folder")]
 		[string]$ItemType,
+
 		## Name of item to remove
 		[parameter(Position=0,ParameterSetName="ByComputerName")][Alias("ItemName")][string]$Name,
+
 		## JSON for the body of the POST WebRequest, for specifying the properties of the XIO object to remove
 		[parameter(Mandatory=$true)][ValidateScript({ try {ConvertFrom-Json -InputObject $_ -ErrorAction:SilentlyContinue | Out-Null; $true} catch {$false} })][string]$SpecForRemoveItem,
+
 		## Full URI to use for the REST call, instead of specifying components from which to construct the URI
 		[parameter(Position=0,ParameterSetName="SpecifyFullUri")]
 		[ValidateScript({[System.Uri]::IsWellFormedUriString($_, "Absolute")})][string]$URI,
+
 		## XioItemInfo object to remove from the XMS
 		[parameter(Position=0,ParameterSetName="ByXioItemInfoObj",ValueFromPipeline)][ValidateNotNullOrEmpty()][PSObject]$XIOItemInfoObj
 	) ## end param
@@ -105,9 +112,11 @@ function Remove-XIOItemInfo {
 <#	.Description
 	Remove an XtremIO ConsistencyGroup.  Does not disturb the Volumes that are a part of the ConsistencyGroup -- they are left intact / untouched.
 	ConsistencyGroup must not be the subject of a SnapshotScheduler.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
+
 	.Example
 	Get-XIOConsistencyGroup myConsistencyGroup0 | Remove-XIOConsistencyGroup
 	Removes the given ConsistencyGroup, leaving the related volumes intact on the array.
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -140,9 +149,11 @@ function Remove-XIOConsistencyGroup {
 
 <#	.Description
 	Remove an XtremIO IGFolder (InitiatorGroup folder). In modern XIOS versions, InitiatorGroups(s) that might reside in the IGFolder are not disturbed by the removal, they just have a new parent folder (the root IGFolder).  However, in some older XIOS versions, the folder must be empty before removal (verified to be the case in XIOS v2.4).
+
 	.Example
 	Get-XIOInitiatorGroupFolder /someFolder/someDeeperFolderToRemove | Remove-XIOInitiatorGroupFolder
 	Removes the given InitiatorGroupFolder, "someDeeperFolderToRemove".
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -176,9 +187,11 @@ function Remove-XIOInitiatorGroupFolder {
 
 <#	.Description
 	Remove an XtremIO Initiator.
+
 	.Example
 	Get-XIOInitiator myInitiator0 | Remove-XIOInitiator
 	Removes the given Initiator.
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -211,9 +224,11 @@ function Remove-XIOInitiator {
 
 <#	.Description
 	Remove an XtremIO InitiatorGroup and any Initiators that are a part of the InitiatorGroup.  InitiatorGroup must not be a part of a LunMap.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
+
 	.Example
 	Get-XIOInitiatorGroup myInitiatorGroup0 | Remove-XIOInitiatorGroup
 	Removes the given InitiatorGroup and all of the Initiators that were a part of it.
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -253,12 +268,15 @@ function Remove-XIOInitiatorGroup {
 
 <#	.Description
 	Remove an XtremIO LunMap
+
 	.Example
 	Get-XIOLunMap -Volume myVolume0 -InitiatorGroup myIG0 | Remove-XIOLunMap
 	Gets the LunMap for the given Volume and InitiatorGroup and removes said LunMap.
+
 	.Example
 	Get-XIOLunMap -Volume myVolume10 | Remove-XIOLunMap
 	Gets all of the LunMaps for the given Volume, and remove each one of the LunMaps.
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -291,9 +309,11 @@ function Remove-XIOLunMap {
 
 <#	.Description
 	Remove an XtremIO SnapshotScheduler.  API does not yet support deleting the associated SnapshotSets.
+
 	.Example
 	Get-XIOSnapshotScheduler myScheduler0 | Remove-XIOSnapshotScheduler
 	Removes the given SnapshotScheduler, but leaves intact any SnapshotSets that it created and that are still present
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -329,9 +349,11 @@ function Remove-XIOSnapshotScheduler {
 
 <#	.Description
 	Remove an XtremIO SnapshotSet and deletes its associated Snapshots.
+
 	.Example
 	Get-XIOSnapshotSet mySnapSet0 | Remove-XIOSnapshotSet
 	Removes the given SnapshotSet, and deletes the Snapshots that were part of the SnapshotSet
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -366,12 +388,15 @@ function Remove-XIOSnapshotSet {
 
 <#	.Description
 	Remove an XtremIO Tag.  Does not disturb objects that are tagged with the Tag being removed, except that they no longer have that Tag associated with them.
+
 	.Example
 	Get-XIOTag /Volume/myVolTag0 | Remove-XIOTag
 	Removes the given Tag and any "child" tags that it had.
+
 	.Example
 	Get-XIOTag /Volume/someParentTag | Remove-XIOTag
 	Removes the given Tag and any "child" tags that it had.  For example, if "someParentTag" had a ten child Tags, "childTag0" through "childTag9", those child Tags would also be removed.
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -403,12 +428,15 @@ function Remove-XIOTag {
 
 <#	.Description
 	Remove an XtremIO Tag assignment (unassign a Tag from an XIO entity)
+
 	.Example
 	Remove-XIOTagAssignment -Tag (Get-XIOTag /Initiator/myInitiatorTag0) -Entity (Get-XIOInitiator myServer0-Init*)
 	Remove the initiator Tag "/Initiator/myInitiatorTag0" from the Initiators myServer0-Init*
+
 	.Example
 	Get-XIOVolume myVol[01] | Remove-XIOTagAssignment -Tag (Get-XIOTag /Volume/favoriteVolumes)
 	Remove the volume Tag "/Volume/favoriteVolumes" from the Volumes myVol0, myVol1
+
 	.Outputs
 	None on success
 #>
@@ -417,6 +445,7 @@ function Remove-XIOTagAssignment {
 	param(
 		## XtremIO entity from which to remove the given Tag assignment. Can be an XIO object of type BBU, Brick, Cluster, ConsistencyGroup, DAE, DataProtectionGroup, InfinibandSwitch, Initiator, InitiatorGroup, SnapshotScheduler, SnapshotSet, SSD, StorageController, Target, or Volume
 		[parameter(ValueFromPipeline=$true, Mandatory=$true)][PSObject[]]$Entity,
+
 		## The Tag object to unassign from the given Entity object(s)
 		[parameter(Mandatory=$true)][XioItemInfo.Tag]$Tag
 	) ## end param
@@ -468,9 +497,11 @@ function Remove-XIOTagAssignment {
 
 <#	.Description
 	Remove an XtremIO UserAccount
+
 	.Example
 	Get-XIOUserAccount someUser0 | Remove-XIOUserAccount
 	Removes the given UserAccount.
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -502,6 +533,7 @@ function Remove-XIOUserAccount {
 
 <#	.Description
 	Delete an XtremIO Volume or Snapshot.  Volume/snapshot must not be a part of a LunMap or a ConsistencyGroup, or be the subject of a SnapshotScheduler.  If it is, the removal attempt will fail, and cmdlet throws a corresponding error.
+
 	.Notes
 	Behavior of this cmdlet if the Volume/Snapshot:
 	-is part of LunMap:  does not delete Volume/Snapshot; user must first remove given
@@ -514,12 +546,15 @@ function Remove-XIOUserAccount {
 	   being deleted, if any (else, $null); If all of the ancestor Volumes of the Snapshot are deleted, the
 	   Snapshot becomes _just_ a Volume, no longer a Snapshot object (though, it still is a part of a
 	   SnapshotSet object)!
+
 	.Example
 	Get-XIOVolume myVolume0,myVolume1 | Remove-XIOVolume
 	Deletes the given Volume
+
 	.Example
 	Get-XIOSnapshot *myOldSnap-Apr* | Remove-XIOVolume
 	Deletes the given Snapshots.
+
 	.Outputs
 	No output upon successful removal
 #>
@@ -565,9 +600,11 @@ function Remove-XIOVolume {
 
 <#	.Description
 	Remove an XtremIO VolumeFolder. Volume(s) that might reside in the VolumeFolder are not disturbed by the removal, they just have a new parent folder (the root VolumeFolder)
+
 	.Example
 	Get-XIOVolumeFolder /someFolder/someDeeperFolderToRemove | Remove-XIOVolumeFolder
 	Removes the given VolumeFolder, "someDeeperFolderToRemove".
+
 	.Outputs
 	No output upon successful removal
 #>

@@ -244,15 +244,13 @@ ToDo:
 
 #### Doing:
 [feat_Standardize]
-- update PS formatting for comment-based help, parameters (style guide suggests spaces between keyword sections in help, and between parameters in param())
-	- in: RemoveXIOItem.ps1, SetXIOItem.ps1, XtremIO.Utils.init.ps1, XtremIO.Utils.psd1, XtremIO_UtilsMod.psm1
-	done:
-		- otherSnippets.ps1, configItems.ps1, GetXIOItem.ps1, NewXIOItem.ps1, OtherXIOMgmt.ps1, XIO_SupportingFunctions.ps1
 
 #### Done:
 [feat_Standardize]
 - breaking change:  updated parameter names to be consistent across cmdlets (remove trailing parameter bits:  "_arr", "_int", "_str", "_sw")
 	- from: otherSnippets.ps1, GetXIOItem.ps1, NewXIOItem.ps1, OtherXIOMgmt.ps1, XIO_SupportingFunctions.ps1
+- update PS formatting for comment-based help, parameters (style guide suggests spaces between keyword sections in help, and between parameters in param())
+	- in: otherSnippets.ps1, configItems.ps1, GetXIOItem.ps1, NewXIOItem.ps1, OtherXIOMgmt.ps1, RemoveXIOItem.ps1, SetXIOItem.ps1, XIO_SupportingFunctions.ps1, XtremIO.Utils.init.ps1, XtremIO.Utils.psd1, XtremIO_UtilsMod.psm1
 
 #### Things already added to changelog/readme:
 
